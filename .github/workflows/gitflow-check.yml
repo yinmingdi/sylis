@@ -1,0 +1,370 @@
+name: GitFlow Compliance Check
+
+on:
+  pull_request:
+    branches: [main, develop, release/*, hotfix/*]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+  # 手动触发
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  gitflow-check:
+    name: Check GitFlow Compliance
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get branch info
+        id: branch-info
+        run: |
+          source_branch="${{ github.head_ref }}"
+          target_branch="${{ github.base_ref }}"
+
+          echo "source_branch=$source_branch" >> $GITHUB_OUTPUT
+          echo "target_branch=$target_branch" >> $GITHUB_OUTPUT
+
+          echo "Source branch: $source_branch"
+          echo "Target branch: $target_branch"
+
+      - name: Validate GitFlow Rules
+        id: gitflow-validation
+        run: |
+          source_branch="${{ steps.branch-info.outputs.source_branch }}"
+          target_branch="${{ steps.branch-info.outputs.target_branch }}"
+
+          valid=true
+          errors=""
+          warnings=""
+
+          # GitFlow 分支命名规范检查
+          check_branch_naming() {
+            local branch=$1
+
+            if [[ $branch =~ ^feature/.+ ]]; then
+              echo "✅ Feature branch naming is correct: $branch"
+            elif [[ $branch =~ ^bugfix/.+ ]]; then
+              echo "✅ Bugfix branch naming is correct: $branch"
+            elif [[ $branch =~ ^hotfix/.+ ]]; then
+              echo "✅ Hotfix branch naming is correct: $branch"
+            elif [[ $branch =~ ^release/.+ ]]; then
+              echo "✅ Release branch naming is correct: $branch"
+            elif [[ $branch == "develop" ]]; then
+              echo "✅ Develop branch is correct: $branch"
+            elif [[ $branch == "main" ]] || [[ $branch == "master" ]]; then
+              echo "✅ Main branch is correct: $branch"
+            else
+              echo "❌ Branch naming does not follow GitFlow convention: $branch"
+              return 1
+            fi
+            return 0
+          }
+
+          # 检查合并规则
+          check_merge_rules() {
+            local src=$1
+            local target=$2
+
+            case "$target" in
+              "main")
+                if [[ $src =~ ^release/.+ ]] || [[ $src =~ ^hotfix/.+ ]]; then
+                  echo "✅ Valid merge to main: $src -> $target"
+                  return 0
+                else
+                  echo "❌ Invalid merge to main. Only release/* and hotfix/* branches can merge to main"
+                  echo "   Current: $src -> $target"
+                  return 1
+                fi
+                ;;
+              "develop")
+                if [[ $src =~ ^feature/.+ ]] || [[ $src =~ ^bugfix/.+ ]] || [[ $src =~ ^release/.+ ]] || [[ $src =~ ^hotfix/.+ ]]; then
+                  echo "✅ Valid merge to develop: $src -> $target"
+                  return 0
+                else
+                  echo "❌ Invalid merge to develop. Only feature/*, bugfix/*, release/*, hotfix/* branches can merge to develop"
+                  echo "   Current: $src -> $target"
+                  return 1
+                fi
+                ;;
+              release/*)
+                if [[ $src =~ ^feature/.+ ]] || [[ $src =~ ^bugfix/.+ ]]; then
+                  echo "✅ Valid merge to release: $src -> $target"
+                  return 0
+                else
+                  echo "❌ Invalid merge to release branch. Only feature/* and bugfix/* branches can merge to release/*"
+                  echo "   Current: $src -> $target"
+                  return 1
+                fi
+                ;;
+              hotfix/*)
+                echo "⚠️  Merging to hotfix branch detected: $src -> $target"
+                echo "   Please ensure this is intentional and follows your team's hotfix process"
+                return 0
+                ;;
+              *)
+                echo "⚠️  Merging to non-standard branch: $src -> $target"
+                echo "   Please verify this follows your GitFlow process"
+                return 0
+                ;;
+            esac
+          }
+
+          # 检查分支命名
+          echo "🔍 Checking branch naming conventions..."
+          if ! check_branch_naming "$source_branch"; then
+            valid=false
+            errors="$errors\n- Branch naming violation: $source_branch does not follow GitFlow conventions"
+          fi
+
+          # 检查合并规则
+          echo ""
+          echo "🔍 Checking merge rules..."
+          if ! check_merge_rules "$source_branch" "$target_branch"; then
+            valid=false
+            errors="$errors\n- Merge rule violation: $source_branch cannot merge to $target_branch"
+          fi
+
+          # 检查分支保护
+          echo ""
+          echo "🔍 Checking branch protection recommendations..."
+          if [[ $target_branch == "main" ]]; then
+            echo "📋 Recommendations for main branch:"
+            echo "   - Require pull request reviews"
+            echo "   - Require status checks to pass"
+            echo "   - Require branches to be up to date before merging"
+            echo "   - Require signed commits (recommended)"
+          fi
+
+          # 输出结果
+          echo "valid=$valid" >> $GITHUB_OUTPUT
+          echo "errors<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$errors" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "warnings<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$warnings" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check commit messages
+        id: commit-check
+        run: |
+          echo "🔍 Checking commit message conventions..."
+
+          # 获取PR中的commits
+          commits=$(git log --pretty=format:"%h %s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+
+          invalid_commits=""
+          commit_valid=true
+
+          # 检查每个commit message
+          while IFS= read -r commit; do
+            if [[ -n "$commit" ]]; then
+              commit_msg=$(echo "$commit" | sed 's/^[a-f0-9]* //')
+
+              # 检查是否符合 Conventional Commits 规范
+              if [[ $commit_msg =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+ ]]; then
+                echo "✅ Valid commit: $commit"
+              else
+                echo "⚠️  Non-conventional commit: $commit"
+                invalid_commits="$invalid_commits\n- $commit"
+              fi
+            fi
+          done <<< "$commits"
+
+          echo "commit_valid=$commit_valid" >> $GITHUB_OUTPUT
+          echo "invalid_commits<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$invalid_commits" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Generate GitFlow Report
+        run: |
+          echo "## 🔄 GitFlow Compliance Report" > gitflow-report.md
+          echo "" >> gitflow-report.md
+          echo "**Pull Request:** ${{ github.event.pull_request.title }}" >> gitflow-report.md
+          echo "**Source Branch:** \`${{ steps.branch-info.outputs.source_branch }}\`" >> gitflow-report.md
+          echo "**Target Branch:** \`${{ steps.branch-info.outputs.target_branch }}\`" >> gitflow-report.md
+          echo "" >> gitflow-report.md
+
+          if [[ "${{ steps.gitflow-validation.outputs.valid }}" == "true" ]]; then
+            echo "### ✅ GitFlow Compliance: PASSED" >> gitflow-report.md
+            echo "" >> gitflow-report.md
+            echo "This pull request follows GitFlow conventions and can be safely merged." >> gitflow-report.md
+          else
+            echo "### ❌ GitFlow Compliance: FAILED" >> gitflow-report.md
+            echo "" >> gitflow-report.md
+            echo "**Errors found:**" >> gitflow-report.md
+            echo "${{ steps.gitflow-validation.outputs.errors }}" >> gitflow-report.md
+          fi
+
+          echo "" >> gitflow-report.md
+          echo "### 📋 GitFlow Branch Strategy" >> gitflow-report.md
+          echo "" >> gitflow-report.md
+          echo "- **feature/\***: New features (merge to develop)" >> gitflow-report.md
+          echo "- **bugfix/\***: Bug fixes (merge to develop or release/*)" >> gitflow-report.md
+          echo "- **release/\***: Release preparation (merge to main and develop)" >> gitflow-report.md
+          echo "- **hotfix/\***: Critical fixes (merge to main and develop)" >> gitflow-report.md
+          echo "- **develop**: Integration branch for features" >> gitflow-report.md
+          echo "- **main**: Production-ready code" >> gitflow-report.md
+
+          if [[ -n "${{ steps.commit-check.outputs.invalid_commits }}" ]]; then
+            echo "" >> gitflow-report.md
+            echo "### ⚠️ Commit Message Recommendations" >> gitflow-report.md
+            echo "" >> gitflow-report.md
+            echo "Consider using [Conventional Commits](https://www.conventionalcommits.org/) format:" >> gitflow-report.md
+            echo "- \`feat: add new feature\`" >> gitflow-report.md
+            echo "- \`fix: resolve bug issue\`" >> gitflow-report.md
+            echo "- \`docs: update documentation\`" >> gitflow-report.md
+            echo "- \`style: format code\`" >> gitflow-report.md
+            echo "- \`refactor: restructure code\`" >> gitflow-report.md
+            echo "- \`test: add tests\`" >> gitflow-report.md
+            echo "- \`chore: maintenance tasks\`" >> gitflow-report.md
+            echo "" >> gitflow-report.md
+            echo "**Non-conventional commits found:**" >> gitflow-report.md
+            echo "${{ steps.commit-check.outputs.invalid_commits }}" >> gitflow-report.md
+          fi
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('gitflow-report.md', 'utf8');
+
+            // 查找现有的GitFlow报告评论
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('🔄 GitFlow Compliance Report')
+            );
+
+            if (botComment) {
+              // 更新现有评论
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              // 创建新评论
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
+
+      - name: Set status check
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const valid = '${{ steps.gitflow-validation.outputs.valid }}' === 'true';
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.payload.pull_request.head.sha,
+              state: valid ? 'success' : 'failure',
+              target_url: `${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              description: valid ? 'GitFlow compliance check passed' : 'GitFlow compliance check failed',
+              context: 'gitflow/compliance-check'
+            });
+
+      - name: Fail if GitFlow violations found
+        if: steps.gitflow-validation.outputs.valid != 'true'
+        run: |
+          echo "❌ GitFlow compliance check failed!"
+          echo "Please review the errors above and fix the violations before merging."
+          exit 1
+
+  # 额外的安全检查
+  security-check:
+    name: Security and Quality Checks
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sensitive files
+        run: |
+          echo "🔒 Checking for sensitive files..."
+
+          sensitive_files=(
+            "*.env"
+            "*.key"
+            "*.pem"
+            "*.p12"
+            "*.pfx"
+            "*password*"
+            "*secret*"
+            ".aws/credentials"
+            ".docker/config.json"
+          )
+
+          found_sensitive=false
+
+          for pattern in "${sensitive_files[@]}"; do
+            if find . -name "$pattern" -type f | grep -v node_modules | grep -v .git; then
+              echo "⚠️  Found potentially sensitive file: $pattern"
+              found_sensitive=true
+            fi
+          done
+
+          if [ "$found_sensitive" = true ]; then
+            echo "❌ Sensitive files detected. Please review and remove them."
+            exit 1
+          else
+            echo "✅ No sensitive files found."
+          fi
+
+      - name: Check file permissions
+        run: |
+          echo "🔍 Checking file permissions..."
+
+          # 检查是否有可执行的非脚本文件
+          find . -type f -executable -not -path "./.git/*" -not -path "./node_modules/*" | while read file; do
+            if [[ ! "$file" =~ \.(sh|py|js|ts|mjs)$ ]] && [[ ! "$file" =~ ^\./(scripts|bin)/ ]]; then
+              echo "⚠️  Executable non-script file found: $file"
+            fi
+          done
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "📝 Checking for TODO/FIXME comments..."
+
+          todos=$(grep -r "TODO\|FIXME\|XXX\|HACK" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --include="*.py" . | grep -v node_modules | grep -v .git || true)
+
+          if [ -n "$todos" ]; then
+            echo "📋 Found TODO/FIXME comments:"
+            echo "$todos"
+            echo ""
+            echo "ℹ️  Consider addressing these before merging to main branch."
+          else
+            echo "✅ No TODO/FIXME comments found."
+          fi

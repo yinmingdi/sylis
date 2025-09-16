@@ -13,8 +13,8 @@ export function getGuideSidebar() {
       text: "指南",
       items: [
         { text: "快速开始", link: "/guide/quick-start" },
-        { text: "服务导航", link: "/guide/navigation" },
         { text: "开发规范", link: "/guide/development-standards" },
+        { text: "GitFlow 工作流", link: "/guide/gitflow" },
       ],
     },
     getPackagesSidebar(),

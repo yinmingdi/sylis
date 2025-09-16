@@ -24,3 +24,4 @@ dist-ssr
 
 # Auto-generated documentation
 docs/overview/apis/
+docs/overview/.vitepress/cache

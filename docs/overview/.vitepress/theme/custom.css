@@ -1,0 +1,64 @@
+/* 自定义样式 - 渐变文字和 icon 效果 */
+
+/* Hero 区域渐变文字效果 */
+.VPHomeHero .name {
+  background: linear-gradient(135deg, #1ed8cd 0%, #1d89f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 按钮样式增强 */
+.VPHomeHero .actions .VPButton.brand {
+  background: linear-gradient(135deg, #1ed8cd 0%, #1d89f6 100%);
+  border: none;
+  box-shadow: 0 4px 15px rgba(30, 216, 205, 0.3);
+  transition: all 0.3s ease;
+}
+
+.VPHomeHero .actions .VPButton.brand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(30, 216, 205, 0.4);
+}
+
+.VPHomeHero .actions .VPButton.alt {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(30, 216, 205, 0.2);
+  color: #1d89f6;
+  transition: all 0.3s ease;
+}
+
+.VPHomeHero .actions .VPButton.alt:hover {
+  background: rgba(30, 216, 205, 0.05);
+  border-color: rgba(30, 216, 205, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Features 区域样式增强 */
+.VPHomeFeatures .item .title {
+  color: #1d89f6;
+}
+
+/* 深色主题适配 */
+.dark .VPHomeHero .tagline {
+  color: #94a3b8;
+}
+
+.dark .VPHomeHero .image img {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  box-shadow:
+    0 20px 40px rgba(30, 216, 205, 0.2),
+    0 10px 20px rgba(29, 137, 246, 0.15),
+    0 0 0 1px rgba(30, 216, 205, 0.2);
+}
+
+.dark .VPHomeHero .actions .VPButton.alt {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(30, 216, 205, 0.3);
+  color: #1ed8cd;
+}
+
+.dark .VPHomeHero .actions .VPButton.alt:hover {
+  background: rgba(30, 216, 205, 0.1);
+  border-color: rgba(30, 216, 205, 0.4);
+}

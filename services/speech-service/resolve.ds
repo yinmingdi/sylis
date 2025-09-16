@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+1. 本地优先
+2. nestjs 怎么搭配本地部署mysql

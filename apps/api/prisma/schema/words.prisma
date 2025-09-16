@@ -1,0 +1,79 @@
+model Word {
+  id                String            @id @default(uuid())
+  headword          String
+  ukPhonetic        String?
+  usPhonetic        String?
+  ukAudio           String?
+  usAudio           String?
+  star              Int               @default(0)
+  exampleSentences  ExampleSentence[]
+  meanings          Meaning[]
+  phrases           Phrase[]
+  questions         Question[]
+  userWords         UserWord[]
+  wordBooks         WordBook[]
+  wordRelationsTo   WordRelation[]    @relation("WordRelationsTo")
+  wordRelationsFrom WordRelation[]    @relation("WordRelationsFrom")
+}
+
+model Meaning {
+  id           String    @id @default(uuid())
+  wordId       String
+  partOfSpeech String
+  meaningCn    String
+  meaningEn    String?
+  word         Word      @relation(fields: [wordId], references: [id])
+  synonyms     Synonym[]
+}
+
+model Synonym {
+  id          String  @id @default(uuid())
+  meaningId   String
+  synonymText String
+  meaning     Meaning @relation(fields: [meaningId], references: [id])
+}
+
+model ExampleSentence {
+  id         String @id @default(uuid())
+  wordId     String
+  sentenceEn String
+  sentenceCn String
+  word       Word   @relation(fields: [wordId], references: [id])
+}
+
+model Phrase {
+  id         String @id @default(uuid())
+  wordId     String
+  phraseText String
+  phraseCn   String
+  word       Word   @relation(fields: [wordId], references: [id])
+}
+
+model WordRelation {
+  id            String  @id @default(uuid())
+  wordId        String
+  relatedWordId String
+  relationType  String?
+  relatedWord   Word    @relation("WordRelationsTo", fields: [relatedWordId], references: [id])
+  word          Word    @relation("WordRelationsFrom", fields: [wordId], references: [id])
+}
+
+model Question {
+  id           String   @id @default(uuid())
+  wordId       String
+  questionText String
+  explanation  String?
+  type         Int
+  correctIndex Int
+  choices      Choice[]
+  word         Word     @relation(fields: [wordId], references: [id])
+}
+
+model Choice {
+  id          String   @id @default(uuid())
+  questionId  String
+  choiceText  String
+  choiceIndex Int
+  isCorrect   Boolean  @default(false)
+  question    Question @relation(fields: [questionId], references: [id])
+}

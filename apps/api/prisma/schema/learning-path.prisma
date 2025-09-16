@@ -1,0 +1,17 @@
+model LearningPath {
+  id                String             @id @default(uuid())
+  title             String
+  description       String
+  estimatedDuration String
+  targetAudience    String[]
+  selectedUsers     UserLearningPath[]
+}
+
+model UserLearningPath {
+  id             String       @id @default(uuid())
+  userId         String       @unique
+  learningPathId String
+  selectedAt     DateTime     @default(now())
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+}

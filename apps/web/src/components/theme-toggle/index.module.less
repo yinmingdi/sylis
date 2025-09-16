@@ -1,0 +1,96 @@
+.themeToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-primary);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+  min-width: 80px;
+  justify-content: center;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    color: var(--color-text-primary);
+    background: var(--color-neutral-50);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.98);
+    transition-duration: calc(var(--duration-fast) / 2);
+  }
+
+  // 涟漪效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--color-primary-100);
+    transform: translate(-50%, -50%);
+    transition: all var(--duration-normal) var(--ease-out);
+    z-index: -1;
+  }
+
+  &:active::before {
+    width: 200%;
+    height: 200%;
+  }
+}
+
+.icon {
+  font-size: var(--font-size-base);
+  transition: all var(--duration-fast) var(--ease-out);
+
+  .themeToggle:hover & {
+    color: var(--color-primary-500);
+    transform: scale(1.1);
+  }
+}
+
+.label {
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+// 深色主题特殊处理
+[data-theme='dark'] {
+  .themeToggle {
+    &:hover {
+      background: var(--color-neutral-800);
+    }
+  }
+}
+
+// 移动端适配
+@media (max-width: 640px) {
+  .themeToggle {
+    padding: var(--spacing-1) var(--spacing-2);
+    min-width: 60px;
+
+    .label {
+      font-size: var(--font-size-xs);
+    }
+  }
+}
+
+// 仅图标模式（可选）
+.iconOnly {
+  min-width: auto;
+
+  .label {
+    display: none;
+  }
+}

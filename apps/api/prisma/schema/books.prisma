@@ -1,0 +1,24 @@
+model Book {
+  id            String     @id @default(uuid())
+  name          String
+  introduce     String?
+  coverUrl      String?
+  tags          String[]
+  originName    String?
+  version       String?
+  wordNum       Int?
+  reciteUserNum Int?
+  offlinedata   String?
+  size          Int?
+  userBooks     UserBook[]
+  wordBooks     WordBook[]
+}
+
+model WordBook {
+  id       String @id @default(uuid())
+  bookId   String
+  wordId   String
+  wordRank Int
+  book     Book   @relation(fields: [bookId], references: [id])
+  word     Word   @relation(fields: [wordId], references: [id])
+}

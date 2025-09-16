@@ -1,0 +1,734 @@
+.wordLearningPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--spacing-4);
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--spacing-8);
+}
+
+// 页面头部进度样式
+.progressContainer {
+  text-align: left;
+  width: 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+// 右侧操作按钮样式
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+}
+
+.headerActionButton {
+  font-size: 18px;
+  padding: var(--spacing-1);
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+.actionButton {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  font-size: 18px;
+  color: var(--color-text-primary);
+  position: relative;
+  overflow: hidden;
+
+  // 悬停效果
+  &:hover {
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+    transform: scale(1.05);
+  }
+
+  // 点击效果
+  &:active {
+    transform: scale(0.95);
+    transition-duration: calc(var(--duration-fast) / 2);
+  }
+
+  // 涟漪效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: var(--color-primary-200);
+    transform: translate(-50%, -50%);
+    transition: all var(--duration-normal) var(--ease-out);
+    z-index: 0;
+  }
+
+  &:active::before {
+    width: 120%;
+    height: 120%;
+  }
+
+  // 图标在涟漪之上
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+// 收藏状态样式
+.favorited {
+  color: var(--color-error-500) !important;
+  animation: heartBeat 0.6s ease-in-out;
+}
+
+@keyframes heartBeat {
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.3);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.3);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+// ==================== 学习容器样式 ====================
+
+.learningContainer {
+  padding: var(--spacing-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  min-height: calc(100vh - 120px);
+  justify-content: center;
+}
+
+// 主要单词卡片
+.mainWordCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8) var(--spacing-6);
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.wordSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.wordText {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-primary-600);
+  }
+}
+
+.wordPronunciation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.voiceToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-100);
+    transform: scale(1.05);
+  }
+}
+
+.voiceType {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary-600);
+}
+
+.soundIcon {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-600);
+}
+
+.phoneticText {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+}
+
+// 例句区域
+.exampleSection {
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.exampleSentence {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+  text-align: left;
+}
+
+.exampleTranslation {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  text-align: left;
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+// 提示按钮区域
+.hintSection {
+  display: flex;
+  justify-content: center;
+}
+
+.hintButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-5);
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    background: var(--color-primary-50);
+    color: var(--color-primary-600);
+    transform: translateY(-1px);
+  }
+}
+
+.hintIcon {
+  font-size: var(--font-size-lg);
+}
+
+.hintText {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+// 操作按钮区域
+.actionButtonsSection {
+  display: flex;
+  gap: var(--spacing-4);
+  margin-top: auto;
+}
+
+.actionButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4) var(--spacing-6);
+  border-radius: var(--radius-xl);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+}
+
+.buttonText {
+  position: relative;
+  z-index: 1;
+}
+
+.knowButton {
+  background: transparent;
+  color: #10b981;
+  border: 2px solid #10b981;
+
+  &:hover {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: #059669;
+    color: #059669;
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.15);
+  }
+}
+
+.unknowButton {
+  background: transparent;
+  color: #f97316;
+  border: 2px solid #f97316;
+
+  &:hover {
+    background: rgba(249, 115, 22, 0.05);
+    border-color: #ea580c;
+    color: #ea580c;
+    box-shadow: 0 8px 25px rgba(249, 115, 22, 0.15);
+  }
+}
+
+// ==================== 详情页样式 ====================
+
+.detailContainer {
+  padding: var(--spacing-4) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+// 单词信息卡片
+.wordInfoCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+.wordHeader {
+  text-align: center;
+}
+
+.wordMeta {
+  margin-top: var(--spacing-3);
+}
+
+.partOfSpeech {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+// 卡片通用样式
+.definitionCard,
+.examplesCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-5);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+.cardTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.definition {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+  line-height: var(--line-height-relaxed);
+}
+
+.chineseDefinition {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-4);
+  line-height: var(--line-height-relaxed);
+}
+
+.etymology {
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.etymologyLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.etymologyText {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-relaxed);
+}
+
+// 例句列表
+.examplesList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.exampleItem {
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-primary-500);
+
+  .exampleSentence {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-2);
+    line-height: var(--line-height-relaxed);
+  }
+
+  .exampleTranslation {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 下一词按钮区域
+.nextWordSection {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-6);
+}
+
+.nextWordButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: var(--color-primary-500);
+  color: white;
+  padding: var(--spacing-4) var(--spacing-6);
+  border-radius: var(--radius-xl);
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-card);
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+
+    .nextArrow {
+      transform: translateX(var(--spacing-1));
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+}
+
+.nextArrow {
+  font-size: var(--font-size-lg);
+  transition: transform 0.2s ease;
+}
+
+// ==================== 动画效果 ====================
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// ==================== 响应式设计 ====================
+
+@media (max-width: 768px) {
+  .content {
+    padding: 0 var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .learningContainer {
+    gap: var(--spacing-5);
+    min-height: calc(100vh - 100px);
+  }
+
+  .mainWordCard {
+    padding: var(--spacing-6) var(--spacing-4);
+  }
+
+  .wordText {
+    font-size: var(--font-size-3xl);
+  }
+
+  .wordPronunciation {
+    gap: var(--spacing-2);
+  }
+
+  .phoneticText {
+    font-size: var(--font-size-base);
+  }
+
+  .exampleSentence {
+    font-size: var(--font-size-base);
+  }
+
+  .actionButton {
+    padding: var(--spacing-3) var(--spacing-4);
+    min-height: 48px;
+    font-size: var(--font-size-base);
+  }
+
+  .detailContainer {
+    gap: var(--spacing-3);
+  }
+
+  .wordInfoCard,
+  .definitionCard,
+  .examplesCard {
+    padding: var(--spacing-4);
+  }
+
+  .cardTitle {
+    font-size: var(--font-size-base);
+  }
+
+  .definition {
+    font-size: var(--font-size-base);
+  }
+}
+
+// ==================== 深色主题适配 ====================
+
+[data-theme='dark'] {
+  .mainWordCard,
+  .wordInfoCard,
+  .definitionCard,
+  .examplesCard {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .hintButton {
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .actionButton {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .nextWordButton {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// ==================== 完成页面样式 ====================
+
+.completeContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 60px); // 减去tabbar高度
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.completeContent {
+  max-width: 320px;
+  width: 100%;
+}
+
+.completeIcon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: celebrate 1s ease-in-out;
+}
+
+@keyframes celebrate {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.completeTitle {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.completeSubtitle {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  margin-bottom: 32px;
+}
+
+.completeStats {
+  margin-bottom: 32px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statNumber {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary-500);
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+}
+
+.completeMessage {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 40px;
+}
+
+.completeActions {
+  display: flex;
+  justify-content: center;
+}
+
+.completeButton {
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 48px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+
+  &:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+    transform: translateY(-1px);
+  }
+}
+
+// ==================== 可访问性支持 ====================
+
+.mainWordCard:focus-visible,
+.wordInfoCard:focus-visible,
+.definitionCard:focus-visible,
+.examplesCard:focus-visible,
+.hintButton:focus-visible,
+.actionButton:focus-visible,
+.nextWordButton:focus-visible,
+.completeButton:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}

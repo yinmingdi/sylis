@@ -1,0 +1,685 @@
+// 词汇量测试页面 - 参考 me 页面和 reading 页面的优雅设计风格
+.testPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 0 var(--spacing-4);
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--spacing-8);
+}
+
+// 介绍页面样式
+.introSection {
+  padding-top: var(--spacing-6);
+}
+
+.testHeader {
+  text-align: center;
+  padding: var(--spacing-6) 0 var(--spacing-8);
+
+  .iconWrapper {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: white;
+    margin: 0 auto var(--spacing-6);
+    box-shadow: var(--shadow-card);
+  }
+
+  h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-3) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+.infoCard {
+  margin-bottom: var(--spacing-8);
+  background: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-5) !important;
+  }
+}
+
+.testInfo {
+  h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    line-height: var(--line-height-tight);
+  }
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+
+  .infoIcon {
+    font-size: var(--font-size-lg);
+    color: var(--color-primary-500);
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 测试进行中页面样式
+.testingSection {
+  padding-top: var(--spacing-6);
+}
+
+.testProgress {
+  margin-bottom: var(--spacing-6);
+}
+
+.progressInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.questionCount {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.timeCounter {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+
+  .timeWarning {
+    color: var(--color-danger-500);
+    animation: pulse 1s infinite;
+  }
+}
+
+.progressBar {
+  :global(.adm-progress-bar) {
+    background-color: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  :global(.adm-progress-bar-fill) {
+    background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
+    border-radius: var(--radius-sm);
+  }
+}
+
+.questionCard {
+  margin-bottom: var(--spacing-6);
+  background: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-6) !important;
+  }
+}
+
+.questionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-6);
+
+  h2 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0;
+    line-height: var(--line-height-tight);
+    flex: 1;
+  }
+}
+
+.difficultyBadge {
+  background: var(--color-bg-tertiary);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  flex-shrink: 0;
+  margin-left: var(--spacing-3);
+}
+
+.wordDisplay {
+  text-align: center;
+  padding: var(--spacing-6) 0;
+  margin-bottom: var(--spacing-6);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-border-secondary);
+}
+
+.targetWord {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-600);
+  letter-spacing: 0.02em;
+}
+
+.optionsGroup {
+  width: 100%;
+
+  :global(.adm-radio-wrapper) {
+    width: 100%;
+    margin-bottom: var(--spacing-3);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.optionItem {
+  :global(.adm-radio) {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--color-primary-300);
+      background: var(--color-primary-50);
+    }
+
+    &.adm-radio-checked {
+      border-color: var(--color-primary-500);
+      background: var(--color-primary-100);
+    }
+  }
+
+  :global(.adm-radio-content) {
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+  }
+}
+
+// 结果页面样式
+.resultSection {
+  padding-top: var(--spacing-6);
+}
+
+.resultHeader {
+  :global(.adm-result-title) {
+    color: var(--color-text-primary) !important;
+    font-size: var(--font-size-xl) !important;
+    font-weight: var(--font-weight-bold) !important;
+  }
+
+  :global(.adm-result-description) {
+    color: var(--color-text-secondary) !important;
+    font-size: var(--font-size-base) !important;
+  }
+
+  :global(.adm-result-icon) {
+    color: var(--color-success-500) !important;
+  }
+}
+
+.scoreCard {
+  margin-bottom: var(--spacing-6);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500),
+    var(--color-primary-600)
+  ) !important;
+  border: none !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-6) !important;
+  }
+}
+
+.scoreDisplay {
+  text-align: center;
+  color: white;
+}
+
+.mainScore {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+
+  .scoreNumber {
+    font-size: 3rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+  }
+
+  .scoreUnit {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    opacity: 0.9;
+  }
+}
+
+.scoreDetails {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--spacing-4);
+}
+
+.scoreItem {
+  text-align: center;
+
+  .scoreLabel {
+    display: block;
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+    margin-bottom: var(--spacing-1);
+  }
+
+  .scoreValue {
+    display: block;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.assessmentCard {
+  margin-bottom: var(--spacing-6);
+  background: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-6) !important;
+  }
+
+  h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  h4 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: var(--spacing-5) 0 var(--spacing-3) 0;
+    line-height: var(--line-height-tight);
+  }
+}
+
+.levelInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+}
+
+.levelBadge {
+  background: linear-gradient(135deg, var(--color-success-500), var(--color-success-600));
+  color: white;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.vocabularyEstimate {
+  text-align: right;
+
+  .estimateLabel {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-1);
+  }
+
+  .estimateValue {
+    display: block;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-600);
+  }
+}
+
+.recommendations {
+  border-top: 1px solid var(--color-border-primary);
+  padding-top: var(--spacing-5);
+}
+
+.suggestionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.suggestion {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+// 通用按钮样式
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.startButton,
+.nextButton,
+.retestButton {
+  :global(.adm-button) {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-500),
+      var(--color-primary-600)
+    ) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    font-weight: var(--font-weight-semibold) !important;
+    font-size: var(--font-size-base) !important;
+    height: 48px !important;
+    box-shadow: var(--shadow-button) !important;
+    transition: all 0.2s ease !important;
+
+    &:active {
+      transform: translateY(1px) !important;
+      box-shadow: var(--shadow-button-active) !important;
+    }
+
+    &:disabled {
+      background: var(--color-bg-tertiary) !important;
+      color: var(--color-text-disabled) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+.backButton,
+.exitButton,
+.homeButton {
+  :global(.adm-button) {
+    border: 1px solid var(--color-border-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    background: var(--color-surface-primary) !important;
+    color: var(--color-text-secondary) !important;
+    font-weight: var(--font-weight-medium) !important;
+    font-size: var(--font-size-base) !important;
+    height: 48px !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      border-color: var(--color-border-focus) !important;
+      background: var(--color-bg-secondary) !important;
+    }
+
+    &:active {
+      transform: translateY(1px) !important;
+    }
+  }
+}
+
+// 动画效果
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .scoreCard {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-600),
+      var(--color-primary-700)
+    ) !important;
+  }
+
+  .infoCard,
+  .questionCard,
+  .assessmentCard {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+    }
+  }
+
+  .wordDisplay {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-border-secondary);
+  }
+
+  .optionItem {
+    :global(.adm-radio) {
+      background: var(--color-bg-tertiary);
+
+      &:hover {
+        background: var(--color-primary-900);
+      }
+
+      &.adm-radio-checked {
+        background: var(--color-primary-900);
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .content {
+    padding: 0 var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .testHeader {
+    padding: var(--spacing-5) 0 var(--spacing-6);
+
+    .iconWrapper {
+      width: 64px;
+      height: 64px;
+      font-size: 2rem;
+      margin-bottom: var(--spacing-4);
+    }
+
+    h1 {
+      font-size: var(--font-size-xl);
+    }
+
+    p {
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .infoCard,
+  .questionCard,
+  .assessmentCard {
+    :global(.adm-card-body) {
+      padding: var(--spacing-4) !important;
+    }
+  }
+
+  .questionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+
+    h2 {
+      font-size: var(--font-size-base);
+    }
+  }
+
+  .difficultyBadge {
+    margin-left: 0;
+  }
+
+  .wordDisplay {
+    padding: var(--spacing-4) 0;
+    margin-bottom: var(--spacing-4);
+  }
+
+  .targetWord {
+    font-size: 1.5rem;
+  }
+
+  .mainScore {
+    margin-bottom: var(--spacing-3);
+
+    .scoreNumber {
+      font-size: 2.5rem;
+    }
+
+    .scoreUnit {
+      font-size: var(--font-size-base);
+    }
+  }
+
+  .scoreDetails {
+    gap: var(--spacing-3);
+  }
+
+  .levelInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+
+  .vocabularyEstimate {
+    text-align: left;
+  }
+
+  .actionButtons {
+    margin-top: var(--spacing-4);
+    gap: var(--spacing-2);
+  }
+
+  .startButton,
+  .nextButton,
+  .retestButton,
+  .backButton,
+  .exitButton,
+  .homeButton {
+    :global(.adm-button) {
+      height: 44px !important;
+      font-size: var(--font-size-sm) !important;
+    }
+  }
+}
+
+// 进入动画
+@media (prefers-reduced-motion: no-preference) {
+  .testHeader {
+    animation: fadeInDown 0.4s ease forwards;
+  }
+
+  .infoCard,
+  .questionCard,
+  .assessmentCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.1s;
+  }
+
+  .actionButtons {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.2s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 焦点状态 - 无障碍支持
+.startButton,
+.nextButton,
+.retestButton,
+.backButton,
+.exitButton,
+.homeButton {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+}
+
+.optionItem {
+  :global(.adm-radio:focus-visible) {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+}

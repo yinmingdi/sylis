@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+      "target": "ES2021",                 // 支持较新 JS 特性
+      "module": "ESNext",                 // 现代模块系统（适配 Vite、NestJS）
+      "moduleResolution": "Node",
+      "lib": ["ES2021"],
+      "declaration": true,                 // 生成 .d.ts 类型声明（对 packages/ 有用）
+      "declarationMap": true,
+      "emitDeclarationOnly": false,        // 保持 ts -> js 转换
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "strict": true,                      // 开启严格模式
+      "skipLibCheck": true,                 // 跳过 node_modules 检查
+      "allowSyntheticDefaultImports": true,
+      "isolatedModules": true,              // 保证每个文件独立编译
+      "noEmit": false,                      // 保持编译输出（可以给打包工具使用）
+      "resolveJsonModule": true,            // 允许 import JSON
+      "baseUrl": ".",                      // 基础路径
+      "types": ["node"],
+      "removeComments": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "sourceMap": true,
+      "outDir": "./dist",
+      "incremental": true,
+      "strictNullChecks": true,
+      "noImplicitAny": false,
+      "strictBindCallApply": false,
+      "noFallthroughCasesInSwitch": false
+    },
+  }
+  

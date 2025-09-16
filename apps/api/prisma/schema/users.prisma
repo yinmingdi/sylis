@@ -1,0 +1,61 @@
+model User {
+  id           String            @id @default(uuid())
+  email        String?           @unique
+  phone        String?           @unique
+  isVerified   Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  password     String
+  userLearning UserLearning?
+  learningPath UserLearningPath?
+  profile      UserProfile?
+}
+
+model UserProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  ageGroup         String
+  occupation       String
+  customOccupation String?
+  learningGoals    String[]
+  initializedAt    DateTime @default(now())
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model UserLearning {
+  id            String     @id @default(uuid())
+  userId        String     @unique
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  currentBookId String?
+  books         UserBook[]
+  user          User       @relation(fields: [userId], references: [id])
+  words         UserWord[]
+}
+
+model UserWord {
+  id             String       @id @default(uuid())
+  wordId         String
+  status         String
+  lastReview     DateTime?
+  isFavorite     Boolean      @default(false)
+  errorCount     Int          @default(0)
+  familiarity    Int          @default(0)
+  userLearningId String
+  userLearning   UserLearning @relation(fields: [userLearningId], references: [id])
+  word           Word         @relation(fields: [wordId], references: [id])
+}
+
+model UserBook {
+  id               String       @id @default(uuid())
+  userLearningId   String
+  bookId           String
+  dailyNewWords    Int          @default(0)
+  dailyReviewWords Int          @default(0)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  book             Book         @relation(fields: [bookId], references: [id])
+  userLearning     UserLearning @relation(fields: [userLearningId], references: [id])
+
+  @@unique([userLearningId, bookId])
+}

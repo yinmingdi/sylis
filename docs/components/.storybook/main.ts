@@ -41,6 +41,17 @@ const config: StorybookConfig = {
     name: "@storybook/react-vite",
     options: {},
   },
+  managerHead: (head) => `
+    ${head}
+    <base href="/sylis/components/">
+  `,
+  // 为 GitHub Pages 部署设置路径
+  viteFinal: async (config) => {
+    if (process.env.NODE_ENV === "production") {
+      config.base = "/sylis/components/";
+    }
+    return config;
+  },
 };
 
 export default config;

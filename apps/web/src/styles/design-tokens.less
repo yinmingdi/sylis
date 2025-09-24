@@ -1,0 +1,275 @@
+// Design System - Design Tokens
+// 参考 Busuu App 的简约现代设计
+
+// ==================== 颜色系统 ====================
+
+// 主题色
+:root {
+  // 主色调 - 渐变蓝紫色系
+  --color-primary: #2ec4b6;
+  --color-primary-50: #e6fffe;
+  --color-primary-100: #ccfffe;
+  --color-primary-200: #99fefd;
+  --color-primary-300: #66fefd;
+  --color-primary-400: #33e9dc;
+  --color-primary-500: #2ec4b6;
+  --color-primary-600: #26a094;
+  --color-primary-700: #1d7b72;
+  --color-primary-800: #145651;
+  --color-primary-900: #0c302f;
+
+  // 辅助色
+  --color-secondary: #ff9f1c;
+  --color-accent: #f71735;
+  --color-success: #06d6a0;
+  --color-warning: #ffd23f;
+  --color-error: #ff006e;
+  --color-info: #3a86ff;
+
+  // 中性色系 - 灰度
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #fafbfc;
+  --color-neutral-100: #f5f6f8;
+  --color-neutral-200: #eef0f3;
+  --color-neutral-300: #e2e5ea;
+  --color-neutral-400: #d1d6dd;
+  --color-neutral-500: #9ca3af;
+  --color-neutral-600: #6b7280;
+  --color-neutral-700: #4b5563;
+  --color-neutral-800: #374151;
+  --color-neutral-900: #1f2937;
+  --color-neutral-950: #0f1419;
+
+  // 语义色 - 浅色主题
+  --color-text-primary: var(--color-neutral-900);
+  --color-text-secondary: var(--color-neutral-600);
+  --color-text-tertiary: var(--color-neutral-500);
+  --color-text-inverse: var(--color-neutral-0);
+
+  --color-bg-primary: var(--color-neutral-0);
+  --color-bg-secondary: var(--color-neutral-50);
+  --color-bg-tertiary: var(--color-neutral-100);
+  --color-bg-elevated: var(--color-neutral-0);
+  --color-bg-overlay: rgba(15, 20, 25, 0.6);
+
+  --color-border-primary: var(--color-neutral-200);
+  --color-border-secondary: var(--color-neutral-300);
+  --color-border-focus: var(--color-primary-500);
+
+  --color-surface-primary: var(--color-neutral-0);
+  --color-surface-secondary: var(--color-neutral-50);
+}
+
+// 深色主题
+[data-theme='dark'] {
+  --color-text-primary: var(--color-neutral-50);
+  --color-text-secondary: var(--color-neutral-400);
+  --color-text-tertiary: var(--color-neutral-500);
+  --color-text-inverse: var(--color-neutral-900);
+
+  --color-bg-primary: var(--color-neutral-950);
+  --color-bg-secondary: var(--color-neutral-900);
+  --color-bg-tertiary: var(--color-neutral-800);
+  --color-bg-elevated: var(--color-neutral-900);
+  --color-bg-overlay: rgba(0, 0, 0, 0.7);
+
+  --color-border-primary: var(--color-neutral-700);
+  --color-border-secondary: var(--color-neutral-600);
+  --color-border-focus: var(--color-primary-400);
+
+  --color-surface-primary: var(--color-neutral-900);
+  --color-surface-secondary: var(--color-neutral-800);
+}
+
+// ==================== 字体系统 ====================
+
+:root {
+  // 字体族
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+
+  // 字体大小
+  --font-size-xs: 0.75rem; // 12px
+  --font-size-sm: 0.875rem; // 14px
+  --font-size-base: 1rem; // 16px
+  --font-size-lg: 1.125rem; // 18px
+  --font-size-xl: 1.25rem; // 20px
+  --font-size-2xl: 1.5rem; // 24px
+  --font-size-3xl: 1.875rem; // 30px
+  --font-size-4xl: 2.25rem; // 36px
+
+  // 行高
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  // 字重
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+// ==================== 间距系统 ====================
+
+:root {
+  // 基础间距单位 (4px grid system)
+  --spacing-0: 0;
+  --spacing-1: 0.25rem; // 4px
+  --spacing-2: 0.5rem; // 8px
+  --spacing-3: 0.75rem; // 12px
+  --spacing-4: 1rem; // 16px
+  --spacing-5: 1.25rem; // 20px
+  --spacing-6: 1.5rem; // 24px
+  --spacing-8: 2rem; // 32px
+  --spacing-10: 2.5rem; // 40px
+  --spacing-12: 3rem; // 48px
+  --spacing-16: 4rem; // 64px
+  --spacing-20: 5rem; // 80px
+  --spacing-24: 6rem; // 96px
+}
+
+// ==================== 圆角系统 ====================
+
+:root {
+  --radius-none: 0;
+  --radius-sm: 0.25rem; // 4px
+  --radius-base: 0.5rem; // 8px
+  --radius-md: 0.75rem; // 12px
+  --radius-lg: 1rem; // 16px
+  --radius-xl: 1.5rem; // 24px
+  --radius-2xl: 2rem; // 32px
+  --radius-full: 9999px;
+}
+
+// ==================== 阴影系统 ====================
+
+:root {
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  // 特殊阴影
+  --shadow-card: 0 2px 12px rgba(46, 196, 182, 0.08);
+  --shadow-card-hover: 0 8px 25px rgba(46, 196, 182, 0.15);
+  --shadow-elevated: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+// 深色主题阴影
+[data-theme='dark'] {
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 8px 25px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+// ==================== Z-index 系统 ====================
+
+:root {
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+// ==================== 动画系统 ====================
+
+:root {
+  // 持续时间
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  // 缓动函数
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+// ==================== 断点系统 ====================
+
+// 媒体查询变量 (Less 语法)
+@screen-xs: 480px;
+@screen-sm: 640px;
+@screen-md: 768px;
+@screen-lg: 1024px;
+@screen-xl: 1280px;
+@screen-2xl: 1536px;
+
+// ==================== 实用工具类 ====================
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-break {
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// 动画类
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn var(--duration-normal) var(--ease-out);
+}
+
+.animate-slideUp {
+  animation: slideUp var(--duration-normal) var(--ease-out);
+}
+
+.animate-pulse {
+  animation: pulse 2s var(--ease-in-out) infinite;
+}

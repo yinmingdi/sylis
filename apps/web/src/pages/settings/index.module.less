@@ -1,0 +1,446 @@
+// 设置页面 - 采用reading页面的优雅简洁设计
+.settingsPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 0 var(--spacing-4);
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--spacing-8);
+}
+
+// Hero区域 - 简洁的标题展示
+.hero {
+  text-align: center;
+  padding: var(--spacing-6) 0 var(--spacing-8);
+
+  h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-3) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 通用区域标题
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+// 设置区域
+.settingsSection {
+  margin-bottom: var(--spacing-8);
+}
+
+.settingsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+// 设置卡片 - 继承reading页面的卡片设计
+.settingCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-5);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+}
+
+// 图标容器
+.iconWrapper {
+  width: 48px;
+  height: 48px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+
+  .settingCard:hover & {
+    transform: scale(1.05);
+  }
+}
+
+// 卡片内容
+.cardContent {
+  flex: 1;
+  min-width: 0;
+
+  h4 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-1) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 开关组件
+.switch {
+  flex-shrink: 0;
+
+  :global(.adm-switch-checked) {
+    background-color: var(--color-primary-500);
+  }
+}
+
+// 颜色设置区域
+.colorSection {
+  margin-bottom: var(--spacing-8);
+}
+
+.colorCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 100px;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &.active {
+    border-color: var(--color-primary-300);
+    background: var(--color-primary-50);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+
+    .colorCircle {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+}
+
+.colorCircle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-2);
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .checkIcon {
+    font-size: var(--font-size-lg);
+    color: #fff;
+    font-weight: bold;
+  }
+}
+
+.colorName {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  text-align: center;
+  line-height: var(--line-height-tight);
+}
+
+// 预览区域
+.previewSection {
+  margin-bottom: var(--spacing-6);
+}
+
+.previewCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+.previewHeader {
+  padding: var(--spacing-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-primary);
+
+  .previewTitle {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-tight);
+  }
+
+  .previewAccent {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+}
+
+.previewContent {
+  padding: var(--spacing-5);
+
+  p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0 0 var(--spacing-4) 0;
+    line-height: var(--line-height-relaxed);
+  }
+
+  .previewButton {
+    display: inline-block;
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-base);
+    color: #fff;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    text-align: center;
+    min-width: 100px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .settingCard,
+  .colorCard,
+  .previewCard {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .colorCard.active {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-primary-400);
+  }
+
+  .colorCircle {
+    border: 2px solid rgba(255, 255, 255, 0.6);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .content {
+    padding: 0 var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .hero {
+    padding: var(--spacing-5) 0 var(--spacing-6);
+
+    h1 {
+      font-size: var(--font-size-xl);
+    }
+
+    p {
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .settingsSection,
+  .colorSection,
+  .previewSection {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .settingCard {
+    padding: var(--spacing-4);
+    gap: var(--spacing-3);
+  }
+
+  .iconWrapper {
+    width: 44px;
+    height: 44px;
+    font-size: var(--font-size-lg);
+  }
+
+  .cardContent {
+    h4 {
+      font-size: var(--font-size-base);
+    }
+
+    p {
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  .colorCard {
+    padding: var(--spacing-3);
+    height: 88px;
+  }
+
+  .colorCircle {
+    width: 36px;
+    height: 36px;
+    margin-bottom: var(--spacing-1);
+
+    .checkIcon {
+      font-size: var(--font-size-base);
+    }
+  }
+
+  .colorName {
+    font-size: 11px;
+  }
+
+  .previewHeader,
+  .previewContent {
+    padding: var(--spacing-4);
+  }
+}
+
+// 动画优化
+@media (prefers-reduced-motion: no-preference) {
+  .hero {
+    animation: fadeInDown 0.4s ease forwards;
+  }
+
+  .settingCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+  }
+
+  .colorCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+      animation-delay: 0.25s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.35s;
+    }
+    &:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+    &:nth-child(5) {
+      animation-delay: 0.45s;
+    }
+    &:nth-child(6) {
+      animation-delay: 0.5s;
+    }
+  }
+
+  .previewCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.55s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 焦点状态 - 无障碍支持
+.settingCard:focus-visible,
+.colorCard:focus-visible,
+.previewCard:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}

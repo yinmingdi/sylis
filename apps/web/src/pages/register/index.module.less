@@ -1,0 +1,297 @@
+// 注册页面 - 简洁设计
+.registerPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+  padding: 0 8%;
+}
+
+.content {
+  flex: 1;
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+// Hero区域
+.hero {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+
+  h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-2) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 表单样式
+.form {
+  margin-bottom: var(--spacing-6);
+
+  :global(.adm-form-item) {
+    margin-bottom: var(--spacing-5);
+
+    :global(.adm-form-item-label) {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-2);
+      padding: 0;
+    }
+
+    :global(.adm-form-item-feedback) {
+      font-size: var(--font-size-xs);
+      color: var(--color-error);
+      margin-top: var(--spacing-1);
+      line-height: var(--line-height-normal);
+    }
+  }
+
+  :global(.adm-form-item:last-of-type) {
+    margin-bottom: var(--spacing-6);
+  }
+}
+
+// 统一输入框样式
+.formInput {
+  :global(.adm-input) {
+    height: 48px;
+    padding: 0 var(--spacing-3);
+    border: 1px solid var(--color-border-primary);
+    border-radius: var(--radius-base);
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    transition: all 0.2s ease;
+    outline: none;
+
+    &::placeholder {
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-base);
+    }
+
+    &:focus {
+      border-color: var(--color-primary-500);
+      box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.1);
+    }
+
+    &:hover:not(:focus) {
+      border-color: var(--color-border-secondary);
+    }
+  }
+
+  :global(.adm-form-item-has-error) :global(.adm-input) {
+    border-color: var(--color-error);
+
+    &:focus {
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 2px rgba(255, 0, 110, 0.1);
+    }
+  }
+
+  :global(.adm-input-clear) {
+    color: var(--color-text-tertiary);
+    font-size: var(--font-size-base);
+  }
+}
+
+// 验证码输入布局 - 确保在同一行
+.codeInputWrapper {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: stretch;
+  width: 100%;
+
+  .codeInput {
+    flex: 1;
+
+    :global(.adm-input) {
+      height: 48px;
+      padding: 0 var(--spacing-3);
+      border: 1px solid var(--color-border-primary);
+      border-radius: var(--radius-base);
+      font-size: var(--font-size-base);
+      color: var(--color-text-primary);
+      background: var(--color-bg-primary);
+      transition: all 0.2s ease;
+      outline: none;
+
+      &::placeholder {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-base);
+      }
+
+      &:focus {
+        border-color: var(--color-primary-500);
+        box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.1);
+      }
+
+      &:hover:not(:focus) {
+        border-color: var(--color-border-secondary);
+      }
+    }
+
+    :global(.adm-input-clear) {
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-base);
+    }
+  }
+}
+
+// 验证码按钮
+.codeButton {
+  height: 48px;
+  min-width: 100px;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  :global(.adm-button-text) {
+    font-weight: var(--font-weight-medium);
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// 提交按钮
+.submitButton {
+  height: 48px;
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  transition: all 0.2s ease;
+
+  :global(.adm-button-text) {
+    font-weight: var(--font-weight-medium);
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 196, 182, 0.2);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+// 底部链接
+.footer {
+  text-align: center;
+
+  p {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-normal);
+  }
+
+  .loginLink {
+    color: var(--color-primary-500);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    margin-left: var(--spacing-1);
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-primary-600);
+    }
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .submitButton {
+    &:hover:not(:disabled) {
+      box-shadow: 0 4px 12px rgba(46, 196, 182, 0.3);
+    }
+  }
+
+  .codeButton {
+    &:hover:not(:disabled) {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// 简单的入场动画
+@media (prefers-reduced-motion: no-preference) {
+  .hero {
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  .form {
+    animation: fadeIn 0.3s ease forwards;
+    animation-delay: 0.1s;
+    opacity: 0;
+  }
+
+  .footer {
+    animation: fadeIn 0.3s ease forwards;
+    animation-delay: 0.2s;
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 焦点状态
+.submitButton:focus-visible,
+.codeButton:focus-visible,
+.formInput:focus-visible,
+.codeInput:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+// 减少动画
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,279 @@
+@import '../../styles/design-tokens.less';
+
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  &--horizontal {
+    .formItem {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+    }
+  }
+
+  &--vertical {
+    .formItem {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &--inline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+
+    .formItem {
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      margin-bottom: 0;
+      margin-right: var(--spacing-4);
+    }
+  }
+
+  &--small {
+    gap: var(--spacing-2);
+
+    .formItem {
+      margin-bottom: var(--spacing-2);
+    }
+  }
+
+  &--medium {
+    gap: var(--spacing-4);
+
+    .formItem {
+      margin-bottom: var(--spacing-4);
+    }
+  }
+
+  &--large {
+    gap: var(--spacing-6);
+
+    .formItem {
+      margin-bottom: var(--spacing-6);
+    }
+  }
+
+  &--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+}
+
+// 表单项基础样式（这些样式会被FormItem组件继承）
+.form :global(.formItem) {
+  width: 100%;
+
+  // 水平布局时的标签样式
+  .form--horizontal & {
+    align-items: flex-start;
+
+    :global(.label) {
+      min-width: 120px;
+      padding-top: var(--spacing-3);
+      padding-right: var(--spacing-3);
+      text-align: right;
+    }
+  }
+
+  // 内联布局时的样式
+  .form--inline & {
+    width: auto;
+    margin-right: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
+
+    :global(.label) {
+      margin-right: var(--spacing-2);
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+  }
+}
+
+// 表单控件组合样式
+.form {
+  // 按钮组合
+  .buttonGroup {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-6);
+
+    &--center {
+      justify-content: center;
+    }
+
+    &--right {
+      justify-content: flex-end;
+    }
+
+    &--left {
+      justify-content: flex-start;
+    }
+
+    .form--inline & {
+      margin-top: 0;
+      margin-left: auto;
+    }
+  }
+
+  // 表单分组
+  .formGroup {
+    margin-bottom: var(--spacing-8);
+
+    .groupTitle {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-4);
+      padding-bottom: var(--spacing-2);
+      border-bottom: 1px solid var(--color-border-primary);
+    }
+
+    .groupDescription {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-4);
+      line-height: var(--line-height-relaxed);
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: @screen-md) {
+  .form {
+    &--horizontal {
+      .formItem {
+        flex-direction: column;
+        align-items: stretch;
+
+        :global(.label) {
+          min-width: auto;
+          padding-top: 0;
+          padding-right: 0;
+          text-align: left;
+          margin-bottom: var(--spacing-2);
+        }
+      }
+    }
+
+    &--inline {
+      flex-direction: column;
+
+      .formItem {
+        flex-direction: column;
+        align-items: stretch;
+        margin-right: 0;
+        margin-bottom: var(--spacing-4);
+
+        :global(.label) {
+          margin-right: 0;
+          margin-bottom: var(--spacing-2);
+        }
+      }
+
+      .buttonGroup {
+        margin-left: 0;
+        margin-top: var(--spacing-4);
+      }
+    }
+  }
+}
+
+@media (max-width: @screen-sm) {
+  .form {
+    .buttonGroup {
+      flex-direction: column;
+
+      :global(.button) {
+        width: 100%;
+      }
+
+      &--center,
+      &--right,
+      &--left {
+        justify-content: stretch;
+      }
+    }
+  }
+}
+
+// 特殊状态样式
+.form {
+  // 加载状态
+  &--loading {
+    position: relative;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+  }
+
+  // 只读状态
+  &--readonly {
+    :global(.inputWrapper) {
+      background-color: var(--color-bg-tertiary);
+      border-color: var(--color-border-primary);
+    }
+
+    :global(.input) {
+      cursor: default;
+    }
+
+    :global(.button) {
+      display: none;
+    }
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .form {
+    .formGroup {
+      .groupTitle {
+        border-bottom-color: var(--color-border-primary);
+      }
+    }
+
+    &--loading {
+      &::after {
+        background: rgba(0, 0, 0, 0.8);
+      }
+    }
+  }
+}
+
+// 打印样式
+@media print {
+  .form {
+    .buttonGroup {
+      display: none;
+    }
+
+    :global(.inputWrapper) {
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    :global(.input) {
+      border-bottom: 1px solid #000;
+      background: transparent;
+    }
+  }
+}

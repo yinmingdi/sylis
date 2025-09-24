@@ -1,0 +1,298 @@
+// 语法解析页面 - 卡片式设计
+.grammarAnalysisPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  padding: var(--spacing-4);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+// 输入区域
+.inputSection {
+  margin-bottom: var(--spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+
+  .sentenceInput {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border-primary);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-4);
+    background: var(--color-surface-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(46, 196, 182, 0.1);
+    }
+  }
+
+  .analyzeButton {
+    padding: var(--spacing-4) var(--spacing-6);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    border-radius: var(--radius-lg);
+    background: var(--color-primary);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 16px rgba(46, 196, 182, 0.3);
+    transition: all var(--duration-normal) var(--ease-out);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(46, 196, 182, 0.4);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+}
+
+// 分析卡片
+.analysisCard {
+  background: var(--color-surface-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-6);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border-primary);
+
+  .cardTitle {
+    text-align: center;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-5) 0;
+  }
+}
+
+// 语法图例
+.grammarLegend {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-5);
+
+  .legendItem {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+
+  .legendCircle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &.subjectCircle {
+      background: #4a90e2; // 蓝色
+    }
+
+    &.predicateCircle {
+      background: #7ed321; // 绿色
+    }
+
+    &.objectCircle {
+      background: #f5a623; // 橙色
+    }
+  }
+}
+
+// 句子展示
+.sentenceDisplay {
+  margin-bottom: var(--spacing-6);
+
+  .englishSentence {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-3);
+    text-align: left;
+
+    .wordSpan {
+      padding: 2px;
+      display: inline-block;
+      transition: all var(--duration-fast) var(--ease-out);
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      &.subject {
+        color: #4a90e2;
+      }
+
+      &.predicate {
+        color: #7ed321;
+      }
+
+      &.object {
+        color: #f5a623;
+      }
+
+      &.default {
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  .chineseTranslation {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    text-align: left;
+    padding-left: var(--spacing-2);
+  }
+}
+
+// AI解析部分
+.aiAnalysis {
+  margin-bottom: var(--spacing-6);
+
+  .sectionTitle {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    padding-bottom: var(--spacing-2);
+    border-bottom: 2px solid var(--color-border-primary);
+  }
+
+  .analysisContent {
+    .meaningExplanation {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-relaxed);
+      margin: 0 0 var(--spacing-3) 0;
+    }
+
+    .grammarBreakdown {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-relaxed);
+      margin: 0 0 var(--spacing-3) 0;
+    }
+
+    .breakdownList {
+      margin: 0;
+      padding-left: var(--spacing-4);
+
+      li {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        line-height: var(--line-height-relaxed);
+        margin-bottom: var(--spacing-2);
+      }
+    }
+  }
+}
+
+// 语法分析部分
+.grammarAnalysis {
+  margin-bottom: var(--spacing-6);
+
+  .sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    padding-bottom: var(--spacing-2);
+    border-bottom: 2px solid var(--color-border-primary);
+
+    .sectionIcon {
+      color: #7ed321; // 绿色图标
+      font-size: var(--font-size-lg);
+    }
+  }
+
+  .grammarList {
+    margin: 0;
+    padding-left: var(--spacing-4);
+
+    li {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-relaxed);
+      margin-bottom: var(--spacing-2);
+    }
+  }
+}
+
+// 搭配积累部分
+.phraseAccumulation {
+  .sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    padding-bottom: var(--spacing-2);
+    border-bottom: 2px solid var(--color-border-primary);
+
+    .sectionIcon {
+      color: #f5a623; // 橙色图标
+      font-size: var(--font-size-lg);
+    }
+  }
+
+  .phraseList {
+    .phraseItem {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-relaxed);
+      margin-bottom: var(--spacing-2);
+    }
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .analysisCard {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .wordSpan {
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+  }
+}
+
+// 动画优化
+@media (prefers-reduced-motion: no-preference) {
+  .analysisCard {
+    animation: fadeInUp 0.4s ease forwards;
+  }
+
+  .wordSpan {
+    &:hover {
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 焦点状态 - 无障碍支持
+.analyzeButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

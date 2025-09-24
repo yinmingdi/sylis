@@ -1,0 +1,237 @@
+@import '../../styles/design-tokens.less';
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  transition: all var(--duration-fast) var(--ease-out);
+  border-radius: var(--radius-base);
+  box-shadow: var(--shadow-xs);
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  // 尺寸变体
+  &--small {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-tight);
+    min-height: 32px;
+  }
+
+  &--medium {
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    min-height: 40px;
+  }
+
+  &--large {
+    padding: var(--spacing-4) var(--spacing-6);
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
+    min-height: 48px;
+  }
+
+  // 颜色变体
+  &--primary {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary);
+      opacity: 0.9;
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-primary);
+      opacity: 0.8;
+      transform: translateY(0);
+    }
+  }
+
+  &--secondary {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border-secondary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-neutral-200);
+      border-color: var(--color-border-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-neutral-300);
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    color: var(--color-primary-600);
+    border: 1px solid var(--color-primary-500);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-50);
+      border-color: var(--color-primary-600);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-primary-100);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+    }
+
+    &:active:not(:disabled) {
+      background: var(--color-neutral-200);
+    }
+  }
+
+  &--danger {
+    background: linear-gradient(135deg, var(--color-error), #e11d48);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #e11d48, #be123c);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background: linear-gradient(135deg, #be123c, #9f1239);
+      transform: translateY(0);
+    }
+  }
+
+  // 形状变体
+  &--round {
+    border-radius: var(--radius-full);
+  }
+
+  &--circle {
+    border-radius: var(--radius-full);
+    width: 40px;
+    height: 40px;
+    padding: 0;
+
+    &.button--small {
+      width: 32px;
+      height: 32px;
+    }
+
+    &.button--large {
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  // 状态变体
+  &--loading {
+    pointer-events: none;
+
+    .loadingIcon {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  &--block {
+    width: 100%;
+    display: flex;
+  }
+
+  // 图标和文字包装器
+  .iconWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+  }
+
+  .textWrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .loadingIcon {
+    font-size: 1em;
+  }
+}
+
+// 动画
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .button {
+    &--secondary {
+      background: var(--color-bg-tertiary);
+      border-color: var(--color-border-primary);
+
+      &:hover:not(:disabled) {
+        background: var(--color-neutral-700);
+      }
+
+      &:active:not(:disabled) {
+        background: var(--color-neutral-600);
+      }
+    }
+
+    &--ghost {
+      &:hover:not(:disabled) {
+        background: var(--color-bg-tertiary);
+      }
+
+      &:active:not(:disabled) {
+        background: var(--color-neutral-700);
+      }
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: @screen-sm) {
+  .button {
+    &--large {
+      padding: var(--spacing-3) var(--spacing-5);
+      font-size: var(--font-size-base);
+      min-height: 44px;
+    }
+  }
+}

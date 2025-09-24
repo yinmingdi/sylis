@@ -1,0 +1,56 @@
+{
+  "name": "sylis",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "./scripts/start-all.sh",
+    "dev": "./scripts/start-dev.sh",
+    "docs": "./scripts/start-docs.sh",
+    "dev:web": "pnpm --filter ./apps/web run dev",
+    "dev:api": "pnpm --filter ./apps/api run dev",
+    "build": "pnpm run build:api && pnpm run build:web && pnpm run build:docs",
+    "build:api": "pnpm --filter ./apps/api run build",
+    "build:web": "pnpm --filter ./apps/web run build",
+    "build:docs": "pnpm --filter ./docs/overview run docs:build",
+    "build:components": "pnpm --filter ./docs/components run build",
+    "clean": "pnpm -r exec rm -rf node_modules dist .next .turbo && rm -rf node_modules",
+    "clean:cache": "pnpm store prune && pnpm -r exec rm -rf .turbo",
+    "typecheck": "pnpm -r run typecheck --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r run test --if-present",
+    "test:e2e": "pnpm --filter ./apps/web run test:e2e --if-present",
+    "db:generate": "pnpm --filter ./apps/api run db:generate",
+    "db:push": "pnpm --filter ./apps/api run db:push",
+    "db:migrate": "pnpm --filter ./apps/api run db:migrate",
+    "db:seed": "pnpm --filter ./apps/api run db:seed",
+    "db:studio": "pnpm --filter ./apps/api run db:studio",
+    "db:reset": "pnpm --filter ./apps/api run db:reset",
+    "speech:install": "cd services/speech-service && pip3 install -e .",
+    "speech:dev": "cd services/speech-service && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload",
+    "speech:health": "curl http://localhost:8080/health",
+    "commit": "cz",
+    "prepare": "husky install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@sylis/shared": "workspace:^",
+    "commitizen": "^4.3.1",
+    "concurrently": "^9.2.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
+}

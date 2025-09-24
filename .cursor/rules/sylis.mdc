@@ -1,0 +1,25 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+- 前端: React、zustand、react-router-dom、typescript、antd-mobile,icon库 react-icons/ai
+- 后端api: NestJS、Prisma、PostgreSQL、redis、typescript,prisma使用6.7.0文件拆分
+- 后端speechService: python3、kaldi
+- 架构:前后端同构(isomorphic)
+- 代码结构:Monorepo,包含多个 workspace(如 apps/api、apps/web、packages/shared 等)
+
+- 前端文件要求
+  - 所有的组件都优先使用antd-mobile已有的
+  - 生成的react接口请求应当使用await，禁止只用.then
+  - 生成样式应当使用less的module语法
+  - 生成的tsx，注意按功能拆分render函数避免复杂的render出现。
+  - 文件夹使用xxx-xxx格式
+
+- 后端文件要求
+  - 接口dto文件请求dto为xxxReqDto，响应dto为 xxResDto
+
+- 设计风格
+  - 你是一位资深全栈工程师，参考 ui_ux_design 设计一个【英语学习app】，模拟产品经理提出需求和信息构，请自己构思好功能需求和界面，参考design-tokens.less和ai/index.tsx页面，这里非常重要一定要参考
+  - 界面中不要有滚动条出现。

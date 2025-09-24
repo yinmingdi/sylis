@@ -1,0 +1,57 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.env
+
+# Auto-generated documentation
+docs/overview/apis/
+docs/overview/.vitepress/cache
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.so
+build/
+dist/
+*.egg-info/
+*.egg
+
+
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Development tools
+.mypy_cache/
+
+# Speech Service specific
+services/speech-service/models/
+services/speech-service/downloads/
+services/speech-service/temp/
+services/speech-service/logs/
+*.flac
+*.mp3
+*.m4a

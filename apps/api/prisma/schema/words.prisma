@@ -1,0 +1,98 @@
+/**
+ * 单词模型
+ * 存储单词的基本信息和各种关联数据
+ */
+model Word {
+  id                String            @id @default(uuid())
+  headword          String /// 单词拼写
+  ukPhonetic        String? /// 英式音标
+  usPhonetic        String? /// 美式音标
+  ukAudio           String? /// 英式发音音频URL
+  usAudio           String? /// 美式发音音频URL
+  star              Int               @default(0) /// 星级或重要程度
+  exampleSentences  ExampleSentence[] /// 关联例句
+  meanings          Meaning[] /// 关联词义
+  phrases           Phrase[] /// 关联短语
+  userWords         UserWord[] /// 关联用户单词学习状态
+  wordBooks         WordBook[] /// 关联单词书籍
+  wordRelationsTo   WordRelation[]    @relation("WordRelationsTo") /// 单词关联关系（目标）
+  wordRelationsFrom WordRelation[]    @relation("WordRelationsFrom") /// 单词关联关系（来源）
+  quizQuestions     QuizQuestion[] /// 关联测验题目
+  quizChoiceOptions QuizChoiceOption[] /// 关联测验选择项
+}
+
+/**
+ * 词义模型
+ * 存储单词的不同词性和含义
+ */
+model Meaning {
+  id           String    @id @default(uuid())
+  wordId       String /// 单词ID
+  partOfSpeech String /// 词性
+  meaningCn    String /// 中文含义
+  meaningEn    String? /// 英文含义
+  word         Word      @relation(fields: [wordId], references: [id]) /// 关联单词
+  synonyms     Synonym[] /// 关联同义词
+
+  @@unique([wordId, partOfSpeech, meaningCn]) /// 确保同一单词的相同词性和含义唯一
+}
+
+/**
+ * 同义词模型
+ * 存储词义的同义词
+ */
+model Synonym {
+  id          String  @id @default(uuid())
+  meaningId   String /// 词义ID
+  synonymText String /// 同义词文本
+  meaning     Meaning @relation(fields: [meaningId], references: [id]) /// 关联词义
+
+  @@unique([meaningId, synonymText]) /// 确保同一词义的相同同义词文本唯一
+}
+
+/**
+ * 例句模型
+ * 存储单词的例句
+ */
+model ExampleSentence {
+  id         String @id @default(uuid())
+  wordId     String /// 单词ID
+  sentenceEn String /// 英文例句
+  sentenceCn String /// 中文例句
+  word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+
+  @@unique([wordId, sentenceEn]) /// 确保同一单词的相同英文例句唯一
+}
+
+/**
+ * 短语模型
+ * 存储与单词相关的短语
+ */
+model Phrase {
+  id         String @id @default(uuid())
+  wordId     String /// 单词ID
+  phraseText String /// 短语文本
+  phraseCn   String /// 短语中文翻译
+  word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+
+  @@unique([wordId, phraseText]) /// 确保同一单词的相同短语文本唯一
+}
+
+
+
+/**
+ * 单词关联关系模型
+ * 存储单词之间的关联关系（如同根词、反义词、近义词等）
+ */
+model WordRelation {
+  id            String            @id @default(uuid())
+  wordId        String /// 源单词ID
+  relatedWordId String /// 关联单词ID
+  pos           String? /// 词性简写（如n, v, adj, adv等，用于同根词等情况）
+  relatedWord   Word             @relation("WordRelationsTo", fields: [relatedWordId], references: [id]) /// 关联的目标单词
+  word          Word             @relation("WordRelationsFrom", fields: [wordId], references: [id]) /// 关联的源单词
+
+  @@unique([wordId, relatedWordId, pos]) /// 确保相同的单词关联关系唯一
+}
+
+

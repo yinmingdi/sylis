@@ -1,0 +1,103 @@
+// 页面头部操作区域 - 参考me页面设计
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.headerActionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+
+    &:hover {
+      transform: none;
+      background: var(--color-surface-primary);
+      border-color: var(--color-border-primary);
+    }
+  }
+}
+
+.favorited {
+  color: var(--color-error);
+  background: rgba(255, 0, 110, 0.1);
+  border-color: var(--color-error);
+
+  &:hover {
+    background: rgba(255, 0, 110, 0.15);
+    border-color: var(--color-error);
+  }
+}
+
+.progressContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .headerActionButton {
+    &:hover {
+      background: var(--color-bg-tertiary);
+    }
+  }
+
+  .favorited {
+    &:hover {
+      background: rgba(255, 0, 110, 0.2);
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .headerActions {
+    gap: var(--spacing-2);
+  }
+
+  .headerActionButton {
+    width: 36px;
+    height: 36px;
+    font-size: var(--font-size-sm);
+  }
+
+  .progressContainer {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-1) var(--spacing-3);
+    min-width: 70px;
+  }
+}

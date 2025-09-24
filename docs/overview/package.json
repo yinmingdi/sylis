@@ -1,0 +1,24 @@
+{
+  "name": "@sylis/doc-overview",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "npm run typedocs:build && vitepress dev --open",
+    "docs:build": "npm run typedocs:build && vitepress build",
+    "docs:preview": "vitepress preview",
+    "typedocs:build": "npx node ./typedoc/build.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typedoc": "^0.28.12",
+    "typedoc-plugin-markdown": "^4.8.1",
+    "vitepress": "^2.0.0-alpha.12"
+  },
+  "dependencies": {
+    "vue-server-renderer": "^2.7.16"
+  }
+}

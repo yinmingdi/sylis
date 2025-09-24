@@ -1,0 +1,144 @@
+name: Deploy Multi-Services to GitHub Pages
+
+on:
+  # 在推送到 main 分支时触发
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "packages/**"
+      - "apps/**/README.md"
+      - "apps/**/src/**/*.stories.*"
+      - "README.md"
+
+  # 允许手动触发
+  workflow_dispatch:
+
+# 设置 GITHUB_TOKEN 权限以允许部署到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允许一个并发部署，跳过正在运行的部署和最新的排队部署
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: |
+          # Build utils package first (required for API)
+          echo "🔨 Building @sylis/utils package..."
+          pnpm --filter "@sylis/utils" run build
+
+          # Verify utils build output - tsup generates index.js (CJS) and index.mjs (ESM)
+          echo "🔍 Verifying build output..."
+          ls -la packages/utils/dist/
+
+          if [ ! -f "packages/utils/dist/index.js" ]; then
+            echo "❌ Error: index.js (CommonJS) not found"
+            exit 1
+          fi
+
+          if [ ! -f "packages/utils/dist/index.mjs" ]; then
+            echo "❌ Error: index.mjs (ESM) not found"
+            exit 1
+          fi
+
+          echo "✅ @sylis/utils build successful - all required files generated"
+
+          # Build shared package if needed (no build script, but check if exports exist)
+          echo "📦 Checking @sylis/shared package..."
+          ls -la packages/shared/dto/ || echo "Shared package structure check"
+
+      - name: Generate Prisma client
+        run: pnpm --filter "./apps/api" run prisma:generate
+
+      - name: Build API and generate Swagger docs
+        env:
+          NODE_ENV: production
+          DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
+          REDIS_URL: "redis://localhost:6379"
+        run: |
+          # Verify workspace dependencies are available
+          echo "Checking workspace dependencies..."
+          ls -la packages/utils/dist/ || echo "Utils dist not found"
+
+          # Build API
+          cd apps/api
+          pnpm run build
+          pnpm run swagger:generate || echo "Swagger generation failed, continuing without it"
+
+      - name: Build Documentation (Overview)
+        run: |
+          cd docs/overview
+          NODE_ENV=production pnpm run docs:build
+
+      - name: Build Storybook
+        run: |
+          cd docs/components
+          NODE_ENV=production pnpm run build
+
+      - name: Combine services
+        run: |
+          # 创建最终部署目录
+          mkdir -p final-dist
+
+          # 复制 Overview 文档到根目录 (作为主入口)
+          cp -r docs/overview/.vitepress/dist/* final-dist/
+
+          # 复制组件库到 components 子目录
+          mkdir -p final-dist/components
+          cp -r docs/components/dist/* final-dist/components/
+
+          # 复制 Swagger 文档到 swagger 子目录 (如果存在)
+          if [ -d "apps/api/dist/swagger" ]; then
+            mkdir -p final-dist/swagger
+            cp -r apps/api/dist/swagger/* final-dist/swagger/
+            echo "Swagger documentation included"
+          else
+            echo "Swagger documentation not found, skipping"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: final-dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

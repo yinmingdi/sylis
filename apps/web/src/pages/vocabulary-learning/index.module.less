@@ -1,0 +1,501 @@
+// 单词学习页面 - 参考阅读页面设计风格
+.wordPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: 0 var(--spacing-4);
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--spacing-8);
+  margin-top: var(--spacing-8);
+}
+
+// Hero区域 - 简洁的标题展示
+.hero {
+  text-align: center;
+  padding: var(--spacing-6) 0 var(--spacing-8);
+
+  h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-3) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// 通用区域标题和头部
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+// 统计数据区域
+.statsSection {
+  margin-top: var(--spacing-8);
+}
+
+.statCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  transition: all 0.2s ease;
+  height: 72px;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.statIcon {
+  font-size: var(--font-size-xl);
+  flex-shrink: 0;
+}
+
+.statContent {
+  flex: 1;
+  text-align: left;
+}
+
+.statValue {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-1);
+}
+
+.statLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+// 词书区域
+.bookSection {
+  margin-bottom: var(--spacing-8);
+}
+
+.bookCard {
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  padding: 0;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+.bookContent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+.bookCover {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-base);
+  background: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  svg {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-tertiary);
+  }
+}
+
+.bookInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookTitleWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.bookTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-primary-500);
+  }
+}
+
+.bookTitleArrow {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+  flex-shrink: 0;
+
+  .bookTitle:hover & {
+    color: var(--color-primary-500);
+    transform: translateX(2px);
+  }
+}
+
+.bookTextButton {
+  padding: var(--spacing-1) var(--spacing-2) !important;
+  height: 28px !important;
+  border-radius: var(--radius-base) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  background: transparent !important;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: var(--color-border-focus) !important;
+    background: var(--color-bg-secondary) !important;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.bookTextIcon {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.bookMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.bookTag {
+  background: var(--color-bg-tertiary);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.bookProgressBar {
+  border-radius: var(--radius-base) !important;
+  height: 8px !important;
+  background: var(--color-bg-tertiary) !important;
+}
+
+// 空状态
+.emptyBookState {
+  text-align: center;
+  padding: var(--spacing-8) var(--spacing-4);
+  color: var(--color-text-secondary);
+
+  .emptyIcon {
+    font-size: var(--font-size-4xl);
+    color: var(--color-text-tertiary);
+    margin-bottom: var(--spacing-4);
+  }
+
+  p {
+    margin: 0 0 var(--spacing-4) 0;
+    font-size: var(--font-size-base);
+  }
+}
+
+// 搜索区域
+.searchBarWrap {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  height: 48px;
+  padding: 0 var(--spacing-4);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+  }
+
+  &:focus-within {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+  }
+}
+
+.searchIcon {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-tertiary);
+  margin-right: var(--spacing-3);
+  flex-shrink: 0;
+}
+
+.searchPlaceholder {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-base);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 开始学习按钮
+.startButton {
+  height: 52px !important;
+  border-radius: var(--radius-xl) !important;
+  font-size: var(--font-size-lg) !important;
+  font-weight: var(--font-weight-semibold) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  transition: all 0.2s ease;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-button-hover);
+  }
+
+  &:not(:disabled):active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Header相关样式
+.headerBell {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+}
+
+.headerDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--color-error-500);
+  border-radius: 50%;
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .statCard,
+  .bookCard {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .startButton {
+    &:not(:disabled):hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .content {
+    padding: 0 var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .hero {
+    padding: var(--spacing-5) 0 var(--spacing-6);
+
+    h1 {
+      font-size: var(--font-size-xl);
+    }
+
+    p {
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .statsSection,
+  .bookSection {
+    margin-bottom: var(--spacing-6);
+  }
+
+  .statCard {
+    padding: var(--spacing-3);
+    height: 64px;
+    gap: var(--spacing-2);
+  }
+
+  .statIcon {
+    font-size: var(--font-size-lg);
+  }
+
+  .statValue {
+    font-size: var(--font-size-base);
+  }
+
+  .bookContent {
+    padding: var(--spacing-3);
+    gap: var(--spacing-3);
+  }
+
+  .bookCover {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bookTitle {
+    font-size: var(--font-size-base);
+  }
+
+  .bookTextButton {
+    height: 24px !important;
+    padding: var(--spacing-1) !important;
+  }
+
+  .searchBarWrap {
+    width: 100%;
+    height: 44px;
+    padding: 0 var(--spacing-3);
+  }
+
+  .startButton {
+    height: 48px !important;
+    font-size: var(--font-size-base) !important;
+  }
+}
+
+// 动画优化
+@media (prefers-reduced-motion: no-preference) {
+  .hero {
+    animation: fadeInDown 0.4s ease forwards;
+  }
+
+  .statCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(4) {
+      animation-delay: 0.25s;
+    }
+  }
+
+  .bookCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.3s;
+  }
+
+  .startButton {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.4s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 焦点状态 - 无障碍支持
+.statCard:focus-visible,
+.bookCard:focus-visible,
+.searchBarWrap:focus-within,
+.startButton:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}

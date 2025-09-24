@@ -1,0 +1,23 @@
+{
+  "name": "@sylis/utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "import": "./dist/index.mjs",
+    "require": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "WATCH=true tsup",
+    "dev": "tsup src/index.ts --dts --format cjs,esm --out-dir dist --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

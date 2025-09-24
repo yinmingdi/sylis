@@ -1,0 +1,510 @@
+// ==================== VocabularyBook Page Styles ====================
+
+@import '../../styles/design-tokens.less';
+
+.vocabularyBookPage {
+  min-height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.content {
+  padding: 0 var(--spacing-4) var(--spacing-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+// ==================== Stats Section ====================
+
+.statsSection {
+  margin-top: var(--spacing-4);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  transition: all var(--duration-normal) var(--ease-out);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+}
+
+.statIcon {
+  font-size: var(--font-size-2xl);
+  flex-shrink: 0;
+}
+
+.statContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.statValue {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-1);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+// ==================== Toolbar Section ====================
+
+.toolbar {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.toolbarMain {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+}
+
+.searchBar {
+  flex: 1;
+
+  :global(.adm-search-bar) {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-base);
+    border: 1px solid var(--color-border-primary);
+
+    .adm-search-bar-input {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+
+      &::placeholder {
+        color: var(--color-text-tertiary);
+      }
+    }
+  }
+}
+
+.filterBtn {
+  padding: var(--spacing-2);
+  border-radius: var(--radius-base);
+  color: var(--color-text-secondary);
+
+  &:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-primary-500);
+  }
+}
+
+.filtersPanel {
+  padding: var(--spacing-3);
+  border-top: 1px solid var(--color-border-primary);
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  animation: slideDown var(--duration-normal) var(--ease-out);
+}
+
+@keyframes slideDown {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 200px;
+    opacity: 1;
+  }
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+// ==================== Action Bar ====================
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.selectionInfo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+// ==================== Words Section ====================
+
+.wordsSection {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.wordsHeader {
+  padding: var(--spacing-4) var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-border-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+// ==================== Empty State ====================
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-20) var(--spacing-4);
+  text-align: center;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--spacing-6);
+  opacity: 0.6;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.emptyTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.emptyDesc {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  margin-bottom: var(--spacing-6);
+}
+
+// ==================== Quick Actions ====================
+
+.quickActions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+.quickActionBtn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: var(--duration-fast);
+  }
+}
+
+.quickActionIcon {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary-500);
+}
+
+.quickActionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.quickActionDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: var(--line-height-normal);
+}
+
+// ==================== Import/Export Actions ====================
+
+.importExportActions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+.importBtn,
+.exportBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-base);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.importBtn {
+  background: var(--color-success);
+  color: white;
+  border: none;
+
+  &:hover {
+    background: var(--color-success);
+    opacity: 0.9;
+  }
+}
+
+.exportBtn {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-primary);
+
+  &:hover {
+    background: var(--color-bg-secondary);
+  }
+}
+
+// ==================== Learning Progress ====================
+
+.progressSection {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-4);
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.progressTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.progressChart {
+  height: 120px;
+  margin-bottom: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.progressLegend {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--spacing-2);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.legendLabel {
+  color: var(--color-text-secondary);
+}
+
+.legendValue {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+// ==================== Dark Theme ====================
+
+[data-theme='dark'] {
+  .filtersPanel {
+    background: var(--color-bg-tertiary);
+  }
+
+  .progressChart {
+    background: var(--color-bg-tertiary);
+  }
+}
+
+// ==================== Responsive Design ====================
+
+@media (max-width: @screen-sm) {
+  .content {
+    padding: 0 var(--spacing-3) var(--spacing-20);
+    gap: var(--spacing-4);
+  }
+
+  .toolbarMain {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-3);
+  }
+
+  .filterBtn {
+    align-self: flex-end;
+  }
+
+  .filtersPanel {
+    gap: var(--spacing-3);
+  }
+
+  .filterGroup {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+
+  .quickActions {
+    flex-direction: column;
+  }
+
+  .importExportActions {
+    flex-direction: column;
+  }
+
+  .actionBar {
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+  }
+
+  .progressLegend {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+// ==================== Animations ====================
+
+.vocabularyBookPage {
+  .animate-fadeIn();
+}
+
+.statCard {
+  animation: fadeInUp var(--duration-normal) var(--ease-out);
+  animation-fill-mode: both;
+
+  &:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  &:nth-child(2) {
+    animation-delay: 100ms;
+  }
+  &:nth-child(3) {
+    animation-delay: 200ms;
+  }
+  &:nth-child(4) {
+    animation-delay: 300ms;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quickActionBtn {
+  animation: fadeInScale var(--duration-normal) var(--ease-out);
+  animation-fill-mode: both;
+
+  &:nth-child(1) {
+    animation-delay: 400ms;
+  }
+  &:nth-child(2) {
+    animation-delay: 500ms;
+  }
+  &:nth-child(3) {
+    animation-delay: 600ms;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

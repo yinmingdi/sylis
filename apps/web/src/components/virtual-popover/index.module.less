@@ -1,0 +1,182 @@
+.popover {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0;
+  max-width: 280px;
+  position: relative;
+  z-index: 1000;
+
+  // 确保文本可选择
+  user-select: text;
+
+  &[data-popper-placement^='top'] .arrow {
+    bottom: -5px;
+    border-top-color: var(--color-bg-elevated);
+    border-bottom-color: transparent;
+
+    &::before {
+      bottom: 1px;
+      border-top-color: var(--color-border);
+      border-bottom-color: transparent;
+    }
+  }
+
+  &[data-popper-placement^='bottom'] .arrow {
+    top: -5px;
+    border-bottom-color: var(--color-bg-elevated);
+    border-top-color: transparent;
+
+    &::before {
+      top: 1px;
+      border-bottom-color: var(--color-border);
+      border-top-color: transparent;
+    }
+  }
+
+  &[data-popper-placement^='left'] .arrow {
+    right: -5px;
+    border-left-color: var(--color-bg-elevated);
+    border-right-color: transparent;
+
+    &::before {
+      right: 1px;
+      border-left-color: var(--color-border);
+      border-right-color: transparent;
+    }
+  }
+
+  &[data-popper-placement^='right'] .arrow {
+    left: -5px;
+    border-right-color: var(--color-bg-elevated);
+    border-left-color: transparent;
+
+    &::before {
+      left: 1px;
+      border-right-color: var(--color-border);
+      border-left-color: transparent;
+    }
+  }
+}
+
+.arrow {
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  z-index: -1;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 5px solid transparent;
+    display: block;
+  }
+
+  &::before {
+    z-index: -1;
+  }
+
+  &::after {
+    z-index: 1;
+  }
+}
+
+.content {
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+
+  // 清除内部元素的margin
+  > *:first-child {
+    margin-top: 0;
+  }
+
+  > *:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// 进入动画
+.popoverEnter {
+  opacity: 0;
+  transform: scale(0.9) translateY(-4px);
+}
+
+.popoverEnterActive {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: all 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+// 退出动画
+.popoverExit {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.popoverExitActive {
+  opacity: 0;
+  transform: scale(0.9) translateY(-4px);
+  transition: all 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+// 暗色主题适配
+:global(.dark-theme) {
+  .popover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  }
+
+  .content {
+    color: var(--color-text);
+  }
+}
+
+// 不同尺寸变体
+.popover.small {
+  .content {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+.popover.large {
+  max-width: 360px;
+
+  .content {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+}
+
+// 无箭头变体
+.popover.noArrow {
+  .arrow {
+    display: none;
+  }
+}
+
+// 自定义箭头颜色（当背景色不同时）
+.popover.customArrow {
+  &[data-popper-placement^='top'] .arrow::after {
+    border-top-color: inherit;
+  }
+
+  &[data-popper-placement^='bottom'] .arrow::after {
+    border-bottom-color: inherit;
+  }
+
+  &[data-popper-placement^='left'] .arrow::after {
+    border-left-color: inherit;
+  }
+
+  &[data-popper-placement^='right'] .arrow::after {
+    border-right-color: inherit;
+  }
+}

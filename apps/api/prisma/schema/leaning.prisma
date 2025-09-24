@@ -1,0 +1,98 @@
+/**
+ * 单词在用户维度的学习状态
+ */
+enum WordLearningStatus {
+  NEW       /// 刚加入用户词表，还未正式学习（可以用于筛选"未接触"新词）
+  LEARNING  /// 正在学习阶段（已开始学习但尚未进入常规 SRS 间隔）
+  REVIEW    /// 进入 SRS 复习阶段（根据 nextReviewAt 调度）
+  MASTERED  /// 被判定为掌握（可以降低优先级或不再频繁复习）
+  SUSPENDED /// （可选）暂时跳过/冻结（用户手动移除或暂时停学）
+}
+
+/**
+ * 用户学习记录模型
+ * 记录用户的整体学习状态和进度
+ */
+model UserLearning {
+  id            String     @id @default(uuid())
+  userId        String     @unique /// 用户ID，唯一标识
+  createdAt     DateTime   @default(now()) /// 创建时间
+  updatedAt     DateTime   @updatedAt /// 更新时间
+  currentBookId String? /// 当前学习的书籍ID
+  books         UserBook[] /// 关联的用户书籍
+  user          User       @relation(fields: [userId], references: [id]) /// 关联用户
+  words         UserWord[] /// 关联的用户单词
+
+  LearningLog LearningLog[] /// 学习日志
+}
+
+/**
+ * 用户单词学习状态模型
+ * 记录单词在用户维度的学习状态（SRS 字段 + 唯一约束 + enum）
+ */
+model UserWord {
+  id             String       @id @default(uuid())
+  wordId         String /// 外键，指向全局 Word 表
+  status         WordLearningStatus @default(NEW) /// 学习状态（用枚举更安全）：NEW / LEARNING / REVIEW / MASTERED
+  lastReview     DateTime? /// 上次复习时间（用于统计 & 计算间隔）
+  nextReviewAt   DateTime? /// 下次复习时间（核心 SRS 字段：用于判断是否到期）
+  repetition     Int          @default(0) /// SRS 相关：重复次数（连续正确次数）
+  interval       Int          @default(0) /// SRS 相关：间隔（以天为单位，整数）
+  easeFactor     Float        @default(2.5) /// SRS 相关：难度系数（常见初始 2.5，可随表现上/下调）
+  isFavorite     Boolean      @default(false) /// 收藏标记
+  errorCount     Int          @default(0) /// 错误次数（可用于调整难度或优先复习）
+  familiarity    Int          @default(0) /// 熟悉度（保留或可替换为更明确的字段）
+  userLearningId String /// 关联到哪个 userLearning（必需）
+  userLearning   UserLearning @relation(fields: [userLearningId], references: [id]) /// 关联用户学习记录
+  word           Word         @relation(fields: [wordId], references: [id]) /// 关联全局 Word
+
+  /// 保证同一个用户学习上下文不重复记录同一单词
+  @@unique([userLearningId, wordId])
+  /// 索引：按 nextReviewAt 查询到期单词更快（常用）
+  @@index([nextReviewAt])
+}
+
+/**
+ * 用户书籍关联模型
+ * 记录用户与书籍的关联关系和学习配置
+ */
+model UserBook {
+  id               String       @id @default(uuid())
+  userLearningId   String /// 用户学习记录ID
+  bookId           String /// 书籍ID
+  dailyNewWords    Int          @default(0) /// 每日新词数量
+  dailyReviewWords Int          @default(0) /// 每日复习词数量
+  createdAt        DateTime     @default(now()) /// 创建时间
+  updatedAt        DateTime     @updatedAt /// 更新时间
+  book             Book         @relation(fields: [bookId], references: [id]) /// 关联书籍
+  userLearning     UserLearning @relation(fields: [userLearningId], references: [id]) /// 关联用户学习记录
+
+  /// 保证同一用户学习记录不重复关联同一书籍
+  @@unique([userLearningId, bookId])
+}
+
+
+/**
+ * 学习日志模型
+ * 记录用户每日的学习计划和完成情况
+ */
+model LearningLog {
+  id                String    @id @default(cuid())
+  userLearningId    String /// 归属用户的学习上下文
+  userLearning      UserLearning @relation(fields: [userLearningId], references: [id]) /// 关联用户学习记录
+  date              DateTime /// 哪一天的日志（标准化为当天日期，时区处理由应用层负责）
+  plannedNewCount   Int /// 当天系统选择的新词数（目标值）
+  plannedReviewCount Int /// 当天系统选择的复习词数（目标值）
+  completedNewCount Int     @default(0) /// 当天实际完成的新词数
+  completedReviewCount Int  @default(0) /// 当天实际完成的复习词数
+  plannedNewWordIds Json? /// 当天计划学习的新词ID列表（锁定机制）
+  plannedReviewWordIds Json? /// 当天计划复习的单词ID列表（锁定机制）
+  totalTimeSeconds  Int? /// 当天总学习时长（秒），可选由客户端上报
+  details           Json? /// 可选：当日操作明细（例如 small list of wordIds + status）——只做小规模 JSON，避免过大,例如: [{ wordId: "...", type: "NEW", status: "DONE" }, ...]
+  createdAt         DateTime @default(now()) /// 创建时间
+
+  /// 为了快速按用户+日期查日志
+  @@unique([userLearningId, date])
+  /// 按日期索引便于查询
+  @@index([date])
+}

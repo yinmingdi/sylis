@@ -1,0 +1,664 @@
+// 书籍详情页 - 现代化设计
+.bookDetailPage {
+  min-height: 100vh;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.pageContent {
+  flex: 1;
+  padding: 0 var(--spacing-4);
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: var(--spacing-8);
+}
+
+// ==================== 书籍详情卡片 ====================
+
+.bookDetailCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12) var(--spacing-6);
+  text-align: center;
+  color: var(--color-text-secondary);
+
+  .emptyIcon {
+    font-size: 48px;
+    margin-bottom: var(--spacing-4);
+    color: var(--color-text-tertiary);
+  }
+
+  p {
+    font-size: var(--font-size-base);
+    margin: 0;
+  }
+}
+
+.bookHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+}
+
+.coverWrapper {
+  flex-shrink: 0;
+}
+
+.bookCover {
+  width: 80px;
+  height: 108px;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+}
+
+.defaultCover {
+  width: 80px;
+  height: 108px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  color: var(--color-text-tertiary);
+}
+
+.bookInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bookTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.bookIntro {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0 0 var(--spacing-3) 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookMeta {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.metaIcon {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary-500);
+}
+
+.metaText {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.tagsSection {
+  padding: 0 var(--spacing-6) var(--spacing-6);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.bookTag {
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  border: 1px solid var(--color-primary-100);
+}
+
+// ==================== 学习计划卡片 ====================
+
+.learningPlanCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.planHeader {
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
+  text-align: center;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-50) 0%,
+    var(--color-primary-100) 100%
+  );
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.planTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+
+  h2 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0;
+    line-height: var(--line-height-tight);
+  }
+}
+
+.planIcon {
+  font-size: var(--font-size-xl);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.planSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+// 统计网格
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--color-border-primary);
+  margin: 0;
+}
+
+.statItem {
+  background: var(--color-surface-primary);
+  padding: var(--spacing-4);
+  text-align: center;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-secondary);
+  }
+}
+
+.statValue {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-600);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-1);
+}
+
+.statLabel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+// 预计时间卡片
+.estimateCard {
+  margin: var(--spacing-5);
+  padding: var(--spacing-4);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-border-secondary);
+  }
+}
+
+.estimateHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.estimateIcon {
+  font-size: var(--font-size-base);
+  color: var(--color-primary-500);
+}
+
+.estimateDate {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+}
+
+// 选择器区域
+.pickerSection {
+  padding: var(--spacing-5);
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.pickerTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+.pickerContainer {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--spacing-5);
+}
+
+.customPicker {
+  height: 180px !important;
+  background: transparent !important;
+
+  :global(.adm-picker-view-column) {
+    background: transparent;
+  }
+
+  :global(.adm-picker-view-column-item) {
+    font-size: var(--font-size-base) !important;
+    font-weight: var(--font-weight-medium) !important;
+    color: var(--color-text-primary) !important;
+    padding: var(--spacing-3) 0 !important;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--color-bg-tertiary);
+    }
+  }
+
+  :global(.adm-picker-view-column-item-selected) {
+    color: var(--color-primary-600) !important;
+    font-weight: var(--font-weight-bold) !important;
+    background: var(--color-primary-50) !important;
+  }
+
+  :global(.adm-picker-view-mask) {
+    background: linear-gradient(
+      180deg,
+      hsla(0, 0%, 100%, 0.9),
+      hsla(0, 0%, 100%, 0.6),
+      hsla(0, 0%, 100%, 0.6),
+      hsla(0, 0%, 100%, 0.9)
+    ) !important;
+  }
+}
+
+// 确认按钮
+.confirmButton {
+  width: 100%;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-primary-600) 100%
+  );
+  border: none;
+  border-radius: var(--radius-xl);
+  color: white;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--spacing-4) var(--spacing-6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(46, 196, 182, 0.3);
+  position: relative;
+  overflow: hidden;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(46, 196, 182, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 12px rgba(46, 196, 182, 0.2);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  &:hover:not(:disabled)::before {
+    left: 100%;
+  }
+}
+
+.buttonContent,
+.loadingContent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  position: relative;
+  z-index: 1;
+}
+
+.buttonIcon,
+.arrowIcon {
+  font-size: var(--font-size-lg);
+  transition: transform 0.2s ease;
+}
+
+.confirmButton:hover:not(:disabled) .arrowIcon {
+  transform: translateX(var(--spacing-1));
+}
+
+.loadingContent {
+  gap: var(--spacing-3);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// ==================== 加载和空状态 ====================
+
+.loading,
+.empty {
+  text-align: center;
+  padding: var(--spacing-8);
+  color: var(--color-text-secondary);
+
+  .loadingSpinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border-primary);
+    border-top: 3px solid var(--color-primary-500);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-4);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+  }
+}
+
+// ==================== 深色主题适配 ====================
+
+[data-theme='dark'] {
+  .bookDetailCard,
+  .learningPlanCard {
+    &:hover {
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .planHeader {
+    background: linear-gradient(
+      135deg,
+      var(--color-neutral-800) 0%,
+      var(--color-neutral-700) 100%
+    );
+  }
+
+  .bookTag {
+    background: var(--color-primary-900);
+    color: var(--color-primary-300);
+    border-color: var(--color-primary-800);
+  }
+
+  .confirmButton {
+    box-shadow: 0 4px 12px rgba(46, 196, 182, 0.2);
+
+    &:hover:not(:disabled) {
+      box-shadow: 0 8px 20px rgba(46, 196, 182, 0.3);
+    }
+  }
+}
+
+// ==================== 响应式设计 ====================
+
+@media (max-width: 768px) {
+  .pageContent {
+    padding: 0 var(--spacing-3);
+    max-width: 100%;
+  }
+
+  .bookHeader {
+    padding: var(--spacing-5);
+    gap: var(--spacing-3);
+  }
+
+  .bookCover,
+  .defaultCover {
+    width: 64px;
+    height: 88px;
+  }
+
+  .bookTitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .bookIntro {
+    font-size: var(--font-size-xs);
+  }
+
+  .planHeader {
+    padding: var(--spacing-5) var(--spacing-5) var(--spacing-3);
+  }
+
+  .planTitle {
+    gap: var(--spacing-2);
+
+    h2 {
+      font-size: var(--font-size-base);
+    }
+  }
+
+  .planIcon {
+    font-size: var(--font-size-lg);
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .statItem {
+    padding: var(--spacing-3);
+  }
+
+  .statValue {
+    font-size: var(--font-size-lg);
+  }
+
+  .estimateCard {
+    margin: var(--spacing-4);
+    padding: var(--spacing-3);
+  }
+
+  .estimateDate {
+    font-size: var(--font-size-base);
+  }
+
+  .pickerSection {
+    padding: var(--spacing-4);
+  }
+
+  .customPicker {
+    height: 160px !important;
+  }
+
+  .confirmButton {
+    font-size: var(--font-size-base);
+    padding: var(--spacing-3) var(--spacing-5);
+  }
+
+  .tagsSection {
+    padding: 0 var(--spacing-5) var(--spacing-5);
+  }
+}
+
+// ==================== 动画效果 ====================
+
+@media (prefers-reduced-motion: no-preference) {
+  .bookDetailCard {
+    animation: fadeInUp 0.4s ease forwards;
+  }
+
+  .learningPlanCard {
+    animation: fadeInUp 0.4s ease 0.1s forwards;
+    opacity: 0;
+  }
+
+  .statItem {
+    animation: fadeInScale 0.3s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.25s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+  }
+
+  .estimateCard {
+    animation: fadeInUp 0.3s ease 0.35s forwards;
+    opacity: 0;
+  }
+
+  .pickerSection {
+    animation: fadeInUp 0.3s ease 0.4s forwards;
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// ==================== 无障碍支持 ====================
+
+.confirmButton:focus-visible,
+.bookDetailCard:focus-visible,
+.learningPlanCard:focus-visible,
+.estimateCard:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+// 高对比度支持
+@media (prefers-contrast: high) {
+  .bookDetailCard,
+  .learningPlanCard {
+    border-width: 2px;
+  }
+
+  .confirmButton {
+    border: 2px solid var(--color-primary-700);
+  }
+
+  .bookTag {
+    border-width: 2px;
+  }
+}
+
+// 减少动画支持
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

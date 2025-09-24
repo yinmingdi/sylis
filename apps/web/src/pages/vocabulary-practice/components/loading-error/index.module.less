@@ -1,0 +1,116 @@
+// 加载和错误状态组件 - 参考me页面设计
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  padding: var(--spacing-8) var(--spacing-4);
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-primary);
+  border-top: 3px solid var(--color-primary-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-4);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-4);
+  color: var(--color-error);
+  opacity: 0.8;
+}
+
+.errorTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-2);
+  line-height: var(--line-height-tight);
+}
+
+.errorMessage {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-6);
+  max-width: 280px;
+}
+
+.retryButton {
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .loadingSpinner {
+    border-color: var(--color-border-primary);
+    border-top-color: var(--color-primary-400);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .loadingContainer,
+  .errorContainer {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .errorIcon {
+    font-size: var(--font-size-3xl);
+  }
+
+  .errorTitle {
+    font-size: var(--font-size-lg);
+  }
+
+  .errorMessage {
+    font-size: var(--font-size-sm);
+  }
+}

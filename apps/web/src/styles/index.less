@@ -1,0 +1,123 @@
+@import './normalize.less';
+@import './design-tokens.less';
+
+// 全局样式重置和基础设置
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  line-height: var(--line-height-normal);
+  font-family: var(--font-family-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  transition:
+    background-color var(--duration-normal) var(--ease-out),
+    color var(--duration-normal) var(--ease-out);
+}
+
+// 移除 antd-mobile 的默认样式覆盖
+.adm-auto-center {
+  text-align: center;
+}
+
+// 全局按钮样式
+button {
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// 全局链接样式
+a {
+  color: var(--color-primary-500);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    color: var(--color-primary-600);
+  }
+
+  &:active {
+    color: var(--color-primary-700);
+  }
+}
+
+// 全局输入框样式
+input,
+textarea {
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background-color: transparent;
+  border: none;
+  outline: none;
+
+  &::placeholder {
+    color: var(--color-text-tertiary);
+  }
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: var(--radius-full);
+
+  &:hover {
+    background: var(--color-neutral-500);
+  }
+}
+
+// 选择文本样式
+::selection {
+  background: var(--color-primary-100);
+  color: var(--color-primary-900);
+}
+
+// 焦点样式
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+// 无障碍增强
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// 高对比度模式支持
+@media (prefers-contrast: high) {
+  :root {
+    --color-border-primary: var(--color-neutral-900);
+    --color-border-secondary: var(--color-neutral-800);
+  }
+}

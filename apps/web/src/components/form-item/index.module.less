@@ -1,0 +1,206 @@
+@import '../../styles/design-tokens.less';
+
+.formItem {
+  display: flex;
+  margin-bottom: var(--spacing-4);
+
+  &--top {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  &--left {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+
+  &--right {
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+
+    .content {
+      text-align: right;
+    }
+  }
+
+  &--error {
+    .label {
+      color: var(--color-text-primary);
+    }
+  }
+
+  &--warning {
+    .label {
+      color: var(--color-text-primary);
+    }
+  }
+
+  &--success {
+    .label {
+      color: var(--color-text-primary);
+    }
+  }
+
+  &--validating {
+    .label {
+      color: var(--color-text-primary);
+    }
+  }
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+
+  &--left {
+    justify-content: flex-start;
+  }
+
+  &--center {
+    justify-content: center;
+  }
+
+  &--right {
+    justify-content: flex-end;
+  }
+
+  .formItem--left & {
+    min-height: 40px; // 与默认input高度对齐
+    align-items: flex-start;
+    padding-top: var(--spacing-3);
+  }
+
+  .formItem--right & {
+    min-height: 40px;
+    align-items: flex-start;
+    padding-top: var(--spacing-3);
+  }
+}
+
+.labelText {
+  flex: 1;
+}
+
+.required {
+  color: var(--color-error);
+  font-weight: var(--font-weight-normal);
+  line-height: 1;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; // 防止flex项目溢出
+}
+
+.control {
+  width: 100%;
+
+  // 确保子元素继承正确的状态样式
+}
+
+.helperContent {
+  margin-top: var(--spacing-1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.errorText {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  line-height: var(--line-height-tight);
+}
+
+.helperText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-tight);
+}
+
+.extraText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+// 特殊布局情况
+.formItem--left,
+.formItem--right {
+  @media (max-width: @screen-sm) {
+    flex-direction: column;
+    gap: var(--spacing-2);
+
+    .label {
+      min-height: auto;
+      padding-top: 0;
+      align-items: center;
+    }
+
+    .content {
+      text-align: left;
+    }
+  }
+}
+
+// 与其他组件的集成样式
+.formItem {
+  // 如果内部包含Input组件，移除其外边距以避免双重间距
+  :global(.inputContainer) {
+    margin-bottom: 0;
+  }
+
+  // 如果内部包含Button组件，确保对齐
+  :global(.button) {
+    align-self: flex-start;
+  }
+}
+
+// 表单项组合样式
+.formItem + .formItem {
+  margin-top: 0; // 依赖基础的margin-bottom来控制间距
+}
+
+// 紧凑模式
+.formItem--compact {
+  margin-bottom: var(--spacing-3);
+
+  .label {
+    font-size: var(--font-size-xs);
+  }
+
+  .helperContent {
+    margin-top: var(--spacing-1);
+  }
+}
+
+// 内联模式（用于水平排列的表单项）
+.formItem--inline {
+  display: inline-flex;
+  margin-right: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+  vertical-align: top;
+
+  .content {
+    width: auto;
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .helperText {
+    color: var(--color-text-tertiary);
+  }
+
+  .extraText {
+    color: var(--color-text-secondary);
+  }
+}

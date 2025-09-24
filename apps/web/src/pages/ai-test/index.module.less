@@ -1,0 +1,119 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--adm-color-background);
+}
+
+.content {
+  padding: 16px;
+  padding-bottom: 100px;
+}
+
+.testCard {
+  margin-bottom: 16px;
+
+  .cardContent {
+    padding: 16px 0;
+  }
+
+  .description {
+    color: var(--adm-color-text-secondary);
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+.resultCard {
+  border: 2px solid var(--adm-color-border);
+
+  &:global(.adm-card) {
+    border-radius: 12px;
+  }
+}
+
+.resultTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+
+  svg {
+    font-size: 18px;
+  }
+}
+
+.resultContent {
+  .resultItem {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .label {
+      min-width: 80px;
+      color: var(--adm-color-text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .value {
+      flex: 1;
+      color: var(--adm-color-text);
+      font-size: 14px;
+      word-break: break-all;
+    }
+
+    .status {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+
+      &.connected {
+        background-color: rgba(0, 181, 120, 0.1);
+        color: #00b578;
+      }
+
+      &.failed {
+        background-color: rgba(255, 49, 65, 0.1);
+        color: #ff3141;
+      }
+    }
+
+    .error {
+      color: #ff3141;
+      font-size: 14px;
+      background-color: rgba(255, 49, 65, 0.1);
+      padding: 8px;
+      border-radius: 6px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+    }
+
+    .response {
+      background-color: var(--adm-color-fill-base);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.5;
+      border-left: 3px solid var(--adm-color-primary);
+    }
+  }
+}
+
+// 暗色主题适配
+:global([data-theme='dark']) {
+  .resultContent {
+    .resultItem {
+      .error {
+        background-color: rgba(255, 49, 65, 0.2);
+      }
+
+      .response {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+  }
+}

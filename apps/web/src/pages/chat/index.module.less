@@ -1,0 +1,309 @@
+// Agent页面样式
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--adm-color-background);
+  color: var(--adm-color-text);
+}
+
+// 聊天头部样式
+.chatHeader {
+  height: 52px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--adm-color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 16px;
+  background: var(--adm-color-background);
+}
+
+.headerTitle {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--adm-color-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 60%;
+
+  .sessionTitle {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--adm-color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// 聊天内容区域样式
+.chatContent {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chatWelcome {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--adm-color-fill-content);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+// 错误状态样式
+.networkError,
+.errorMessage {
+  padding: 12px 16px;
+  margin: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  animation: slideDown 0.3s ease-out;
+}
+
+.networkError {
+  background: rgba(255, 159, 67, 0.1);
+  color: #ff9f43;
+  border: 1px solid rgba(255, 159, 67, 0.3);
+}
+
+.errorMessage {
+  background: rgba(255, 107, 129, 0.1);
+  color: #ff6b81;
+  border: 1px solid rgba(255, 107, 129, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 聊天发送区域样式
+.chatSender {
+  padding: 12px;
+  border-top: 1px solid var(--adm-color-border);
+  background: var(--adm-color-background);
+}
+
+.speechButton {
+  font-size: 18px;
+  color: var(--adm-color-text);
+}
+
+// 会话列表样式
+.sessionList {
+  width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--adm-color-background);
+  border-radius: 8px;
+}
+
+.sessionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--adm-color-border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--adm-color-text);
+}
+
+.sessionItem {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--adm-color-border);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--adm-color-fill-content);
+  }
+
+  &.active {
+    background: var(--adm-color-primary-light);
+    border-left: 3px solid var(--adm-color-primary);
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .sessionTitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--adm-color-text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sessionMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--adm-color-text-secondary);
+
+    .deleteButton {
+      opacity: 0;
+      transition: opacity 0.2s;
+      padding: 2px;
+      font-size: 12px;
+
+      &:hover {
+        color: var(--adm-color-danger);
+      }
+    }
+  }
+
+  &:hover .deleteButton {
+    opacity: 1;
+  }
+}
+
+.emptyState {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--adm-color-text-secondary);
+  font-size: 14px;
+}
+
+// 响应式适配
+@media (max-width: 768px) {
+  .chatHeader {
+    height: 48px;
+    padding: 0 8px 0 12px;
+  }
+
+  .headerTitle {
+    font-size: 15px;
+    max-width: 50%;
+
+    .sessionTitle {
+      font-size: 12px;
+    }
+  }
+
+  .chatContent {
+    padding: 12px 8px;
+  }
+
+  .chatSender {
+    padding: 8px;
+  }
+
+  .sessionList {
+    width: 260px;
+    max-height: 60vh;
+  }
+
+  .sessionItem {
+    padding: 10px 12px;
+
+    .sessionTitle {
+      font-size: 13px;
+    }
+
+    .sessionMeta {
+      font-size: 11px;
+    }
+  }
+}
+
+// 小屏幕优化
+@media (max-width: 480px) {
+  .sessionList {
+    width: calc(100vw - 32px);
+    max-width: 280px;
+  }
+
+  .headerTitle {
+    max-width: 40%;
+    font-size: 14px;
+  }
+}
+
+// 自定义滚动条
+.chatContent {
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--adm-color-border);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--adm-color-text-secondary);
+  }
+}
+
+// 气泡样式自定义
+:global {
+  .ant-bubble-list {
+    height: 100%;
+  }
+
+  .ant-bubble {
+    margin-bottom: 12px;
+
+    &-content {
+      border-radius: 12px;
+      max-width: 80%;
+      word-wrap: break-word;
+
+      &.user {
+        background: var(--adm-color-primary);
+        color: white;
+      }
+
+      &.assistant {
+        background: var(--adm-color-fill-content);
+        color: var(--adm-color-text);
+      }
+    }
+  }
+
+  .ant-prompts {
+    border-radius: 12px;
+
+    .ant-prompts-item {
+      border-radius: 8px;
+      transition: all 0.2s;
+
+      &:hover {
+        background: var(--adm-color-fill-content);
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  .ant-sender {
+    border-radius: 12px;
+    border: 1px solid var(--adm-color-border);
+
+    &:focus-within {
+      border-color: var(--adm-color-primary);
+      box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
+    }
+  }
+}

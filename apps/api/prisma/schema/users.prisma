@@ -1,0 +1,30 @@
+/**
+ * 用户模型
+ * 存储用户基本信息和认证数据
+ */
+model User {
+  id           String            @id @default(uuid())
+  email        String?           @unique /// 邮箱地址，唯一
+  phone        String?           @unique /// 手机号码，唯一
+  isVerified   Boolean           @default(false) /// 是否已验证
+  createdAt    DateTime          @default(now()) /// 创建时间
+  updatedAt    DateTime          @updatedAt /// 更新时间
+  password     String /// 密码
+  userLearning UserLearning? /// 关联用户学习记录
+  profile      UserProfile? /// 关联用户资料
+}
+
+/**
+ * 用户资料模型
+ * 存储用户个人信息和学习偏好
+ */
+model UserProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique /// 用户ID，唯一
+  ageGroup         String /// 年龄段
+  occupation       String /// 职业
+  customOccupation String? /// 自定义职业
+  learningGoals    String[] /// 学习目标列表
+  initializedAt    DateTime @default(now()) /// 初始化时间
+  user             User     @relation(fields: [userId], references: [id]) /// 关联用户
+}

@@ -1,0 +1,47 @@
+/**
+ * 测验题目类型枚举
+ * 定义支持的测验题目类型
+ */
+enum QuizQuestionType {
+  CHOICE /// 选择题
+}
+
+/**
+ * 测验题目基础模型
+ * 存储测验题目的基本信息，支持多种题型
+ */
+model QuizQuestion {
+  id             String            @id @default(uuid()) /// 题目唯一标识
+  type           QuizQuestionType /// 题目类型
+  wordId         String? /// 关联单词ID（可选）
+  word           Word?             @relation(fields: [wordId], references: [id]) /// 关联的单词
+  createdAt      DateTime          @default(now()) /// 创建时间
+  updatedAt      DateTime          @updatedAt /// 更新时间
+  choiceQuestion QuizChoiceQuestion? /// 选择题详细信息（当type为CHOICE时使用）
+}
+
+/**
+ * 选择题详细信息模型
+ * 存储选择题的具体内容和答案信息
+ */
+model QuizChoiceQuestion {
+  id           String             @id @default(uuid()) /// 选择题唯一标识
+  baseId       String             @unique /// 关联的基础题目ID（一对一关系）
+  base         QuizQuestion       @relation(fields: [baseId], references: [id]) /// 关联的基础题目
+  answerWordId String /// 正确答案的单词ID
+  options      QuizChoiceOption[] /// 选择题的选项列表
+}
+
+/**
+ * 选择题选项模型
+ * 存储选择题的每个选项信息
+ */
+model QuizChoiceOption {
+  id         String             @id @default(uuid()) /// 选项唯一标识
+  questionId String /// 所属选择题ID
+  question   QuizChoiceQuestion @relation(fields: [questionId], references: [id]) /// 所属的选择题
+  wordId     String /// 选项对应的单词ID
+  word       Word               @relation(fields: [wordId], references: [id]) /// 选项对应的单词
+  createdAt  DateTime           @default(now()) /// 创建时间
+  updatedAt  DateTime           @updatedAt /// 更新时间
+}

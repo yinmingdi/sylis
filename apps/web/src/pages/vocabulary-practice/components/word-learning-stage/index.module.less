@@ -1,0 +1,289 @@
+// 单词学习阶段 - 参考me页面设计
+.learningContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4) 0;
+}
+
+// 主单词卡片 - 参考me页面卡片风格
+.mainWordCard {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  &:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+  }
+}
+
+// 单词区域
+.wordSection {
+  text-align: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.wordText {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: var(--line-height-tight);
+
+  &:hover {
+    color: var(--color-primary-500);
+  }
+}
+
+.wordPronunciation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+}
+
+.voiceToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-border-focus);
+  }
+}
+
+.voiceType {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.soundIcon {
+  font-size: var(--font-size-base);
+  color: var(--color-text-tertiary);
+}
+
+.phoneticText {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+// 例句区域
+.exampleSection {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-6);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  margin: var(--spacing-6) 0;
+  min-height: 100px;
+}
+
+.exampleSentence {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-3);
+  font-style: italic;
+  font-weight: var(--font-weight-normal);
+}
+
+.exampleTranslation {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  opacity: 0.9;
+}
+
+// 提示按钮区域
+.hintSection {
+  display: flex;
+  justify-content: center;
+}
+
+.hintButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.hintIcon {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary-500);
+}
+
+.hintText {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+// 操作按钮区域
+.actionButtonsSection {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.actionButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.knowButton {
+  background: var(--color-primary-500);
+  color: var(--color-text-inverse);
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-1px);
+  }
+}
+
+.unknowButton {
+  background: var(--color-secondary);
+  color: var(--color-text-inverse);
+
+  &:hover {
+    background: #e68a0a;
+    transform: translateY(-1px);
+  }
+}
+
+.buttonText {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .mainWordCard {
+    &:hover {
+      box-shadow: var(--shadow-card-hover);
+    }
+  }
+
+  .exampleSection {
+    background: var(--color-bg-tertiary);
+  }
+}
+
+// 动画优化 - 参考me页面风格
+@media (prefers-reduced-motion: no-preference) {
+  .mainWordCard {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .hintSection {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.1s;
+  }
+
+  .actionButtonsSection {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.15s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .learningContainer {
+    gap: var(--spacing-6);
+  }
+
+  .mainWordCard {
+    padding: var(--spacing-8) var(--spacing-6);
+    min-height: 350px;
+  }
+
+  .wordText {
+    font-size: var(--font-size-3xl);
+  }
+
+  .exampleSection {
+    padding: var(--spacing-6);
+    min-height: 100px;
+  }
+
+  .exampleSentence {
+    font-size: var(--font-size-base);
+  }
+
+  .actionButton {
+    height: 52px;
+    font-size: var(--font-size-base);
+  }
+
+  .actionButtonsSection {
+    gap: var(--spacing-4);
+  }
+
+  .buttonText {
+    font-size: var(--font-size-base);
+  }
+}

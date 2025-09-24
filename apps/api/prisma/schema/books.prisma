@@ -1,0 +1,32 @@
+/**
+ * 书籍模型
+ * 存储词汇书或教材的基本信息
+ */
+model Book {
+  id            String     @id @default(uuid())
+  name          String /// 书籍名称
+  introduce     String? /// 书籍介绍
+  coverUrl      String? /// 封面图片URL
+  tags          String[] /// 标签列表
+  originName    String? /// 原始名称
+  version       String? /// 版本
+  wordNum       Int? /// 单词数量
+  reciteUserNum Int? /// 背诵用户数量
+  offlinedata   String? /// 离线数据
+  size          Int? /// 大小
+  userBooks     UserBook[] /// 关联用户书籍
+  wordBooks     WordBook[] /// 关联单词书籍
+}
+
+/**
+ * 单词书籍关联模型
+ * 记录书籍与单词的关联关系和排序
+ */
+model WordBook {
+  id       String @id @default(uuid())
+  bookId   String /// 书籍ID
+  wordId   String /// 单词ID
+  wordRank Int /// 单词在书中的排序
+  book     Book   @relation(fields: [bookId], references: [id]) /// 关联书籍
+  word     Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+}

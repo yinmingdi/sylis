@@ -2,12 +2,12 @@
 
 ## 🎯 项目概述
 
-Sylis Speech Service 是一个基于 WeNet 的智能语音评估服务，专为英语学习应用设计。该服务提供精确的语音对齐、发音评估和音素分析功能，帮助学习者提升英语发音水平。
+Sylis Speech Service 是一个基于 WhisperX + Phonemizer 的智能语音评估服务，专为英语学习应用设计。该服务提供精确的音素级语音对齐、发音评估和详细的音素分析功能，帮助学习者提升英语发音水平。
 
 ## ✨ 核心功能
 
-- 🎤 **语音识别**: 基于 WeNet (Conformer + CTC) 的高精度语音识别
-- 📍 **音素对齐**: CTC 算法实现的精确音素级时间对齐
+- 🎤 **语音识别**: 基于 WhisperX 的高精度语音识别和转录
+- 📍 **音素对齐**: WhisperX + Phonemizer 实现的精确音素级时间对齐
 - 📊 **发音评估**: 多维度发音质量评估（准确性、流利度、完整性）
 - 🔍 **音素分析**: 详细的音素置信度分析和错误检测
 - 🌐 **RESTful API**: 易于集成的 HTTP API 接口
@@ -19,7 +19,7 @@ Sylis Speech Service 是一个基于 WeNet 的智能语音评估服务，专为�
 services/speech-service/
 ├── app/                     # 🌐 主应用代码
 │   ├── __init__.py
-│   ├── alignment.py         # ✅ WeNet语音对齐实现
+│   ├── alignment.py         # ✅ WhisperX+Phonemizer语音对齐实现
 │   ├── phoneme_confidence.py # 📊 发音评估算法
 │   ├── main.py             # 🌐 FastAPI服务入口
 │   └── schemas.py          # 📋 数据模型定义
@@ -46,11 +46,26 @@ services/speech-service/
 
 ### 核心组件
 
-- **`alignment.py`**: WeNet 语音对齐核心模块
+- **`alignment.py`**: WhisperX + Phonemizer 语音对齐核心模块
 - **`phoneme_confidence.py`**: 发音评估算法实现
 - **`main.py`**: FastAPI 服务主入口
-- **`wenet_config.yaml`**: WeNet 模型配置文件
-- **`words.txt`**: 词典文件
+
+### 🎵 WhisperX + Phonemizer 架构
+
+本服务采用先进的 WhisperX + Phonemizer 组合来实现精确的音素级语音对齐：
+
+1. **WhisperX 转录**: 使用 WhisperX 进行高质量语音转录
+2. **Phonemizer 转换**: 将转录文本转换为 IPA 音素表示
+3. **音素级对齐**: 使用专门的对齐模型 (wav2vec2-xlsr-53-espeak-cv-ft) 进行音素级时间对齐
+4. **置信度计算**: 基于对齐结果计算每个音素的置信度分数
+
+#### 技术优势
+
+- ✅ **高精度**: WhisperX 提供业界领先的转录精度
+- ✅ **音素级对齐**: 精确到单个音素的时间对齐
+- ✅ **多语言支持**: 支持英语、西班牙语、法语、德语等
+- ✅ **实时处理**: 优化的批处理和模型缓存
+- ✅ **详细分析**: 字符级和音素级的详细置信度分析
 
 ### 技术特点
 
@@ -65,33 +80,45 @@ services/speech-service/
 ### 1. 一键快速开始（推荐）
 
 ```bash
-# 使用 Makefile（推荐）
-make setup
+# 方式1: 使用快速安装脚本（自动检测conda）
+./quick-install.sh
 
-# 或直接运行设置脚本
-python3 scripts/quick_setup.py
+# 方式2: 使用conda创建完整环境（推荐）
+make conda-setup
+
+# 方式3: 使用传统方式
+make setup
 ```
 
-### 2. 手动安装
+### 2. Conda环境安装（推荐）
 
 ```bash
-# 1. 安装依赖
-make install
-# 或: pip install -e .
+# 创建conda环境并安装所有依赖
+make conda-setup
 
-# 2. 下载WeNet模型
+# 或在现有conda环境中安装项目
+make conda-install
+
+# 仅安装MFA依赖
+make mfa-install
+```
+
+### 3. 其他命令
+
+```bash
+# 下载WeNet模型
 make download
 # 或: python3 scripts/download_models.py
 
-# 3. 运行测试
+# 运行测试
 make test
 
-# 4. 启动服务
+# 启动服务
 make start
 # 或开发模式: make dev
 ```
 
-### 3. 网络问题解决方案
+### 4. 网络问题解决方案
 
 如果模型下载失败（SSL证书错误等），可以使用以下方案：
 
@@ -106,14 +133,14 @@ python3 download_models.py --manual
 python3 download_models.py --force
 ```
 
-### 4. Docker部署
+### 5. Docker部署
 
 ```bash
 docker build -t sylis-speech-wenet .
 docker run -p 8080:8080 sylis-speech-wenet
 ```
 
-### 5. 使用示例
+### 6. 使用示例
 
 ```bash
 # 查看详细使用示例
@@ -192,6 +219,64 @@ if not WENET_AVAILABLE:
 
 ## 🛠️ 配置说明
 
+### 依赖管理策略
+
+本项目采用**纯conda**的依赖管理策略：
+
+- **唯一方式**: 使用conda管理所有依赖，包括科学计算、Web框架、开发工具
+- **优势**: 更好的依赖冲突解决、系统依赖自动安装、环境隔离、版本一致性
+
+#### 依赖管理
+
+```
+conda环境 (environment.yml)
+├── Python 3.8
+├── 科学计算: numpy, scipy, librosa, pysoundfile
+├── 机器学习: pytorch, torchaudio, torchvision
+├── 音频处理: ffmpeg, sox
+├── Web框架: fastapi, uvicorn, python-multipart
+├── MFA相关: montreal-forced-aligner, praatio, textgrid
+└── 开发工具: pytest, black, isort, flake8, mypy
+
+注意: 已完全删除pyproject.toml，所有依赖通过conda管理
+```
+
+### Conda环境管理
+
+#### 创建新环境
+
+```bash
+# 使用environment.yml创建环境
+conda env create -f environment.yml
+
+# 或使用快速脚本
+./conda-setup.sh
+```
+
+#### 激活环境
+
+```bash
+# 激活speech-service环境
+conda activate sylis-speech-service
+
+# 验证安装
+python -c "import montreal_forced_aligner; print('MFA可用')"
+mfa version
+```
+
+#### 环境管理
+
+```bash
+# 列出所有环境
+conda env list
+
+# 删除环境
+conda env remove -n sylis-speech-service
+
+# 导出环境配置
+conda env export > environment-backup.yml
+```
+
 ### 环境变量
 
 - `WENET_MODEL_PATH`: WeNet 模型文件路径
@@ -209,7 +294,37 @@ if not WENET_AVAILABLE:
 
 ### 常见问题
 
-1. **WeNet导入失败**
+1. **Conda环境问题**
+
+   ```bash
+   # 环境创建失败
+   conda clean --all
+   conda env create -f environment.yml --force
+
+   # 环境激活失败
+   conda init bash  # 或 zsh
+   source ~/.bashrc  # 或 ~/.zshrc
+
+   # 包冲突
+   conda env export > current_env.yml
+   conda env remove -n sylis-speech-service
+   conda env create -f environment.yml
+   ```
+
+2. **MFA安装问题**
+
+   ```bash
+   # 使用conda安装MFA
+   conda install -c conda-forge montreal-forced-aligner
+
+   # 或使用pip安装
+   python3 scripts/install-mfa.py
+
+   # 检查MFA安装
+   python3 scripts/install-mfa.py --test-only
+   ```
+
+3. **WeNet导入失败**
 
    ```bash
    # 尝试重新安装WeNet
@@ -219,7 +334,7 @@ if not WENET_AVAILABLE:
    pip install torch torchaudio numpy
    ```
 
-2. **模型下载失败 (SSL证书错误)**
+4. **模型下载失败 (SSL证书错误)**
 
    ```bash
    # 方案1: 使用回退模式
@@ -232,7 +347,7 @@ if not WENET_AVAILABLE:
    python3 download_models.py --force
    ```
 
-3. **服务启动失败**
+5. **服务启动失败**
 
    ```bash
    # 检查端口占用
@@ -245,13 +360,13 @@ if not WENET_AVAILABLE:
    uvicorn app.main:app --log-level debug
    ```
 
-4. **对齐结果不准确**
+6. **对齐结果不准确**
    - 检查音频质量 (16kHz, 单声道)
    - 确保文本与音频匹配
    - 调整模型参数
    - 尝试使用真实的WeNet模型
 
-5. **依赖安装失败**
+7. **依赖安装失败**
 
    ```bash
    # 升级pip

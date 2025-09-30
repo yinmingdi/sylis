@@ -23,6 +23,10 @@ def _aggregate_scores(values: List[float]) -> float:
 
 
 def compute_assessment_scores(alignment_result: AlignmentResult, enable_phoneme: bool = True) -> Dict:
+    import logging
+    logger = logging.getLogger(__name__)
+
+
     words_out = []
     phone_confs_all: List[float] = []
 
@@ -30,13 +34,14 @@ def compute_assessment_scores(alignment_result: AlignmentResult, enable_phoneme:
         word_phones = []
         per_word_confs: List[float] = []
         for p in w.phonemes:
-            # 只使用 WeNet 提供的置信度，不使用时长启发式
+            # 使用 MFA 提供的置信度
             model_conf = getattr(p, 'confidence', None)
             conf = float(model_conf) if isinstance(model_conf, (int, float)) else 0.0
             # 边界保护
             conf = max(0.0, min(1.0, conf))
             per_word_confs.append(conf)
             phone_confs_all.append(conf)
+
             if enable_phoneme:
                 word_phones.append({
                     "phoneme": p.phoneme,
@@ -46,6 +51,7 @@ def compute_assessment_scores(alignment_result: AlignmentResult, enable_phoneme:
                 })
 
         word_score = _aggregate_scores(per_word_confs)
+
         words_out.append({
             "word": w.word,
             "start": round(w.start, 3),
@@ -58,6 +64,7 @@ def compute_assessment_scores(alignment_result: AlignmentResult, enable_phoneme:
     fluency = round(min(100.0, max(0.0, len(alignment_result.words) / max(0.5, alignment_result.duration) * 10.0 * 10.0)), 2)
     completeness = round(100.0 if alignment_result.words else 0.0, 2)
     overall = round(0.6 * accuracy + 0.25 * fluency + 0.15 * completeness, 2)
+
 
     return {
         "overallScore": overall,

@@ -21,7 +21,7 @@ class TestAPI:
         response = self.client.get("/")
         assert response.status_code == 200
         data = response.json()
-        assert data["service"] == "sylis-speech-wenet"
+        assert data["service"] == "sylis-speech-whisperx"
         assert data["status"] == "ok"
 
     def test_health_endpoint(self):
@@ -32,7 +32,7 @@ class TestAPI:
         assert "status" in data
         assert "model" in data
 
-    @patch('app.alignment.run_wenet_alignment')
+    @patch('app.alignment.run_mfa_alignment')
     @patch('app.phoneme_confidence.compute_assessment_scores')
     def test_pronunciation_assess_mock(self, mock_compute, mock_alignment):
         """测试发音评估端点（使用模拟）"""
@@ -66,7 +66,7 @@ class TestAPI:
         data = response.json()
         assert "overallScore" in data
         assert "modelInfo" in data
-        assert data["modelInfo"]["engine"] == "WeNet"
+        assert data["modelInfo"]["engine"] == "WhisperX"
 
     def test_pronunciation_assess_missing_text(self):
         """测试缺少文本的发音评估"""
@@ -116,12 +116,12 @@ class TestAPI:
             }
         )
 
-        # 如果WeNet模型可用，应该返回200；否则可能返回错误
+        # 如果WhisperX模型可用，应该返回200；否则可能返回错误
         if response.status_code == 200:
             data = response.json()
             assert "overallScore" in data
             assert "modelInfo" in data
-            assert data["modelInfo"]["engine"] == "WeNet"
+            assert data["modelInfo"]["engine"] == "WhisperX"
         else:
             # 模型不可用时的预期行为
             assert response.status_code in [500, 503]

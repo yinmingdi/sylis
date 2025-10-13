@@ -52,6 +52,7 @@ services/speech-service/models/
 services/speech-service/downloads/
 services/speech-service/temp/
 services/speech-service/logs/
+services/speech-service/aligned_data/
 *.flac
 *.mp3
 *.m4a

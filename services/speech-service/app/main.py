@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
-from pronunciation_pipeline import (
+from .pronunciation_pipeline import (
     create_default_pipeline,
     PipelineConfig,
     create_pronunciation_pipeline
@@ -31,18 +31,32 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
 # 设置日志级别为 INFO 以便看到调试信息
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-app = FastAPI(title="Sylis Speech Service (Refactored)", version="2.0.0")
+app = FastAPI(
+    title="Sylis Speech Service (Refactored)",
+    version="2.0.0",
+    # 默认使用 camelCase 输出
+    generate_unique_id_function=lambda route: route.name,
+)
 
 # 全局流水线实例
 _pipeline = None
 
 def get_pipeline():
-    """获取全局流水线实例"""
+    """获取全局流水线实例（使用 PyTorch 模型）"""
     global _pipeline
     if _pipeline is None:
+        # 使用 PyTorch DNN 模型
+        logger = logging.getLogger(__name__)
+        logger.info("初始化发音评估流水线（PyTorch DNN 模型）")
+
+        # 创建流水线（使用默认的 PyTorch 模型路径）
         _pipeline = create_default_pipeline()
+
         # 预初始化流水线
-        _pipeline.initialize()
+        if not _pipeline.initialize():
+            raise RuntimeError("流水线初始化失败，请检查模型是否已训练（运行: make train）")
+
+        logger.info("✅ 流水线初始化成功")
     return _pipeline
 
 
@@ -115,25 +129,12 @@ async def pronunciation_assess(
             pipeline.save_intermediate_results(result, debug_dir)
             logging.info(f"调试信息已保存到: {debug_dir}")
 
-        # 构建响应
+        # 构建响应（使用 camelCase，只返回核心评估数据）
         assessment_dict = result.assessment.to_dict()
 
-        # 添加处理信息
-        assessment_dict["processing_info"] = {
-            "total_time": result.processing_time,
-            "step_times": result.step_times,
-            "pipeline_version": "2.0.0"
-        }
-
-        # 添加模型信息
-        pipeline_info = pipeline.get_pipeline_info()
-        assessment_dict["model_info"] = {
-            "engine": "Refactored Pipeline",
-            "description": "使用重构后的音素级发音评估流水线",
-            "components": pipeline_info.get("components", {}),
-            "config": pipeline_info.get("config", {}),
-            "status": "✅ 流水线运行正常"
-        }
+        # 移除不需要的字段
+        assessment_dict.pop("gopStatistics", None)
+        assessment_dict.pop("errorPhonemes", None)
 
         return JSONResponse(content=assessment_dict)
 

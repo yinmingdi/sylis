@@ -1,67 +1,42 @@
-# Sylis Speech Service - 重构版本 2.0 环境配置
+# Sylis Speech Service 环境配置
 name: sylis-speech-service
 channels:
-  - conda-forge
+  - conda-forge # ⭐ 优先使用 conda-forge（解决 NumPy/MFA 兼容性）
   - pytorch
   - defaults
+
 dependencies:
   # Python
-  - python=3.8
+  - python=3.9
 
-  # Core dependencies
+  # 核心依赖
   - pip
-  - numpy>=1.21.0
+  - numpy>=1.21.0,<2.0 # ⭐ NumPy 1.x（MFA 要求）
   - scipy>=1.9.0
-  - librosa>=0.9.0
-  - pyyaml>=6.0.0
-  - requests>=2.28.0
-  - urllib3>=1.26.0
 
-  # PyTorch ecosystem
+  # PyTorch（模型训练和推理）
   - pytorch>=1.12.0
   - torchaudio>=0.12.0
-  - torchvision>=0.13.0
 
-  # Audio processing
+  # 音频处理
+  - librosa>=0.9.0
+  - pysoundfile>=0.12.0
   - ffmpeg
   - sox
-  - pysoundfile>=0.12.0
-  - librosa>=0.9.0
 
-  # Web framework
+  # 数据集（训练时下载 SpeechOcean762）
+  - datasets>=2.0.0
+
+  # Web 框架（API 服务）
   - fastapi>=0.100.0
-  - uvicorn[standard]>=0.20.0
+  - uvicorn>=0.20.0
   - python-multipart>=0.0.5
 
-  # WhisperX dependencies (conda packages)
-  - transformers>=4.21.0
-  - accelerate>=0.20.0
-  - datasets>=2.0.0
-  - tokenizers>=0.13.0
+  # Montreal Forced Aligner（音素对齐）
+  - montreal-forced-aligner>=2.0.0
+  - praatio>=5.0.0 # TextGrid 解析
 
-  # Development dependencies
-  - pytest>=7.0.0
-  - pytest-asyncio>=0.21.0
-  - pytest-cov>=4.0.0
-  - black>=23.0.0
-  - isort>=5.12.0
-  - flake8>=6.0.0
-  - mypy>=1.0.0
-  - pre-commit>=3.0.0
-
-  # Additional audio processing
-
-  # pip依赖 (只有conda上没有的包)
-  - pip:
-      - whisperx
-      - openai-whisper
-      - phonemizer>=3.2.0 # For text-to-phoneme conversion
-      - faster-whisper>=0.9.0 # WhisperX dependency
-      - scikit-learn>=1.0.0 # For additional scoring algorithms
-      - matplotlib>=3.5.0 # For visualization (optional)
-      - seaborn>=0.11.0 # For enhanced visualization (optional)
-
-# 环境变量设置
-variables:
-  # espeak环境变量将在激活脚本中动态设置
-  ESPEAK_DATA_PATH: ""
+  # 工具
+  - pytest>=7.0.0 # 测试
+  - tqdm # 进度条
+  - pyyaml # 配置文件

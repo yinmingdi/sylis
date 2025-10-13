@@ -2,16 +2,25 @@
 
 ## 🎯 项目概述
 
-Sylis Speech Service 是一个基于 WhisperX + Phonemizer 的智能语音评估服务，专为英语学习应用设计。该服务提供精确的音素级语音对齐、发音评估和详细的音素分析功能，帮助学习者提升英语发音水平。
+Sylis Speech Service 是一个基于 **PyTorch DNN + MFA** 的智能语音评估服务，专为**儿童英语学习**应用设计。
+
+**核心特点**：
+
+- 使用 **PyTorch DNN** 模型（交叉熵损失函数，保留完整音素概率分布）
+- 不使用 CTC（避免概率极化）
+- 提供精确的音素级语音对齐和 GOP 评分
+- 基于 SpeechOcean762 数据集训练（非母语发音评估）
 
 ## ✨ 核心功能
 
-- 🎤 **语音识别**: 基于 WhisperX 的高精度语音识别和转录
-- 📍 **音素对齐**: WhisperX + Phonemizer 实现的精确音素级时间对齐
-- 📊 **发音评估**: 多维度发音质量评估（准确性、流利度、完整性）
-- 🔍 **音素分析**: 详细的音素置信度分析和错误检测
+- 🎯 **音素对齐**: 基于 MFA 实现的精确音素级时间对齐（±20ms 精度）
+- 🧠 **GOP 评分**: 使用 PyTorch DNN 模型计算 Goodness of Pronunciation 分数
+- 📊 **多维度评估**: 准确性、流利度、完整性综合评分
+- 🔍 **音素分析**: 详细的音素置信度和混淆分析
+- 🏆 **NBest 候选**: 提供每个音素位置的 Top-5 候选音素及分数（类似 Azure）
+- ⚠️ **错误类型**: 自动标注 None/Mispronunciation（基于分数阈值）
 - 🌐 **RESTful API**: 易于集成的 HTTP API 接口
-- 🐳 **容器化**: Docker 支持，便于部署和扩展
+- 💾 **离线运行**: 无需云端 API，节省成本
 
 ## 📁 文件结构
 
@@ -19,132 +28,219 @@ Sylis Speech Service 是一个基于 WhisperX + Phonemizer 的智能语音评估
 services/speech-service/
 ├── app/                     # 🌐 主应用代码
 │   ├── __init__.py
-│   ├── alignment.py         # ✅ WhisperX+Phonemizer语音对齐实现
+│   ├── mfa_aligner.py       # ✅ MFA 音素对齐实现
+│   ├── pytorch_phoneme_scorer.py # 🧠 PyTorch DNN 音素评分器
 │   ├── phoneme_confidence.py # 📊 发音评估算法
-│   ├── main.py             # 🌐 FastAPI服务入口
-│   └── schemas.py          # 📋 数据模型定义
-├── config/                  # ⚙️ 配置文件
-│   ├── wenet_config.yaml   # WeNet模型配置
-│   ├── words.txt           # 词典文件
-│   └── env.example         # 环境变量示例
-├── scripts/                 # 🔧 管理脚本
-│   ├── manage.py           # 服务管理脚本
-│   ├── quick_setup.py      # 快速设置脚本
-│   └── download_models.py  # 模型下载工具
+│   ├── pronunciation_pipeline.py # 🔄 完整评估流水线
+│   ├── main.py              # 🌐 FastAPI 服务入口
+│   └── schemas.py           # 📋 数据模型定义
+├── training/                # 🎓 模型训练
+│   ├── train_phoneme_dnn.py # 主训练脚本
+│   ├── batch_align_dataset.py # 批量数据对齐
+│   ├── align_dataset.py     # 单样本对齐（已废弃）
+│   ├── TRAINING_PLAN.md     # 训练计划
+│   └── README.md            # 训练文档
 ├── tests/                   # 🧪 测试代码
-│   ├── conftest.py         # pytest配置
-│   ├── unit/               # 单元测试
-│   └── integration/        # 集成测试
+│   ├── test_pytorch_model.py # PyTorch 模型测试
+│   ├── hello.wav / bye.wav  # 测试音频
+│   ├── conftest.py          # pytest 配置
+│   ├── unit/                # 单元测试
+│   ├── integration/         # 集成测试
+│   └── README.md            # 测试文档
 ├── models/                  # 🤖 模型文件
-├── Makefile                # 📋 构建管理
-├── pyproject.toml          # 📦 Python项目配置和依赖
-├── Dockerfile             # 🐳 Docker配置
-└── README.md              # 📄 项目文档
+│   ├── best_phoneme_dnn.pth # 最佳模型
+│   └── pytorch_phoneme_dnn/ # PyTorch 模型
+├── aligned_data/            # 📊 对齐数据
+│   ├── train_aligned.json   # 训练集对齐结果
+│   └── test_aligned.json    # 测试集对齐结果
+├── scripts/                 # 🔧 管理脚本
+├── Makefile                 # 📋 构建管理
+└── README.md                # 📄 项目文档
 ```
 
 ## 🏗️ 技术架构
 
 ### 核心组件
 
-- **`alignment.py`**: WhisperX + Phonemizer 语音对齐核心模块
-- **`phoneme_confidence.py`**: 发音评估算法实现
+- **`mfa_aligner.py`**: MFA 音素对齐模块
+- **`pytorch_phoneme_scorer.py`**: PyTorch DNN 音素评分器（GOP 算法）
+- **`phoneme_confidence.py`**: 多维度置信度计算
+- **`pronunciation_pipeline.py`**: 完整的评估流水线
 - **`main.py`**: FastAPI 服务主入口
 
-### 🎵 WhisperX + Phonemizer 架构
+### 🎵 PyTorch DNN + MFA 架构
 
-本服务采用先进的 WhisperX + Phonemizer 组合来实现精确的音素级语音对齐：
+本服务使用现代化的深度学习架构：
 
-1. **WhisperX 转录**: 使用 WhisperX 进行高质量语音转录
-2. **Phonemizer 转换**: 将转录文本转换为 IPA 音素表示
-3. **音素级对齐**: 使用专门的对齐模型 (wav2vec2-xlsr-53-espeak-cv-ft) 进行音素级时间对齐
-4. **置信度计算**: 基于对齐结果计算每个音素的置信度分数
+1. **MFA 对齐**: 使用 Montreal Forced Aligner 进行音素级时间对齐
+2. **音素级时间边界**: 精确到 ±20ms 的音素级对齐
+3. **PyTorch DNN**: 使用自训练的 DNN 模型（**交叉熵训练，不是 CTC**）
+4. **GOP 评分**: 计算 `log(P(正确音素) / P(混淆音素))`
+5. **多维度评分**: 准确性 + 流利度 + 完整性
 
-#### 技术优势
+#### 技术优势（相比 CTC 方案）
 
-- ✅ **高精度**: WhisperX 提供业界领先的转录精度
-- ✅ **音素级对齐**: 精确到单个音素的时间对齐
-- ✅ **多语言支持**: 支持英语、西班牙语、法语、德语等
-- ✅ **实时处理**: 优化的批处理和模型缓存
-- ✅ **详细分析**: 字符级和音素级的详细置信度分析
+- ✅ **保留完整概率分布**: 使用交叉熵而非 CTC，不会极化输出
+- ✅ **音素混淆分析**: 可以比较目标音素和混淆音素的概率
+- ✅ **可训练优化**: 基于 SpeechOcean762 数据集自主训练
+- ✅ **轻量级模型**: PyTorch 模型，易于部署和优化
+- ✅ **离线部署**: 无需云端 API，降低成本
 
 ### 技术特点
 
-- **WeNet 集成**: 使用业界先进的 Conformer + CTC 架构
-- **CTC 对齐**: 基于概率的精确音素级时间对齐
-- **智能回退**: 当 WeNet 不可用时自动使用简化算法
-- **配置驱动**: YAML 配置文件，便于参数调优
-- **自动下载**: 智能模型下载和缓存机制
+- **PyTorch DNN**: 使用交叉熵训练的深度神经网络（非 CTC）
+- **MFA 对齐**: 精确的音素级对齐
+- **GOP 算法**: Goodness of Pronunciation 评分
+- **自主训练**: 可基于自己的数据训练模型
+- **配置驱动**: 灵活的配置系统
 
-## 🚀 使用方法
+### 核心算法原理
 
-### 1. 一键快速开始（推荐）
+详细的算法说明和实现细节，请参阅：
+
+- **算法原理文档**: [ALGORITHM_README.md](ALGORITHM_README.md)
+- **实现状态说明**: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)
+
+## 🎓 模型训练
+
+**首次使用需要训练模型：**
 
 ```bash
-# 方式1: 使用快速安装脚本（自动检测conda）
-./quick-install.sh
+# 训练音素识别模型（约 30-60 分钟）
+make train
+```
 
-# 方式2: 使用conda创建完整环境（推荐）
-make conda-setup
+**训练内容：**
 
-# 方式3: 使用传统方式
+- 数据集：SpeechOcean762（~2500 训练样本）
+- 模型：PyTorch DNN [1024, 512, 256]
+- 训练轮数：20 轮（自动早停）
+- 输出：`models/pytorch_phoneme_dnn/final_model.pth`
+
+### 使用示例
+
+```python
+from app.pronunciation_pipeline import create_default_pipeline
+
+# 创建流水线（使用训练好的 PyTorch 模型）
+pipeline = create_default_pipeline()
+
+# 初始化
+pipeline.initialize()
+
+# 评估发音
+result = pipeline.assess_pronunciation(
+    audio_path="audio.wav",
+    reference_text="this is a test"
+)
+```
+
+---
+
+## 🚀 快速开始
+
+### 完整流程（首次使用）
+
+```bash
+# 1. 设置环境（一次性）
+make setup
+
+# 2. 训练模型（必需，约30-60分钟）
+make train
+
+# 3. 测试模型
+make test-model
+
+# 4. 启动服务
+make start
+```
+
+---
+
+## 📖 详细使用
+
+### 1. 环境设置
+
+```bash
+# 一键创建conda环境并安装所有依赖
 make setup
 ```
 
-### 2. Conda环境安装（推荐）
+**安装内容：**
+
+- ✅ 创建 `sylis-speech-service` conda 环境
+- ✅ 安装 PyTorch、Librosa、FastAPI 等核心依赖
+- ✅ 安装 Montreal Forced Aligner (MFA)
+- ✅ 安装训练和测试所需的所有包
+
+### 2. 模型训练
 
 ```bash
-# 创建conda环境并安装所有依赖
-make conda-setup
+# 训练音素识别模型（20轮，约30-60分钟）
+make train
 
-# 或在现有conda环境中安装项目
-make conda-install
-
-# 仅安装MFA依赖
-make mfa-install
+# 或手动运行
+cd training
+python train_phoneme_dnn.py
 ```
 
-### 3. 其他命令
+**训练配置：**
+
+- 数据集：SpeechOcean762 (~2500训练样本，~500验证样本)
+- 模型：DNN [1024, 512, 256] + 帧拼接（context_frames=5）
+- 训练轮数：20轮（自动早停）
+- 输出：`models/pytorch_phoneme_dnn/final_model.pth`
+
+详见：[training/README.md](training/README.md)
+
+### 3. 模型测试
 
 ```bash
-# 下载WeNet模型
-make download
-# 或: python3 scripts/download_models.py
+# 测试训练好的模型
+make test-model
 
-# 运行测试
-make test
+# 或手动测试
+python tests/test_pytorch_model.py tests/hello.wav 'hello'
+python tests/test_pytorch_model.py tests/bye.wav 'bye'
+```
 
-# 启动服务
+详见：[tests/README.md](tests/README.md)
+
+### 4. 启动服务
+
+```bash
+# 生产模式
 make start
-# 或开发模式: make dev
+
+# 开发模式（自动重载）
+make dev
 ```
 
-### 4. 网络问题解决方案
+访问：
 
-如果模型下载失败（SSL证书错误等），可以使用以下方案：
+- 服务地址：http://localhost:8080
+- API文档：http://localhost:8080/docs
 
-```bash
-# 方案1: 跳过下载，使用回退模式
-python3 download_models.py --skip-download
-
-# 方案2: 查看手动下载说明
-python3 download_models.py --manual
-
-# 方案3: 强制重试下载
-python3 download_models.py --force
-```
-
-### 5. Docker部署
+### 5. 其他命令
 
 ```bash
-docker build -t sylis-speech-wenet .
-docker run -p 8080:8080 sylis-speech-wenet
-```
+# 查看所有命令
+make help
 
-### 6. 使用示例
+# 检查环境状态
+make status
 
-```bash
-# 查看详细使用示例
-python example_usage.py
+# 批量对齐数据（如果需要）
+make align-data
+
+# 代码检查
+make lint
+
+# 格式化代码
+make format
+
+# 清理临时文件
+make clean
 ```
 
 ## 📊 API接口
@@ -407,3 +503,13 @@ conda env export > environment-backup.yml
 - 🔬 **语音研究**: 为语音学研究和开发提供基础服务
 
 这个服务为 Sylis 英语学习应用提供了强大的语音评估能力，帮助学习者提升英语发音水平。
+
+## 📖 相关文档
+
+- 📊 **[API 数据结构对比](./API_COMPARISON.md)**: 与 Azure Speech 的详细功能对比（覆盖 95% Azure 功能）
+  - 完整的返回数据示例
+  - NBest 音素候选功能说明
+  - ErrorType 错误类型说明
+  - GOP 和概率分析优势
+- 🎓 **[训练文档](./training/README.md)**: 模型训练详细说明
+- 🧪 **[测试文档](./tests/README.md)**: 测试用例和覆盖率

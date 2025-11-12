@@ -8,8 +8,9 @@
   display: flex;
   justify-content: space-around;
   align-items: center;
-  z-index: var(--z-fixed);
-  padding: var(--spacing-1) var(--spacing-2) calc(var(--spacing-1) + env(safe-area-inset-bottom));
+  z-index: 1;
+  padding: var(--spacing-1) var(--spacing-2)
+    calc(var(--spacing-1) + env(safe-area-inset-bottom));
   transition: all var(--duration-normal) var(--ease-out);
 }
 
@@ -70,7 +71,8 @@
 @media (max-width: 480px) {
   .tabbar {
     height: 64px;
-    padding: var(--spacing-1) 0 calc(var(--spacing-1) + env(safe-area-inset-bottom));
+    padding: var(--spacing-1) 0
+      calc(var(--spacing-1) + env(safe-area-inset-bottom));
   }
 
   .tab {

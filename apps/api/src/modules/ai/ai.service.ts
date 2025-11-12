@@ -8,7 +8,7 @@ export class AIService {
   private readonly AI_CONFIG = {
     apiKey: process.env.AI_KEY || '',
     baseURL: process.env.AI_URL || '',
-    model: process.env.AI_MODEL || 'gpt-3.5-turbo',
+    model: 'gpt-4o',
   };
   private readonly logger = new Logger(AIService.name);
   private readonly client = new OpenAI({

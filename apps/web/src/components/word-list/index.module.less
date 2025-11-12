@@ -1,6 +1,6 @@
 // ==================== WordList Component Styles ====================
 
-@import '../../styles/design-tokens.less';
+@import '../../styles/utils.less';
 
 .wordList {
   width: 100%;
@@ -433,34 +433,6 @@
       var(--color-neutral-700) 50%,
       var(--color-neutral-800) 75%
     );
-  }
-}
-
-// ==================== Responsive Design ====================
-
-@media (max-width: @screen-sm) {
-  .wordCard {
-    .cardContent {
-      padding: var(--spacing-3);
-    }
-  }
-
-  .headword {
-    font-size: var(--font-size-lg);
-  }
-
-  .wordMain {
-    align-items: flex-start;
-  }
-
-  .meaning {
-    gap: var(--spacing-1);
-    align-items: flex-start;
-  }
-
-  .wordMeta {
-    align-items: flex-start;
-    gap: var(--spacing-2);
   }
 }
 

@@ -30,7 +30,7 @@
     "db:studio": "pnpm --filter ./apps/api run db:studio",
     "db:reset": "pnpm --filter ./apps/api run db:reset",
     "speech:install": "cd services/speech-service && pip3 install -e .",
-    "speech:dev": "cd services/speech-service && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload",
+    "speech:dev": "cd services/speech-service && make dev",
     "speech:health": "curl http://localhost:8080/health",
     "commit": "cz",
     "prepare": "husky install"

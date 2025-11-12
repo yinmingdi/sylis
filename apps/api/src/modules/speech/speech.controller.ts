@@ -45,7 +45,7 @@ export class SpeechController {
           format: 'binary',
           description: 'WAV音频文件',
         },
-        text: {
+        referenceText: {
           type: 'string',
           description: '参考文本',
           example: 'Hello world',
@@ -56,13 +56,13 @@ export class SpeechController {
           example: 'en-US',
           default: 'en-US',
         },
-        enable_phoneme: {
-          type: 'boolean',
+        enablePhonemeDetail: {
+          type: 'string',
           description: '是否启用音素分析',
-          default: true,
+          default: 'true',
         },
       },
-      required: ['audio', 'text'],
+      required: ['audio', 'referenceText'],
     },
   })
   @ApiResponse({
@@ -80,51 +80,68 @@ export class SpeechController {
   })
   async assessPronunciation(
     @UploadedFile() audio: any,
-    @Body() assessDto: PronunciationAssessReqDto,
+    @Body('referenceText') referenceText: string,
+    @Body('language') language?: string,
+    @Body('enablePhonemeDetail') enablePhonemeDetail?: string,
   ): Promise<PronunciationAssessResDto> {
+    this.logger.log('收到发音评估请求');
+    this.logger.debug('请求参数:', {
+      referenceText,
+      language,
+      enablePhonemeDetail,
+    });
+    this.logger.debug('音频文件信息:', {
+      hasAudio: !!audio,
+      originalname: audio?.originalname,
+      mimetype: audio?.mimetype,
+      size: audio?.size,
+    });
+
     // 验证音频文件
     if (!audio) {
+      this.logger.error('音频文件缺失');
       throw new BadRequestException('音频文件是必需的');
     }
 
     // 验证音频文件格式
     if (!audio.originalname.toLowerCase().endsWith('.wav')) {
+      this.logger.error(
+        `音频文件格式不支持: ${audio.originalname} (mimetype: ${audio.mimetype})`,
+      );
       throw new BadRequestException('只支持WAV格式的音频文件');
     }
 
     // 验证音频文件大小 (限制为10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (audio.size > maxSize) {
+      this.logger.error(
+        `音频文件过大: ${audio.size} bytes (最大: ${maxSize} bytes)`,
+      );
       throw new BadRequestException('音频文件大小不能超过10MB');
     }
 
     // 验证参考文本
-    if (!assessDto.text || !assessDto.text.trim()) {
+    if (!referenceText || !referenceText.trim()) {
+      this.logger.error('参考文本为空');
       throw new BadRequestException('参考文本不能为空');
     }
 
-    // 处理enable_phoneme参数（从字符串转换为布尔值）
-    let enablePhoneme = true;
-    if (assessDto.enable_phoneme !== undefined) {
-      if (typeof assessDto.enable_phoneme === 'string') {
-        enablePhoneme = assessDto.enable_phoneme.toLowerCase() === 'true';
-      } else {
-        enablePhoneme = Boolean(assessDto.enable_phoneme);
-      }
-    }
+    // 手动构建 DTO
+    const assessDto: PronunciationAssessReqDto = {
+      referenceText: referenceText.trim(),
+      language: language || 'en-US',
+      enablePhonemeDetail: enablePhonemeDetail === 'false' ? false : true,
+    };
 
     this.logger.log(
-      `收到发音评估请求 - 文件: ${audio.originalname}, 大小: ${audio.size} bytes, 文本: "${assessDto.text}"`,
+      `处理后的参数 - 文件: ${audio.originalname}, 大小: ${audio.size} bytes, 文本: "${assessDto.referenceText}", 语言: ${assessDto.language}, 音素详情: ${assessDto.enablePhonemeDetail}`,
     );
 
     try {
       const result = await this.speechService.assessPronunciation(
         audio.buffer,
         audio.originalname,
-        {
-          ...assessDto,
-          enable_phoneme: enablePhoneme,
-        },
+        assessDto,
       );
 
       this.logger.log(`发音评估完成 - 总体得分: ${result.overallScore}`);

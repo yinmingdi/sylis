@@ -9,11 +9,27 @@ export interface WordInfoDto {
   phonetic?: string;
 }
 
+export interface QuizWordInfoDto {
+  id: string;
+  headword: string;
+  ukPhonetic?: string;
+  usPhonetic?: string;
+}
+
 export interface QuizChoiceOptionDto {
   id?: string;
   wordId: string;
-  text: string;
-  word?: WordInfoDto;
+  headword: string;
+  meaningCn: string;
+  partOfSpeech?: string;
+}
+
+export interface QuizChoiceDataDto {
+  id: string;
+  questionId: string;
+  wordId: string;
+  answerWordId: string;
+  options: QuizChoiceOptionDto[];
 }
 
 export interface QuizChoiceQuestionDto {

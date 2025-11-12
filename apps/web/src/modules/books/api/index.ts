@@ -5,6 +5,10 @@ import type {
   GetCurrentBookResDto,
   GetDailyPlanReqDto,
   GetDailyPlanResDto,
+  GetNewWordsReqDto,
+  GetNewWordsResDto,
+  GetReviewWordsReqDto,
+  GetReviewWordsResDto,
 } from '@sylis/shared/dto';
 
 import request from '../../../network/request';
@@ -44,5 +48,23 @@ export const getBookDetail = (bookId: string) => {
   return request<null, BookDetailResDto>({
     method: 'GET',
     url: `/learning/book-detail/${bookId}`,
+  });
+};
+
+export const getNewWords = (data: GetNewWordsReqDto) => {
+  return request<GetNewWordsReqDto, GetNewWordsResDto>({
+    method: 'GET',
+    url: '/learning/new-words',
+    data,
+    timeout: 100000,
+  });
+};
+
+export const getReviewWords = (data: GetReviewWordsReqDto) => {
+  return request<GetReviewWordsReqDto, GetReviewWordsResDto>({
+    method: 'GET',
+    url: '/learning/review-words',
+    data,
+    timeout: 100000,
   });
 };

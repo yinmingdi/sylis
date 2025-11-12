@@ -13,10 +13,12 @@ export class LearningService {
   constructor(private readonly learningRepository: LearningRepository) {}
 
   async addBook(dto: AddBookReqDto, userId: string) {
-    const userLearning = await this.learningRepository.getUserLearning(userId);
+    // 获取或创建用户学习记录
+    let userLearning = await this.learningRepository.getUserLearning(userId);
 
     if (!userLearning) {
-      throw new BadRequestException('用户学习记录不存在');
+      // 自动创建用户学习记录
+      userLearning = await this.learningRepository.createUserLearning(userId);
     }
 
     const params: AddUserLearning = {
@@ -91,11 +93,12 @@ export class LearningService {
   }
 
   async getLearningStats(userId: string): Promise<LearningStatsResDto> {
-    // 获取用户学习记录
-    const userLearning = await this.getUserLearning(userId);
+    // 获取或创建用户学习记录
+    let userLearning = await this.getUserLearning(userId);
 
     if (!userLearning) {
-      throw new BadRequestException('用户学习记录不存在');
+      // 自动创建用户学习记录
+      userLearning = await this.learningRepository.createUserLearning(userId);
     }
 
     // 并行获取所有统计数据
@@ -123,11 +126,12 @@ export class LearningService {
   async getTodayProgress(
     userId: string,
   ): Promise<{ completed: number; total: number }> {
-    // 获取用户学习记录
-    const userLearning = await this.getUserLearning(userId);
+    // 获取或创建用户学习记录
+    let userLearning = await this.getUserLearning(userId);
 
     if (!userLearning) {
-      throw new BadRequestException('用户学习记录不存在');
+      // 自动创建用户学习记录
+      userLearning = await this.learningRepository.createUserLearning(userId);
     }
 
     return this.learningRepository.getTodayProgress(userLearning.id);
@@ -143,10 +147,11 @@ export class LearningService {
       throw new BadRequestException('书籍不存在');
     }
 
-    // 获取用户学习记录
-    const userLearning = await this.getUserLearning(userId);
+    // 获取或创建用户学习记录
+    let userLearning = await this.getUserLearning(userId);
     if (!userLearning) {
-      throw new BadRequestException('用户学习记录不存在');
+      // 自动创建用户学习记录
+      userLearning = await this.learningRepository.createUserLearning(userId);
     }
 
     // 获取用户对该书籍的学习设置

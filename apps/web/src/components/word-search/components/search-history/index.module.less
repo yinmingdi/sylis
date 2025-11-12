@@ -1,0 +1,50 @@
+.searchHistory {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0 0;
+
+  .clearButton {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+    padding: 4px 8px;
+
+    &:active {
+      opacity: 0.6;
+    }
+
+    svg {
+      font-size: 12px;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+
+  svg {
+    font-size: 16px;
+  }
+}
+
+.listContainer {
+  flex: 1;
+  overflow: hidden;
+}

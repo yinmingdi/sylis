@@ -1,0 +1,68 @@
+.followRead {
+  width: 100%;
+  margin: 0 auto;
+
+  // 在模态框中的样式调整
+  &.modalMode {
+    max-width: 100%;
+    margin: 0;
+
+    .card {
+      border-radius: 0;
+      box-shadow: none;
+      padding: 20px;
+    }
+  }
+
+  // 文本显示区域（英文和音标）
+  .textDisplay {
+    text-align: center;
+    margin-bottom: 32px;
+
+    .englishText {
+      display: block;
+      font-size: 28px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .phoneticText {
+      display: block;
+      font-size: 18px;
+      color: #666;
+      font-family: 'Times New Roman', serif;
+      line-height: 1.2;
+    }
+  }
+}
+
+// 响应式设计
+@media (max-width: 480px) {
+  .followRead {
+    .card {
+      padding: 12px;
+    }
+  }
+}
+
+// 暗色主题支持
+@media (prefers-color-scheme: dark) {
+  .followRead {
+    .card {
+      background: #1f1f1f;
+      border-color: #333;
+    }
+
+    .textDisplay {
+      .englishText {
+        color: #fff;
+      }
+
+      .phoneticText {
+        color: #ccc;
+      }
+    }
+  }
+}

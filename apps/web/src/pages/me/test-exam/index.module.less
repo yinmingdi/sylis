@@ -1,0 +1,291 @@
+// 词汇量测试答题页面
+
+.content {
+  flex: 1;
+  padding: var(--spacing-4);
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+// 加载页面样式
+.loadingSection {
+  padding: var(--spacing-4) var(--spacing-4) 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+
+  p {
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+}
+
+.testProgress {
+  margin-bottom: var(--spacing-6);
+}
+
+.progressBarWrapper {
+  width: 100%;
+  height: 6px;
+  background: var(--color-bg-tertiary);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-500),
+    var(--color-primary-600)
+  );
+  transition: width 0.3s ease;
+}
+
+// 结果页面样式
+.resultSection {
+  padding: var(--spacing-4) var(--spacing-4) 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.resultHeader {
+  :global(.adm-result-title) {
+    color: var(--color-text-primary) !important;
+    font-size: var(--font-size-xl) !important;
+    font-weight: var(--font-weight-bold) !important;
+  }
+
+  :global(.adm-result-description) {
+    color: var(--color-text-secondary) !important;
+    font-size: var(--font-size-base) !important;
+  }
+
+  :global(.adm-result-icon) {
+    color: var(--color-success-500) !important;
+  }
+}
+
+.scoreCard {
+  margin-bottom: var(--spacing-6);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500),
+    var(--color-primary-600)
+  ) !important;
+  border: none !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card-hover) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-6) !important;
+  }
+}
+
+.scoreDisplay {
+  text-align: center;
+  color: white;
+}
+
+.mainScore {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+
+  .scoreNumber {
+    font-size: 3rem;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+  }
+
+  .scoreUnit {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    opacity: 0.9;
+  }
+}
+
+.scoreDetails {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--spacing-4);
+}
+
+.scoreItem {
+  text-align: center;
+
+  .scoreLabel {
+    display: block;
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+    margin-bottom: var(--spacing-1);
+  }
+
+  .scoreValue {
+    display: block;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.assessmentCard {
+  margin-bottom: var(--spacing-6);
+  background: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-primary) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+
+  :global(.adm-card-body) {
+    padding: var(--spacing-6) !important;
+  }
+
+  h3 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-4) 0;
+    line-height: var(--line-height-tight);
+  }
+
+  h4 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: var(--spacing-5) 0 var(--spacing-3) 0;
+    line-height: var(--line-height-tight);
+  }
+}
+
+.levelInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-5);
+}
+
+.levelBadge {
+  background: linear-gradient(
+    135deg,
+    var(--color-success-500),
+    var(--color-success-600)
+  );
+  color: white;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.vocabularyEstimate {
+  text-align: right;
+
+  .estimateLabel {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-1);
+  }
+
+  .estimateValue {
+    display: block;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary-600);
+  }
+}
+
+.recommendations {
+  border-top: 1px solid var(--color-border-primary);
+  padding-top: var(--spacing-5);
+}
+
+.suggestionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.suggestion {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+// 通用按钮样式
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.retestButton {
+  :global(.adm-button) {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-500),
+      var(--color-primary-600)
+    ) !important;
+    border: none !important;
+    border-radius: var(--radius-lg) !important;
+    font-weight: var(--font-weight-semibold) !important;
+    font-size: var(--font-size-base) !important;
+    height: 48px !important;
+    box-shadow: var(--shadow-button) !important;
+    transition: all 0.2s ease !important;
+
+    &:active {
+      transform: translateY(1px) !important;
+      box-shadow: var(--shadow-button-active) !important;
+    }
+
+    &:disabled {
+      background: var(--color-bg-tertiary) !important;
+      color: var(--color-text-disabled) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+  }
+}
+
+.homeButton {
+  :global(.adm-button) {
+    border: 1px solid var(--color-border-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    background: var(--color-surface-primary) !important;
+    color: var(--color-text-secondary) !important;
+    font-weight: var(--font-weight-medium) !important;
+    font-size: var(--font-size-base) !important;
+    height: 48px !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      border-color: var(--color-border-focus) !important;
+      background: var(--color-bg-secondary) !important;
+    }
+
+    &:active {
+      transform: translateY(1px) !important;
+    }
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .scoreCard {
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-600),
+      var(--color-primary-700)
+    ) !important;
+  }
+}

@@ -1,0 +1,167 @@
+// 单词选择题组件
+.quizContainer {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// 问题区域
+.questionSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.questionTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  text-align: left;
+  margin: 0;
+}
+
+// 选项容器
+.optionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  margin: 0 auto;
+  width: 100%;
+}
+
+// 选项样式
+.option {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-5) var(--spacing-6);
+  background: var(--color-surface-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.5s ease;
+  min-height: 60px;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.optionSelected {
+  .option();
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+}
+
+.optionCorrect {
+  .option();
+  background: var(--color-success-100);
+  cursor: default;
+}
+
+.optionIncorrect {
+  .option();
+  background: var(--color-error-100);
+  cursor: default;
+}
+
+.optionDisabled {
+  .option();
+  opacity: 0.5;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: var(--color-border-primary);
+  }
+}
+
+.optionContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  width: 100%;
+  justify-content: center; // 当只有中文时垂直居中
+  min-height: 28px; // 确保有最小高度
+}
+
+.optionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.partOfSpeech {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.headword {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.optionText {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .wordSection {
+    background: var(--color-surface-primary);
+  }
+
+  .option {
+    background: var(--color-surface-primary);
+  }
+
+  .optionSelected {
+    background: var(--color-primary-900);
+  }
+
+  .optionCorrect {
+    background: var(--color-success-700);
+  }
+
+  .optionIncorrect {
+    background: var(--color-error-700);
+  }
+
+  .partOfSpeech {
+    background: var(--color-surface-secondary);
+    color: var(--color-text-tertiary);
+  }
+}
+
+// 进入动画
+@media (prefers-reduced-motion: no-preference) {
+  .quizContainer {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .optionsContainer {
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+    animation-delay: 0.15s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

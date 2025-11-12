@@ -1,0 +1,47 @@
+//// 聊天配置表：定义AI会话的角色、模型、参数等相关配置
+model ChatConfig {
+  id           String        @id @default(uuid())    /// 配置ID，主键，UUID自动生成
+  systemPrompt String?                              /// AI角色/身份描述，支持用户自定义Prompt，如设定AI性格、任务
+  roleName     String?                              /// “AI角色”显示名称，例：写作批改老师、口语助教
+  aiModel      String?                              /// 关联AI模型名称，如 gpt-4、qwen 等
+  temperature  Float?                               /// AI模型生成内容的多样性参数，值越大结果越随机
+  tags         String[]                             /// 配置自定义标签，便于检索/分类
+  extraConfig  Json?                                /// 其它扩展配置，支持定制API参数等
+  chats        ChatSession[]                        /// 反向关系：关联的历史会话列表
+}
+
+//// 消息角色类型枚举，用于标记消息发送者身份
+enum MessageRole {
+  user        /// 普通用户消息
+  assistant   /// AI助手消息
+  system      /// 系统生成消息（如引导或操作提示）
+  teacher     /// “教师”身份（AI或真人批改等扩展）
+}
+
+//// 聊天会话表：记录每个用户的历史会话
+model ChatSession {
+  id         String         @id @default(uuid())    /// 会话ID，主键
+  userId     String                                    /// 用户ID，对应系统唯一标识
+  title      String?                                   /// 会话标题，支持自定义
+  configId   String?                                   /// 会话配置外键，关联ChatConfig
+  config     ChatConfig?   @relation(fields: [configId], references: [id]) /// 关联配置详情
+  isArchived Boolean         @default(false)           /// 是否归档，已归档仅作历史保留
+  createdAt  DateTime        @default(now())           /// 创建时间
+  updatedAt  DateTime        @updatedAt                /// 最后活跃时间
+  messages   ChatMessage[]                             /// 会话下所有消息
+}
+
+//// 聊天消息表：包含文本、音频、多模元信息等，保存全部交流内容
+model ChatMessage {
+  id         String     @id @default(uuid())      /// 消息ID，主键
+  sessionId  String                                  /// 所属会话ID，外键
+  session    ChatSession @relation(fields: [sessionId], references: [id]) /// 所属会话详情
+  role       MessageRole                             /// 发送方身份（关联枚举）
+  content    String                                  /// 消息内容文本
+  audioUrl   String?                                 /// 音频消息URL，若有语音输入/输出
+  error      String?                                 /// 消息生成错误信息，如AI回复失败等
+  meta       Json?                                   /// 额外元数据，支持扩展如置信度/结构化标记
+  quotedMessageId String?                            /// 所引用回复的消息ID，支持多轮上下文
+  createdAt  DateTime   @default(now())              /// 消息创建时间
+  updatedAt  DateTime   @updatedAt                   /// 消息最后更新时间
+}

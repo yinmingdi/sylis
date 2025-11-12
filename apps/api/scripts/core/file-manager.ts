@@ -19,23 +19,20 @@ export class FileManager {
 
     let indexContent = '// Auto-generated module exports\n\n';
 
-    // 导出DTO接口
-    const dtoFiles = new Map<string, string[]>();
+    // 导出DTO接口（去重）
+    const dtoFiles = new Map<string, Set<string>>();
     moduleDtos.forEach(({ className, fileName }) => {
       const fileNameWithoutExt = fileName.replace('.ts', '');
       if (!dtoFiles.has(fileNameWithoutExt)) {
-        dtoFiles.set(fileNameWithoutExt, []);
+        dtoFiles.set(fileNameWithoutExt, new Set());
       }
-      dtoFiles.get(fileNameWithoutExt)!.push(className);
+      dtoFiles.get(fileNameWithoutExt)!.add(className);
     });
 
-    // 生成导出语句
+    // 生成导出语句 (使用 export type 而不是 import type)
     dtoFiles.forEach((classNames, fileName) => {
-      indexContent += TypeHelper.generateImportStatement(
-        classNames,
-        `./${fileName}`,
-        true,
-      );
+      const classNamesArray = Array.from(classNames);
+      indexContent += `export type { ${classNamesArray.join(', ')} } from './${fileName}';\n`;
     });
 
     // 导出类型文件
@@ -93,11 +90,22 @@ export class FileManager {
     // 生成导入语句
     typeImports.forEach((imports, fileName) => {
       if (imports.length > 0) {
-        content += TypeHelper.generateImportStatement(
-          imports,
-          `./types/${fileName}`,
-          true,
-        );
+        // 处理跨模块导入
+        if (fileName.startsWith('__cross_module__')) {
+          const actualPath = fileName.replace('__cross_module__', '');
+          content += TypeHelper.generateImportStatement(
+            imports,
+            actualPath,
+            true,
+          );
+        } else {
+          // 处理类型文件导入
+          content += TypeHelper.generateImportStatement(
+            imports,
+            `./types/${fileName}`,
+            true,
+          );
+        }
       }
     });
 
@@ -116,6 +124,7 @@ export class FileManager {
     usedTypes: Set<string>,
   ): Map<string, string[]> {
     const typeImports = new Map<string, string[]>();
+    const crossModuleImports = new Map<string, string[]>();
 
     for (const dependency of analysisResult.dependencies) {
       const usedImports = dependency.imports.filter((imp) =>
@@ -124,6 +133,34 @@ export class FileManager {
 
       if (usedImports.length === 0) continue;
 
+      // 处理跨模块 DTO 依赖
+      if (
+        dependency.isRelativeImport &&
+        dependency.resolvedPath.includes('/dto/')
+      ) {
+        // 从路径中提取模块名和文件名
+        // 例如: .../modules/quiz/dto/quiz.dto.ts -> ../quiz/quiz.dto
+        const match = dependency.resolvedPath.match(
+          /modules\/([^/]+)\/dto\/([^/]+)\.ts$/,
+        );
+        if (match) {
+          const [, moduleName, fileName] = match;
+          const importPath = `../${moduleName}/${fileName}`;
+
+          if (!crossModuleImports.has(importPath)) {
+            crossModuleImports.set(importPath, []);
+          }
+          const existing = crossModuleImports.get(importPath)!;
+          usedImports.forEach((imp) => {
+            if (!existing.includes(imp)) {
+              existing.push(imp);
+            }
+          });
+        }
+        continue;
+      }
+
+      // 处理类型文件依赖
       let fileName: string;
 
       if (dependency.isRelativeImport && dependency.isTypeFile) {
@@ -149,6 +186,11 @@ export class FileManager {
         }
       });
     }
+
+    // 合并跨模块导入到结果中（使用特殊前缀区分）
+    crossModuleImports.forEach((imports, path) => {
+      typeImports.set(`__cross_module__${path}`, imports);
+    });
 
     return typeImports;
   }

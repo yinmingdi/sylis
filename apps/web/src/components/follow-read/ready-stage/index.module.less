@@ -1,0 +1,66 @@
+.readyStage {
+  text-align: center;
+
+  .playReferenceButton {
+    margin-bottom: 24px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: #f0f9ff;
+    border: 1px solid #bae7ff;
+    color: #1890ff;
+
+    .playIcon {
+      margin-right: 4px;
+    }
+  }
+
+  .startButtonContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .startButton {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #1890ff;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: #40a9ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    .micIcon {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+// 暗色主题支持
+@media (prefers-color-scheme: dark) {
+  .readyStage {
+    .textDisplay {
+      .englishText {
+        color: #fff;
+      }
+
+      .phoneticText {
+        color: #ccc;
+      }
+    }
+  }
+}

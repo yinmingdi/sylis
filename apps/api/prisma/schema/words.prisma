@@ -3,22 +3,25 @@
  * 存储单词的基本信息和各种关联数据
  */
 model Word {
-  id                String            @id @default(uuid())
-  headword          String /// 单词拼写
-  ukPhonetic        String? /// 英式音标
-  usPhonetic        String? /// 美式音标
-  ukAudio           String? /// 英式发音音频URL
-  usAudio           String? /// 美式发音音频URL
-  star              Int               @default(0) /// 星级或重要程度
-  exampleSentences  ExampleSentence[] /// 关联例句
-  meanings          Meaning[] /// 关联词义
-  phrases           Phrase[] /// 关联短语
-  userWords         UserWord[] /// 关联用户单词学习状态
-  wordBooks         WordBook[] /// 关联单词书籍
-  wordRelationsTo   WordRelation[]    @relation("WordRelationsTo") /// 单词关联关系（目标）
-  wordRelationsFrom WordRelation[]    @relation("WordRelationsFrom") /// 单词关联关系（来源）
-  quizQuestions     QuizQuestion[] /// 关联测验题目
-  quizChoiceOptions QuizChoiceOption[] /// 关联测验选择项
+  id                 String              @id @default(uuid())
+  headword           String              @unique /// 单词拼写（添加唯一索引）
+  ukPhonetic         String?             /// 英式音标
+  usPhonetic         String?             /// 美式音标
+  ukAudio            String?             /// 英式发音音频URL
+  usAudio            String?             /// 美式发音音频URL
+  star               Int                 @default(0) /// 星级或重要程度
+  exampleSentences   ExampleSentence[]   /// 关联例句
+  realExamSentences  RealExamSentence[]  /// 关联真题例句
+  meanings           Meaning[]           /// 关联词义
+  phrases            Phrase[]            /// 关联短语
+  userWords          UserWord[]          /// 关联用户单词学习状态
+  wordBooks          WordBook[]          /// 关联单词书籍
+  wordRelationsTo    WordRelation[]      @relation("WordRelationsTo") /// 单词关联关系（目标）
+  wordRelationsFrom  WordRelation[]      @relation("WordRelationsFrom") /// 单词关联关系（来源）
+  quizQuestions      QuizQuestion[]      /// 关联测验题目
+  quizChoiceOptions  QuizChoiceOption[]  /// 关联测验选择项
+  dailyWordProgress  DailyWordProgress[] /// 每日学习进度（Prisma 要求的反向关系，实际业务中不使用）
+  collectedWords     CollectedWord[]     /// 被收藏的记录
 }
 
 /**
@@ -62,6 +65,30 @@ model ExampleSentence {
   word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
 
   @@unique([wordId, sentenceEn]) /// 确保同一单词的相同英文例句唯一
+}
+
+/**
+ * 真题例句模型
+ * 存储来自真实考试的例句及其来源信息
+ */
+model RealExamSentence {
+  id         String   @id @default(uuid())
+  wordId     String   /// 单词ID
+  sentenceEn String   /// 英文例句（原句）
+  sentenceCn String?  /// 中文翻译（可选）
+
+  // 来源信息
+  paper      String   /// 试卷套数（如"第三套"）
+  level      String   /// 考试级别（如"CET4", "CET6", "考研"）
+  year       String   /// 年份（如"2017.6"）
+  examType   String   /// 题型（如"阅读理解", "听力", "写作"）
+
+  word       Word     @relation(fields: [wordId], references: [id]) /// 关联单词
+  createdAt  DateTime @default(now())
+
+  @@unique([wordId, sentenceEn, year, level]) /// 确保同一单词相同例句在同一年份同一级别考试中唯一
+  @@index([level, year]) /// 按级别和年份查询的索引
+  @@index([wordId, level]) /// 按单词和级别查询的索引
 }
 
 /**

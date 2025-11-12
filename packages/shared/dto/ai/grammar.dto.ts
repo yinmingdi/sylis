@@ -1,35 +1,22 @@
 // Auto-generated shared DTO interface
 // This file includes all necessary type dependencies
 
-import type { GrammarTag } from "./types/grammar.types";
-
-// Function call 返回的原始数据结构
-export interface GrammarAnalysisFunctionCallResult {
-  sentence: string;
-  translation: string;
-  aiExplanation: string;
-  grammarAnalysis: Array<{
-    component: string;
-    text: string;
-    explanation: string;
-  }>;
-  phraseAccumulation: string[];
-}
+import type { GrammarTag } from './types/grammar.types';
 
 export interface ParseGrammarReqDto {
   sentence: string;
-  analysisLevel?: "basic" | "detailed" | "comprehensive";
+  analysisLevel?: 'basic' | 'detailed' | 'comprehensive';
   includePhrases?: boolean;
   includeClauses?: boolean;
-  learnerLevel?: "beginner" | "intermediate" | "advanced";
+  learnerLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface ParseMultipleGrammarReqDto {
   sentences: string[];
-  analysisLevel?: "basic" | "detailed" | "comprehensive";
+  analysisLevel?: 'basic' | 'detailed' | 'comprehensive';
   includePhrases?: boolean;
   includeClauses?: boolean;
-  learnerLevel?: "beginner" | "intermediate" | "advanced";
+  learnerLevel?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface WordGrammarAnalysisDto {
@@ -69,8 +56,8 @@ export interface ClauseAnalysisDto {
 
 export interface SentenceGrammarAnalysisDto {
   sentence: string;
-  sentenceType: "declarative" | "interrogative" | "imperative" | "exclamatory";
-  sentenceStructure: "simple" | "compound" | "complex" | "compound-complex";
+  sentenceType: 'declarative' | 'interrogative' | 'imperative' | 'exclamatory';
+  sentenceStructure: 'simple' | 'compound' | 'complex' | 'compound-complex';
   words: WordGrammarAnalysisDto[];
   phrases: PhraseAnalysisDto[];
   clauses: ClauseAnalysisDto[];
@@ -84,7 +71,6 @@ export interface ParseGrammarResDto {
   success: boolean;
   message: string;
   error?: string;
-  // 新增字段用于前端显示
   translation?: string;
   aiExplanation?: string;
   grammarAnalysis?: Array<{
@@ -104,3 +90,4 @@ export interface ParseMultipleGrammarResDto {
   message: string;
   errors?: string[];
 }
+

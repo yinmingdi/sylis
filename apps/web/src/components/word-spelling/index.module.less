@@ -1,0 +1,258 @@
+// 单词拼写组件
+.spellingContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; // 防止动画时出现滚动条
+}
+
+// 主要内容区域
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-1);
+  overflow: hidden; // 防止动画时内容溢出
+}
+
+// 单词区域
+.wordSection {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wordDisplay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-1);
+  // 共享的文字样式
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.1em;
+}
+
+.spellingInput {
+  text-align: center;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--color-success);
+  min-width: 300px;
+  padding: var(--spacing-4) var(--spacing-6);
+  transition: none;
+  cursor: text;
+  white-space: nowrap;
+
+  &:focus {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    outline: none;
+  }
+
+  &:empty:before {
+    content: attr(data-placeholder);
+    color: transparent;
+  }
+
+  &[contenteditable='false'] {
+    cursor: default;
+  }
+}
+
+// 结果字符样式
+.resultChar {
+  display: inline-block;
+  text-align: center;
+}
+
+.correctChar {
+  color: var(--color-success);
+}
+
+.incorrectChar {
+  color: var(--color-error);
+}
+
+.missingChar {
+  color: var(--color-error);
+  vertical-align: baseline;
+}
+
+// 解释区域
+.meaningSection {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  min-height: 30px; // 固定最小高度，避免中英文切换时抖动
+  // 共享的文字样式
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  line-height: 1.5; // 统一行高
+}
+
+// 底部按钮区域
+.bottomActions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--spacing-6) 0;
+}
+
+.actionButton {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-neutral-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 20px !important;
+  color: var(--color-text-primary);
+
+  &:hover {
+    background: var(--color-neutral-300);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    background: var(--color-neutral-400);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+      background: var(--color-neutral-200);
+    }
+  }
+}
+
+.checkButton .buttonIcon {
+  color: var(--color-success-500);
+}
+
+// 抖动动画
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-8px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+.shakeAnimation {
+  animation: shake 0.5s ease-in-out;
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .actionButton {
+    background: var(--color-neutral-700);
+    color: var(--color-text-primary);
+
+    &:hover {
+      background: var(--color-neutral-600);
+    }
+
+    &:active {
+      background: var(--color-neutral-500);
+    }
+
+    &:disabled {
+      &:hover {
+        background: var(--color-neutral-700);
+      }
+    }
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 进入动画
+@media (prefers-reduced-motion: no-preference) {
+  .spellingContainer {
+    animation: fadeInUp var(--duration-normal) var(--ease-out) forwards;
+  }
+
+  .wordSection {
+    animation: fadeInUp var(--duration-normal) var(--ease-out) forwards;
+    animation-delay: 0.1s;
+    opacity: 0;
+  }
+
+  .meaningSection {
+    animation: fadeInUp var(--duration-normal) var(--ease-out) forwards;
+    animation-delay: 0.2s;
+    opacity: 0;
+  }
+
+  .bottomActions {
+    animation: fadeInUp var(--duration-normal) var(--ease-out) forwards;
+    animation-delay: 0.3s;
+    opacity: 0;
+  }
+}
+
+// 减少动画
+@media (prefers-reduced-motion: reduce) {
+  .spellingContainer,
+  .wordSection,
+  .meaningSection,
+  .bottomActions {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    opacity: 1 !important;
+  }
+}
+
+// Modal 样式
+.wordSpellingModal {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  background-color: var(--color-surface-primary);
+}
+
+.wordSpellingModalBody {
+  overflow: hidden !important;
+}

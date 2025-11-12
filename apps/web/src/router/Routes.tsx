@@ -1,26 +1,35 @@
 import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
 
-const Login = lazy(() => import('../pages/login'));
-const Register = lazy(() => import('../pages/register'));
-const Onboarding = lazy(() => import('../pages/onboarding'));
+const Login = lazy(() => import('../pages/auth/login'));
+const Register = lazy(() => import('../pages/auth/register'));
+const Onboarding = lazy(() => import('../pages/auth/onboarding'));
 const Layout = lazy(() => import('../layout')); // 引导页
-const VocabularyLearning = lazy(() => import('../pages/vocabulary-learning'));
-const WordLearning = lazy(() => import('../pages/vocabulary-practice'));
-const Ai = lazy(() => import('../pages/ai'));
-const Reading = lazy(() => import('../pages/reading'));
-const Me = lazy(() => import('../pages/me'));
-const Profile = lazy(() => import('../pages/profile'));
-const BookDetail = lazy(() => import('../pages/book-detail'));
-const VocabularyBook = lazy(() => import('../pages/vocabulary-book'));
-const Test = lazy(() => import('../pages/test'));
-const Settings = lazy(() => import('../pages/settings/index'));
-const Books = lazy(() => import('../pages/books'));
-const Chat = lazy(() => import('../pages/chat'));
-const StoryVocabulary = lazy(() => import('../pages/story-vocabulary'));
-const ClozeTest = lazy(() => import('../pages/cloze-test'));
-const AITest = lazy(() => import('../pages/ai-test'));
-const GrammarAnalysis = lazy(() => import('../pages/grammar-analysis'));
+const VocabularyLearning = lazy(() => import('../pages/vocabulary/learning'));
+const WordLearning = lazy(() => import('../pages/vocabulary/practice'));
+const Ai = lazy(() => import('../pages/ai/index'));
+const Explore = lazy(() => import('../pages/explore/index'));
+const Me = lazy(() => import('../pages/me/index'));
+const Profile = lazy(() => import('../pages/me/profile'));
+const BookDetail = lazy(() => import('../pages/common/book-detail'));
+const VocabularyBook = lazy(() => import('../pages/common/vocabulary-book'));
+const VocabularyTest = lazy(() => import('../pages/me/test'));
+const VocabularyTestExam = lazy(() => import('../pages/me/test-exam'));
+const VocabularyTestHistory = lazy(() => import('../pages/me/test-history'));
+const Settings = lazy(() => import('../pages/me/settings'));
+const Books = lazy(() => import('../pages/common/books'));
+const Chat = lazy(() => import('../pages/ai/chat'));
+const ClozeReading = lazy(() => import('../pages/ai/cloze-reading'));
+const GrammarAnalysis = lazy(() => import('../pages/ai/grammar-analysis'));
+const WordDetail = lazy(() => import('../pages/common/word-detail'));
+const Reddit = lazy(() => import('../pages/explore/reddit'));
+const RedditSubreddit = lazy(() => import('../pages/explore/reddit/subreddit'));
+const RedditPostDetail = lazy(() => import('../pages/explore/reddit/post-detail'));
+const RedditSaved = lazy(() => import('../pages/explore/reddit/saved'));
+const RedditHistory = lazy(() => import('../pages/explore/reddit/history'));
+const Articles = lazy(() => import('../pages/common/articles'));
+const ArticleDetail = lazy(() => import('../pages/common/articles/article-detail'));
+
 interface RouteMeta {
   requireAuth?: boolean;
 }
@@ -69,8 +78,8 @@ export const routes: RouteItem[] = [
         element: <Ai />,
       },
       {
-        path: '/reading',
-        element: <Reading />,
+        path: '/explore',
+        element: <Explore />,
       },
       {
         path: '/me',
@@ -87,8 +96,18 @@ export const routes: RouteItem[] = [
         meta: { requireAuth: true },
       },
       {
-        path: '/test',
-        element: <Test />,
+        path: '/vocabulary-test',
+        element: <VocabularyTest />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/vocabulary-test-exam',
+        element: <VocabularyTestExam />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/vocabulary-test-history',
+        element: <VocabularyTestHistory />,
         meta: { requireAuth: true },
       },
       {
@@ -107,28 +126,58 @@ export const routes: RouteItem[] = [
         meta: { requireAuth: true },
       },
       {
+        path: '/word-detail/:word',
+        element: <WordDetail />,
+        meta: { requireAuth: true },
+      },
+      {
         path: '/chat',
         element: <Chat />,
         meta: { requireAuth: true },
       },
       {
-        path: '/story-vocabulary',
-        element: <StoryVocabulary />,
-        meta: { requireAuth: true },
-      },
-      {
-        path: '/cloze-test',
-        element: <ClozeTest />,
-        meta: { requireAuth: true },
-      },
-      {
-        path: '/ai-test',
-        element: <AITest />,
+        path: '/cloze-reading/:articleId',
+        element: <ClozeReading />,
         meta: { requireAuth: true },
       },
       {
         path: '/grammar-analysis',
         element: <GrammarAnalysis />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/reddit',
+        element: <Reddit />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/reddit/subreddit/:name',
+        element: <RedditSubreddit />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/reddit/post/:id',
+        element: <RedditPostDetail />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/reddit/saved',
+        element: <RedditSaved />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/reddit/history',
+        element: <RedditHistory />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/articles',
+        element: <Articles />,
+        meta: { requireAuth: true },
+      },
+      {
+        path: '/articles/:id',
+        element: <ArticleDetail />,
         meta: { requireAuth: true },
       },
     ]

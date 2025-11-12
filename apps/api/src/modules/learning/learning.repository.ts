@@ -16,6 +16,11 @@ export class LearningRepository {
     });
   }
 
+  // 创建用户学习记录的别名方法
+  createUserLearning(userId: string) {
+    return this.addUserLearning(userId);
+  }
+
   updateUserLearning(params: Partial<UserLearning>) {
     return this.prismaService.userLearning.update({
       where: { id: params.id },

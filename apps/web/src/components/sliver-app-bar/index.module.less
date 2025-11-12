@@ -1,0 +1,199 @@
+// ========================================
+// SliverAppBar 样式（基于 PageHeader）
+// ========================================
+
+.sliverAppBarContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  
+  // 适配刘海屏
+  padding-top: env(safe-area-inset-top);
+  
+  // 玻璃态效果
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-surface-primary);
+    opacity: 0.95;
+    z-index: -1;
+  }
+}
+
+.sliverAppBarContainer.elevated {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.appBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4);
+  min-height: 60px;
+  width: 100%;
+  position: relative;
+  background: var(--color-surface-primary);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.leading,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+  min-width: 48px;
+  z-index: 10;
+  position: relative;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--line-height-tight);
+  transition: color var(--duration-normal) var(--ease-out);
+  pointer-events: none;
+  min-width: 0;
+  
+  > * {
+    pointer-events: auto;
+  }
+  
+  &.titleCenter {
+    text-align: center;
+    justify-content: center;
+  }
+  
+  &.titleStart {
+    text-align: left;
+    justify-content: flex-start;
+  }
+  
+  &.titleFullWidth {
+    pointer-events: auto;
+  }
+}
+
+.actionButton {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  padding: 0;
+  
+  &:hover {
+    background: var(--color-bg-secondary);
+  }
+  
+  &:active {
+    background: var(--color-bg-tertiary);
+    transform: scale(0.95);
+  }
+}
+
+.bottom {
+  border-top: 1px solid #f0f0f0;
+  background: inherit;
+  width: 100%;
+}
+
+.flexibleSpace {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+  transition: height 0.2s ease, opacity 0.2s ease;
+}
+
+// ========================================
+// 响应式适配
+// ========================================
+
+@media (max-width: 480px) {
+  .appBar {
+    padding: var(--spacing-3);
+  }
+  
+  .title {
+    font-size: var(--font-size-base);
+  }
+}
+
+// ========================================
+// SliverAppBar 特殊样式
+// ========================================
+
+.sliverAppBarContainer {
+  position: relative;
+  overflow: hidden;
+  
+  &.pinned {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+}
+
+.sliverAppBarContent {
+  position: relative;
+  width: 100%;
+  transition: height 0.1s ease-out;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+// ========================================
+// 暗色模式支持
+// ========================================
+
+[data-theme='dark'] {
+  .actionButton {
+    &:hover {
+      background: var(--color-neutral-800);
+    }
+    
+    &:active {
+      background: var(--color-neutral-700);
+    }
+  }
+}
+
+// ========================================
+// 高对比度模式
+// ========================================
+
+@media (prefers-contrast: high) {
+  .sliverAppBarContainer {
+    border-bottom: 2px solid var(--color-border-primary);
+  }
+}

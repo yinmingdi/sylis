@@ -1,4 +1,9 @@
-import { Project, ClassDeclaration, SourceFile } from 'ts-morph';
+import {
+  Project,
+  ClassDeclaration,
+  SourceFile,
+  EnumDeclaration,
+} from 'ts-morph';
 import { config, patterns } from '../config';
 import { fileSystem } from '../utils/file-system';
 import { logger } from '../utils/logger';
@@ -47,6 +52,14 @@ export class DtoGenerator {
       this.fileManager.cleanGeneratedFiles();
     }
 
+    // 在watch模式下，移除已存在的源文件，强制重新加载
+    files.forEach((filePath) => {
+      const existingFile = this.project.getSourceFile(filePath);
+      if (existingFile) {
+        this.project.removeSourceFile(existingFile);
+      }
+    });
+
     const sourceFiles = this.project.addSourceFilesAtPaths(files);
     const moduleDtos: ModuleDtos = {};
 
@@ -78,8 +91,9 @@ export class DtoGenerator {
   ): Promise<void> {
     const classes = sourceFile.getClasses().filter((c) => c.isExported());
     const interfaces = sourceFile.getInterfaces().filter((i) => i.isExported());
+    const enums = sourceFile.getEnums().filter((e) => e.isExported());
 
-    if (classes.length === 0 && interfaces.length === 0) {
+    if (classes.length === 0 && interfaces.length === 0 && enums.length === 0) {
       return;
     }
 
@@ -118,6 +132,7 @@ export class DtoGenerator {
     let content = this.generateFileContent(
       classes,
       interfaces,
+      enums,
       analysisResult,
       usedTypes,
       moduleDtos[moduleName],
@@ -135,6 +150,7 @@ export class DtoGenerator {
   private generateFileContent(
     classes: ClassDeclaration[],
     interfaces: any[],
+    enums: EnumDeclaration[],
     analysisResult: DependencyAnalysisResult | null,
     usedTypes: Set<string>,
     moduleDtos: DtoInfo[],
@@ -146,6 +162,9 @@ export class DtoGenerator {
     });
     interfaces.forEach((intf) => {
       TypeHelper.generateInterfaceFromInterface(intf, usedTypes);
+    });
+    enums.forEach((enumDecl) => {
+      TypeHelper.generateEnumFromEnum(enumDecl, usedTypes);
     });
 
     // 生成文件头部
@@ -167,6 +186,14 @@ export class DtoGenerator {
       if (interfaceName) {
         moduleDtos.push({ className: interfaceName, fileName });
         content += TypeHelper.generateInterfaceFromInterface(intf, usedTypes);
+      }
+    });
+
+    enums.forEach((enumDecl) => {
+      const enumName = enumDecl.getName();
+      if (enumName) {
+        moduleDtos.push({ className: enumName, fileName });
+        content += TypeHelper.generateEnumFromEnum(enumDecl, usedTypes);
       }
     });
 

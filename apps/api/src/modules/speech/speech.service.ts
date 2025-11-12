@@ -31,21 +31,22 @@ export class SpeechService {
   ): Promise<PronunciationAssessResDto> {
     try {
       this.logger.log(
-        `开始发音评估 - 文本: "${assessDto.text}", 文件: ${fileName}`,
+        `开始发音评估 - 文本: "${assessDto.referenceText}", 文件: ${fileName}`,
       );
 
-      // 创建FormData
+      // 创建FormData（参数名必须与 Python 服务匹配）
       const formData = new FormData();
       formData.append('audio', audioBuffer, {
         filename: fileName,
         contentType: 'audio/wav',
       });
-      formData.append('text', assessDto.text);
+      formData.append('text', assessDto.referenceText); // Python 服务期望 'text'
       formData.append('language', assessDto.language || 'en-US');
       formData.append(
-        'enable_phoneme',
-        String(assessDto.enable_phoneme ?? true),
+        'enable_phoneme', // Python 服务期望 'enable_phoneme'
+        String(assessDto.enablePhonemeDetail ?? true),
       );
+      formData.append('save_debug_info', 'false'); // 不保存调试信息
 
       // 调用Python服务
       const response: AxiosResponse<PronunciationAssessResDto> =
@@ -56,7 +57,7 @@ export class SpeechService {
             headers: {
               ...formData.getHeaders(),
             },
-            timeout: 30000, // 30秒超时
+            timeout: 900000, // 900秒超时
           },
         );
 

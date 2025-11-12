@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class PronunciationAssessReqDto {
   @ApiProperty({
@@ -7,7 +8,7 @@ export class PronunciationAssessReqDto {
     example: 'Hello world',
   })
   @IsString()
-  text: string;
+  referenceText: string;
 
   @ApiPropertyOptional({
     description: '语言代码',
@@ -16,12 +17,23 @@ export class PronunciationAssessReqDto {
   })
   @IsOptional()
   @IsString()
-  language?: string = 'en-US';
+  language?: string;
 
   @ApiPropertyOptional({
-    description: '是否启用音素分析',
+    description: '是否返回音素详细信息',
     default: true,
   })
   @IsOptional()
-  enable_phoneme?: any;
+  @Transform(({ value }) => {
+    // FormData 传递的是字符串，需要转换为布尔值
+    if (value === undefined || value === null) {
+      return true;
+    }
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true';
+    }
+    return Boolean(value);
+  })
+  @IsBoolean()
+  enablePhonemeDetail?: boolean;
 }

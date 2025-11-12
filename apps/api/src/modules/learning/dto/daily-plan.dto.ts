@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { WordLearningStatus } from '@prisma/client';
+import { WordLearningStatus, FirstRoundChoice } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -9,9 +9,11 @@ import {
   Min,
   Max,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 
 import { QuizChoiceDataDto } from '../../quiz/dto/quiz.dto';
+import { WordDetailResDto } from '../../words/dto/word-detail.dto';
 
 /**
  * 获取每日计划请求DTO
@@ -46,6 +48,7 @@ export class UpdateWordStatusReqDto {
 
   @ApiProperty({ description: '是否答对', required: false })
   @IsOptional()
+  @IsBoolean()
   isCorrect?: boolean;
 
   @ApiProperty({
@@ -59,6 +62,16 @@ export class UpdateWordStatusReqDto {
   @Min(1)
   @Max(5)
   difficultyRating?: number;
+
+  // ⭐️ 新增：每日进度相关字段
+  @ApiProperty({
+    description: '第一轮识别时的选择',
+    enum: FirstRoundChoice,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(FirstRoundChoice)
+  firstRoundChoice?: FirstRoundChoice;
 }
 
 /**
@@ -74,24 +87,13 @@ export class BatchUpdateWordsReqDto {
 
 /**
  * 每日计划单词信息
+ * 继承单词详情，添加学习状态相关字段
  */
-export class DailyPlanWordDto {
-  @ApiProperty({ description: '单词ID' })
-  id: string;
-
-  @ApiProperty({ description: '单词拼写' })
-  headword: string;
-
-  @ApiProperty({ description: '英式音标' })
-  ukPhonetic?: string;
-
-  @ApiProperty({ description: '美式音标' })
-  usPhonetic?: string;
-
-  @ApiProperty({ description: '英式发音音频URL' })
+export class DailyPlanWordDto extends WordDetailResDto {
+  @ApiProperty({ description: '英式发音音频URL', required: false })
   ukAudio?: string;
 
-  @ApiProperty({ description: '美式发音音频URL' })
+  @ApiProperty({ description: '美式发音音频URL', required: false })
   usAudio?: string;
 
   @ApiProperty({ description: '星级' })
@@ -100,7 +102,7 @@ export class DailyPlanWordDto {
   @ApiProperty({ description: '学习状态', enum: WordLearningStatus })
   status: WordLearningStatus;
 
-  @ApiProperty({ description: '下次复习时间' })
+  @ApiProperty({ description: '下次复习时间', required: false })
   nextReviewAt?: Date;
 
   @ApiProperty({ description: '难度系数' })
@@ -108,21 +110,6 @@ export class DailyPlanWordDto {
 
   @ApiProperty({ description: '重复次数' })
   repetition: number;
-
-  @ApiProperty({ description: '词义列表' })
-  meanings: Array<{
-    id: string;
-    partOfSpeech: string;
-    meaningCn: string;
-    meaningEn?: string;
-  }>;
-
-  @ApiProperty({ description: '例句列表' })
-  exampleSentences: Array<{
-    id: string;
-    sentenceEn: string;
-    sentenceCn: string;
-  }>;
 
   @ApiProperty({
     description: '选择题数据',
@@ -133,6 +120,23 @@ export class DailyPlanWordDto {
   @ValidateNested()
   @Type(() => QuizChoiceDataDto)
   quizChoice?: QuizChoiceDataDto;
+
+  @ApiProperty({
+    description: '每日学习进度',
+    required: false,
+  })
+  @IsOptional()
+  dailyProgress?: {
+    firstRoundChoice: FirstRoundChoice;
+    correctCount: number;
+    requiredCorrectCount: number;
+    isCompletedToday: boolean;
+  };
+
+  @ApiProperty({ description: '是否已收藏到生词本', required: false })
+  @IsOptional()
+  @IsBoolean()
+  isCollected?: boolean;
 }
 
 /**
@@ -176,4 +180,76 @@ export class SRSCalculationResult {
 
   @ApiProperty({ description: '下次复习时间' })
   nextReviewAt: Date;
+}
+
+/**
+ * 获取新单词请求DTO
+ */
+export class GetNewWordsReqDto {
+  @ApiProperty({ description: '书籍ID' })
+  @IsString()
+  bookId: string;
+
+  @ApiProperty({ description: '日期 (YYYY-MM-DD)', required: false })
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @ApiProperty({ description: '是否重新生成学习计划', required: false })
+  @IsOptional()
+  @IsBoolean()
+  regenerate?: boolean;
+}
+
+/**
+ * 获取新单词响应DTO
+ */
+export class GetNewWordsResDto {
+  @ApiProperty({ description: '单词列表', type: [DailyPlanWordDto] })
+  words: DailyPlanWordDto[];
+
+  @ApiProperty({ description: '计划数量' })
+  plannedCount: number;
+
+  @ApiProperty({ description: '已完成数量' })
+  completedCount: number;
+
+  @ApiProperty({ description: '日期' })
+  date: string;
+}
+
+/**
+ * 获取复习单词请求DTO
+ */
+export class GetReviewWordsReqDto {
+  @ApiProperty({ description: '书籍ID' })
+  @IsString()
+  bookId: string;
+
+  @ApiProperty({ description: '日期 (YYYY-MM-DD)', required: false })
+  @IsOptional()
+  @IsString()
+  date?: string;
+
+  @ApiProperty({ description: '是否重新生成学习计划', required: false })
+  @IsOptional()
+  @IsBoolean()
+  regenerate?: boolean;
+}
+
+/**
+ * 获取复习单词响应DTO
+ */
+export class GetReviewWordsResDto {
+  @ApiProperty({ description: '单词列表', type: [DailyPlanWordDto] })
+  words: DailyPlanWordDto[];
+
+  @ApiProperty({ description: '计划数量' })
+  plannedCount: number;
+
+  @ApiProperty({ description: '已完成数量' })
+  completedCount: number;
+
+  @ApiProperty({ description: '日期' })
+  date: string;
 }

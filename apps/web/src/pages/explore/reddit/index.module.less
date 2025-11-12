@@ -1,0 +1,33 @@
+// Reddit 首页样式 - 类似图片中的设计
+
+// 搜索栏容器
+.searchContainer {
+  padding: var(--spacing-4);
+  background: var(--color-surface-primary);
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.searchBar {
+  :global(.adm-search-bar) {
+    background: var(--color-bg-primary);
+    border: 2px solid #ff6b35;
+    border-radius: var(--radius-lg);
+
+    .adm-search-bar-input-box {
+      background: transparent;
+    }
+
+    .adm-search-bar-input {
+      font-size: var(--font-size-base);
+      color: var(--color-text-primary);
+
+      &::placeholder {
+        color: var(--color-text-tertiary);
+      }
+    }
+
+    .adm-search-bar-search {
+      color: var(--color-text-secondary);
+    }
+  }
+}

@@ -3,13 +3,13 @@ import { Module } from '@nestjs/common';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
 import { GrammarAnalysisService } from './grammar-analysis.service';
-import { ReadingGenerationService } from './reading-generation.service';
+import { LoggerModule } from '../logger/logger.module';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [RedisModule],
+  imports: [RedisModule, LoggerModule],
   controllers: [AIController],
-  providers: [AIService, ReadingGenerationService, GrammarAnalysisService],
-  exports: [AIService, ReadingGenerationService, GrammarAnalysisService],
+  providers: [AIService, GrammarAnalysisService],
+  exports: [AIService, GrammarAnalysisService],
 })
 export class AIModule {}

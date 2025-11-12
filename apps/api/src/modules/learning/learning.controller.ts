@@ -4,7 +4,6 @@ import {
   Post,
   Req,
   Get,
-  UseGuards,
   Query,
   Patch,
   Param,
@@ -16,18 +15,20 @@ import { DailyPlanService } from './daily-plan.service';
 import { AddBookReqDto } from './dto/addBook.dto';
 import { BookDetailResDto } from './dto/book-detail.dto';
 import { LearningService } from './learning.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetCurrentBookResDto } from './dto/currentBook.dto';
 import {
   GetDailyPlanReqDto,
   GetDailyPlanResDto,
   UpdateWordStatusReqDto,
   BatchUpdateWordsReqDto,
+  GetNewWordsReqDto,
+  GetNewWordsResDto,
+  GetReviewWordsReqDto,
+  GetReviewWordsResDto,
 } from './dto/daily-plan.dto';
 import { LearningStatsResDto } from './dto/learning-stats.dto';
 
 @ApiTags('学习模块')
-@UseGuards(JwtAuthGuard)
 @Controller('learning')
 export class LearningController {
   constructor(
@@ -71,6 +72,26 @@ export class LearningController {
     @Req() req: Request,
   ): Promise<GetDailyPlanResDto> {
     return this.dailyPlanService.getDailyPlan(req.user!.id, dto);
+  }
+
+  @Get('new-words')
+  @ApiOperation({ summary: '获取新单词列表' })
+  @ApiResponse({ type: GetNewWordsResDto })
+  async getNewWords(
+    @Query() dto: GetNewWordsReqDto,
+    @Req() req: Request,
+  ): Promise<GetNewWordsResDto> {
+    return this.dailyPlanService.getNewWords(req.user!.id, dto);
+  }
+
+  @Get('review-words')
+  @ApiOperation({ summary: '获取复习单词列表' })
+  @ApiResponse({ type: GetReviewWordsResDto })
+  async getReviewWords(
+    @Query() dto: GetReviewWordsReqDto,
+    @Req() req: Request,
+  ): Promise<GetReviewWordsResDto> {
+    return this.dailyPlanService.getReviewWords(req.user!.id, dto);
   }
 
   @Patch('word-status')

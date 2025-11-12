@@ -128,6 +128,14 @@ export class DistributedLockService {
       } catch (error) {
         this.logger.warn(`缓存结果失败: ${key}`, error);
       }
+    } else if (!result.success) {
+      // 如果执行失败，删除可能存在的旧缓存
+      try {
+        await this.redisService.del(cacheKey);
+        this.logger.debug(`删除失败的缓存: ${key}`);
+      } catch (error) {
+        this.logger.warn(`删除缓存失败: ${key}`, error);
+      }
     }
 
     return result;

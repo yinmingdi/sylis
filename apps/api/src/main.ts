@@ -10,8 +10,11 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // 自动过滤未定义的属性
-      forbidNonWhitelisted: true, // 禁止未定义的属性
+      forbidNonWhitelisted: false, // 允许未定义的属性（对于 multipart/form-data 必需）
       transform: true, // 自动转换类型
+      transformOptions: {
+        enableImplicitConversion: true, // 启用隐式类型转换
+      },
     }),
   );
 

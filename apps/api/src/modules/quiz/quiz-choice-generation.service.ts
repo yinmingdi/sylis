@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { AIService } from '../ai/ai.service';
 import { QuizChoicePrompts } from './prompts/quiz-choice.prompts';
+import { QuizChoiceTools } from './tools/quiz-choice.tools';
 import {
   QuizChoiceGenerationParams,
   QuizChoiceGenerationResult,
@@ -88,44 +89,54 @@ export class QuizChoiceGenerationService {
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
-      max_tokens: 2000,
+      tools: QuizChoiceTools.tools,
+      tool_choice: QuizChoiceTools.getToolChoice('return_quiz_questions'),
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('AI 返回空内容');
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    if (
+      !toolCall ||
+      toolCall.type !== 'function' ||
+      toolCall.function.name !== 'return_quiz_questions'
+    ) {
+      throw new Error('AI未返回预期的function call');
     }
 
-    return this.parseAIResponse(content);
+    const argumentsStr = toolCall.function.arguments;
+    if (!argumentsStr) {
+      throw new Error('Function call参数为空');
+    }
+
+    return this.parseAIResponse(argumentsStr);
   }
 
   /**
    * 解析AI返回的内容
    */
-  private parseAIResponse(content: string): QuizChoiceQuestion[] {
+  private parseAIResponse(argumentsStr: string): QuizChoiceQuestion[] {
     try {
-      // 提取JSON部分
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
-      if (!jsonMatch) {
-        // 如果没有找到代码块，尝试直接解析整个内容
-        const trimmed = content.trim();
-        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-          return JSON.parse(trimmed);
-        }
-        throw new Error('无法找到有效的JSON格式数据');
+      const parsed = JSON.parse(argumentsStr);
+
+      // 检查是否包含 questions 字段
+      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+        throw new Error('AI返回的数据格式不正确，缺少 questions 数组');
       }
 
-      const jsonData = JSON.parse(jsonMatch[1]);
+      // 清理数据：去除多余的空格，补充 type 字段
+      const cleanedQuestions = parsed.questions.map((q: any) => ({
+        ...q,
+        type: q.type || 'choice', // 如果 AI 没返回 type，自动补充
+        answer: q.answer?.trim(),
+        options: q.options?.map((opt: any) => ({
+          word: opt.word?.trim(),
+          tranCn: opt.tranCn?.trim(),
+        })),
+      }));
 
-      // 确保返回的是数组
-      if (!Array.isArray(jsonData)) {
-        throw new Error('AI返回的数据不是数组格式');
-      }
-
-      return jsonData;
+      return cleanedQuestions;
     } catch (error) {
       this.logger.error('解析AI返回内容失败:', error);
-      this.logger.debug('AI原始返回内容:', content);
+      this.logger.debug('AI原始返回内容:', argumentsStr);
       throw new Error(`解析AI返回内容失败: ${error.message}`);
     }
   }
@@ -181,12 +192,17 @@ export class QuizChoiceGenerationService {
         return { isValid: false, reason: `第 ${i + 1} 题缺少answer字段` };
       }
 
-      // 检查答案是否在选项中
+      // 检查答案是否在选项中（使用宽松比较：trim + 大小写不敏感）
       const answerExists = question.options.some(
-        (option) => option.word === question.answer,
+        (option) =>
+          option.word?.trim().toLowerCase() ===
+          question.answer?.trim().toLowerCase(),
       );
       if (!answerExists) {
-        return { isValid: false, reason: `第 ${i + 1} 题的答案不在选项中` };
+        return {
+          isValid: false,
+          reason: `第 ${i + 1} 题的答案 "${question.answer}" 不在选项 [${question.options.map((o) => o.word).join(', ')}] 中`,
+        };
       }
 
       // 检查是否至少使用了一个原始单词

@@ -1,9 +1,15 @@
 @import './normalize.less';
 @import './design-tokens.less';
+@import './animations.less';
+@import './utils.less';
 
 // 全局样式重置和基础设置
 * {
   box-sizing: border-box;
+  user-select: text;
+  -moz-user-select: text;
+  -webkit-user-select: text;
+  -ms-user-select: text;
 }
 
 html {
@@ -23,9 +29,16 @@ body {
   background: var(--color-bg-secondary);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);
+
   transition:
     background-color var(--duration-normal) var(--ease-out),
     color var(--duration-normal) var(--ease-out);
+}
+
+html,
+body,
+#root {
+  height: 100%;
 }
 
 // 移除 antd-mobile 的默认样式覆盖
@@ -97,21 +110,6 @@ textarea {
 ::selection {
   background: var(--color-primary-100);
   color: var(--color-primary-900);
-}
-
-// 焦点样式
-:focus-visible {
-  outline: 2px solid var(--color-border-focus);
-  outline-offset: 2px;
-}
-
-// 无障碍增强
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
 
 // 高对比度模式支持

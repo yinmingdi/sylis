@@ -1,0 +1,57 @@
+.commonList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.listItem {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed var(--color-border-primary);
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .primaryRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .primaryText {
+    flex: 1;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .secondaryText {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .metadata {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-text-tertiary);
+    margin: 0;
+  }
+
+  .highlightedWord {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+}

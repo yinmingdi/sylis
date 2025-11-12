@@ -1,11 +1,14 @@
 // Auto-generated shared DTO interface
 // This file includes all necessary type dependencies
 
-import type { WordLearningStatus } from "./types/prisma.types";
+import type { WordLearningStatus, FirstRoundChoice } from './types/prisma.types';
+import type { QuizChoiceDataDto } from '../quiz/quiz.dto';
+import type { WordDetailResDto } from '../words/word-detail.dto';
 
 export interface GetDailyPlanReqDto {
   bookId: string;
   date?: string;
+  regenerate?: boolean;
 }
 
 export interface UpdateWordStatusReqDto {
@@ -13,17 +16,14 @@ export interface UpdateWordStatusReqDto {
   status: WordLearningStatus;
   isCorrect?: boolean;
   difficultyRating?: number;
+  firstRoundChoice?: FirstRoundChoice;
 }
 
 export interface BatchUpdateWordsReqDto {
   words: UpdateWordStatusReqDto[];
 }
 
-export interface DailyPlanWordDto {
-  id: string;
-  headword: string;
-  ukPhonetic?: string;
-  usPhonetic?: string;
+export interface DailyPlanWordDto extends WordDetailResDto {
   ukAudio?: string;
   usAudio?: string;
   star: number;
@@ -31,18 +31,14 @@ export interface DailyPlanWordDto {
   nextReviewAt?: Date;
   easeFactor: number;
   repetition: number;
-  meanings: Array<{
-    id: string;
-    partOfSpeech: string;
-    meaningCn: string;
-    meaningEn?: string;
-  }>;
-  exampleSentences: Array<{
-    id: string;
-    sentenceEn: string;
-    sentenceCn: string;
-  }>;
-  quizChoice: any;
+  quizChoice?: QuizChoiceDataDto;
+  dailyProgress?: {
+    firstRoundChoice: FirstRoundChoice;
+    correctCount: number;
+    requiredCorrectCount: number;
+    isCompletedToday: boolean;
+  };
+  isCollected?: boolean;
 }
 
 export interface GetDailyPlanResDto {
@@ -61,3 +57,30 @@ export interface SRSCalculationResult {
   easeFactor: number;
   nextReviewAt: Date;
 }
+
+export interface GetNewWordsReqDto {
+  bookId: string;
+  date?: string;
+  regenerate?: boolean;
+}
+
+export interface GetNewWordsResDto {
+  words: DailyPlanWordDto[];
+  plannedCount: number;
+  completedCount: number;
+  date: string;
+}
+
+export interface GetReviewWordsReqDto {
+  bookId: string;
+  date?: string;
+  regenerate?: boolean;
+}
+
+export interface GetReviewWordsResDto {
+  words: DailyPlanWordDto[];
+  plannedCount: number;
+  completedCount: number;
+  date: string;
+}
+

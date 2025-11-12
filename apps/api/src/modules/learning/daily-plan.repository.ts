@@ -4,6 +4,8 @@ import {
   Word,
   UserWord,
   LearningLog,
+  DailyWordProgress,
+  FirstRoundChoice,
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -96,7 +98,7 @@ export class DailyPlanRepository {
         },
       },
       orderBy: {
-        id: 'asc',
+        id: 'asc', // 保持顺序
       },
     });
   }
@@ -118,9 +120,6 @@ export class DailyPlanRepository {
         userWords: {
           some: {
             userLearningId,
-            status: {
-              in: [WordLearningStatus.LEARNING, WordLearningStatus.REVIEW],
-            },
           },
         },
       },
@@ -132,23 +131,25 @@ export class DailyPlanRepository {
         },
       },
       orderBy: {
-        id: 'asc',
+        id: 'asc', // 保持顺序
       },
     });
   }
 
   /**
-   * 获取新词（通过WordBook关联）
+   * 查找今天需要学习的新词
    */
   async findNewWordsForToday(
     userLearningId: string,
     bookId: string,
     limit: number,
+    excludeWordIds: string[] = [],
   ): Promise<WordWithDetails[]> {
     const wordBooks = await this.prismaService.wordBook.findMany({
       where: {
         bookId,
         word: {
+          id: excludeWordIds.length > 0 ? { notIn: excludeWordIds } : undefined,
           userWords: {
             none: {
               userLearningId,
@@ -168,40 +169,45 @@ export class DailyPlanRepository {
         },
       },
       orderBy: {
-        wordRank: 'asc', // 按照单词在书中的排序（wordRank）升序排列
+        wordRank: 'asc',
       },
       take: limit,
     });
 
-    // 提取单词数据
     return wordBooks.map((wb) => wb.word);
   }
 
   /**
-   * 获取复习词
+   * 查找今天需要复习的单词
    */
   async findReviewWordsForToday(
     userLearningId: string,
     bookId: string,
     targetDate: Date,
     limit: number,
+    excludeWordIds: string[] = [],
   ): Promise<WordWithDetails[]> {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     return this.prismaService.word.findMany({
       where: {
+        id: excludeWordIds.length > 0 ? { notIn: excludeWordIds } : undefined,
         wordBooks: {
           some: { bookId },
         },
         userWords: {
           some: {
             userLearningId,
-            status: {
-              in: [WordLearningStatus.LEARNING, WordLearningStatus.REVIEW],
-            },
             nextReviewAt: {
               lte: endOfDay,
+            },
+            status: {
+              in: [
+                WordLearningStatus.LEARNING,
+                WordLearningStatus.REVIEW,
+                WordLearningStatus.MASTERED,
+              ],
             },
           },
         },
@@ -213,12 +219,12 @@ export class DailyPlanRepository {
           where: { userLearningId },
         },
       },
+      take: limit,
       orderBy: {
         userWords: {
-          _count: 'desc',
+          _count: 'asc', // 优先复习次数少的
         },
       },
-      take: limit,
     });
   }
 
@@ -229,10 +235,12 @@ export class DailyPlanRepository {
     userLearningId: string,
     wordId: string,
   ): Promise<UserWord | null> {
-    return this.prismaService.userWord.findFirst({
+    return this.prismaService.userWord.findUnique({
       where: {
-        userLearningId,
-        wordId,
+        userLearningId_wordId: {
+          userLearningId,
+          wordId,
+        },
       },
     });
   }
@@ -244,8 +252,8 @@ export class DailyPlanRepository {
     userLearningId: string;
     wordId: string;
     status: WordLearningStatus;
-    lastReview: Date;
-    nextReviewAt: Date;
+    lastReview?: Date;
+    nextReviewAt?: Date;
     repetition: number;
     interval: number;
     easeFactor: number;
@@ -260,77 +268,248 @@ export class DailyPlanRepository {
    * 更新用户单词记录
    */
   async updateUserWord(
-    userWordId: string,
+    id: string,
     data: {
-      status: WordLearningStatus;
-      lastReview: Date;
-      nextReviewAt: Date;
-      repetition: number;
-      interval: number;
-      easeFactor: number;
-      errorCount: number;
+      status?: WordLearningStatus;
+      lastReview?: Date;
+      nextReviewAt?: Date;
+      repetition?: number;
+      interval?: number;
+      easeFactor?: number;
+      errorCount?: number;
     },
   ): Promise<UserWord> {
     return this.prismaService.userWord.update({
-      where: { id: userWordId },
+      where: { id },
       data,
     });
   }
 
   /**
-   * 更新学习日志进度
+   * 更新学习日志的完成进度（使用 upsert 以防记录不存在）
    */
   async updateLearningLogProgress(
     userLearningId: string,
     date: Date,
-    updateData: {
+    data: {
       completedNewCount?: { increment: number };
       completedReviewCount?: { increment: number };
     },
-  ): Promise<void> {
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-
-    const learningLog = await this.prismaService.learningLog.findUnique({
+  ) {
+    // 先查找是否存在
+    const existing = await this.prismaService.learningLog.findUnique({
       where: {
         userLearningId_date: {
           userLearningId,
-          date: targetDate,
+          date,
         },
       },
     });
 
-    if (!learningLog) return;
+    if (existing) {
+      // 存在则更新
+      return this.prismaService.learningLog.update({
+        where: {
+          userLearningId_date: {
+            userLearningId,
+            date,
+          },
+        },
+        data,
+      });
+    } else {
+      // 不存在则创建（默认值为 0，然后应用增量）
+      const newCount = data.completedNewCount?.increment || 0;
+      const reviewCount = data.completedReviewCount?.increment || 0;
 
-    if (Object.keys(updateData).length > 0) {
-      await this.prismaService.learningLog.update({
-        where: { id: learningLog.id },
-        data: updateData,
+      return this.prismaService.learningLog.create({
+        data: {
+          userLearningId,
+          date,
+          plannedNewCount: 0,
+          plannedReviewCount: 0,
+          completedNewCount: newCount,
+          completedReviewCount: reviewCount,
+        },
       });
     }
   }
 
   /**
-   * 更新学习日志的锁定单词ID
+   * 更新学习日志锁定的单词ID
    */
   async updateLearningLogWordIds(
     userLearningId: string,
     date: Date,
     plannedNewWordIds: string[],
     plannedReviewWordIds: string[],
-  ): Promise<void> {
-    const targetDate = new Date(date);
-    targetDate.setHours(0, 0, 0, 0);
-
-    await this.prismaService.learningLog.updateMany({
+  ) {
+    return this.prismaService.learningLog.update({
       where: {
-        userLearningId,
-        date: targetDate,
+        userLearningId_date: {
+          userLearningId,
+          date,
+        },
       },
       data: {
         plannedNewWordIds,
         plannedReviewWordIds,
       },
     });
+  }
+
+  /**
+   * 查找未完成的单词（昨天的）
+   */
+  async findUnfinishedWords(
+    userLearningId: string,
+    date: Date,
+  ): Promise<DailyWordProgress[]> {
+    return this.prismaService.dailyWordProgress.findMany({
+      where: {
+        userLearningId,
+        date,
+        isCompletedToday: false,
+      },
+    });
+  }
+
+  /**
+   * 根据单词ID批量获取单词
+   */
+  async findWordsByIds(
+    wordIds: string[],
+    userLearningId: string,
+  ): Promise<WordWithDetails[]> {
+    if (wordIds.length === 0) return [];
+
+    return this.prismaService.word.findMany({
+      where: {
+        id: {
+          in: wordIds,
+        },
+      },
+      include: {
+        meanings: true,
+        exampleSentences: true,
+        userWords: {
+          where: { userLearningId },
+        },
+      },
+    });
+  }
+
+  /**
+   * 查找今天某个单词的进度记录
+   */
+  async findDailyWordProgress(
+    userLearningId: string,
+    wordId: string,
+    date: Date,
+  ): Promise<DailyWordProgress | null> {
+    return this.prismaService.dailyWordProgress.findUnique({
+      where: {
+        userLearningId_wordId_date: {
+          userLearningId,
+          wordId,
+          date,
+        },
+      },
+    });
+  }
+
+  /**
+   * 批量查找每日进度
+   */
+  async findDailyWordProgressBatch(
+    userLearningId: string,
+    wordIds: string[],
+    date: Date,
+  ): Promise<DailyWordProgress[]> {
+    return this.prismaService.dailyWordProgress.findMany({
+      where: {
+        userLearningId,
+        wordId: {
+          in: wordIds,
+        },
+        date,
+      },
+    });
+  }
+
+  /**
+   * 创建或更新每日单词进度
+   */
+  async createOrUpdateDailyWordProgress(data: {
+    userLearningId: string;
+    wordId: string;
+    date: Date;
+    firstRoundChoice?: FirstRoundChoice;
+    correctCount?: number;
+    requiredCorrectCount?: number;
+    isCompletedToday?: boolean;
+  }): Promise<DailyWordProgress> {
+    return this.prismaService.dailyWordProgress.upsert({
+      where: {
+        userLearningId_wordId_date: {
+          userLearningId: data.userLearningId,
+          wordId: data.wordId,
+          date: data.date,
+        },
+      },
+      create: {
+        userLearningId: data.userLearningId,
+        wordId: data.wordId,
+        date: data.date,
+        firstRoundChoice: data.firstRoundChoice || FirstRoundChoice.NOT_STARTED,
+        correctCount: data.correctCount || 0,
+        requiredCorrectCount: data.requiredCorrectCount || 3,
+        isCompletedToday: data.isCompletedToday || false,
+      },
+      update: {
+        firstRoundChoice: data.firstRoundChoice,
+        correctCount: data.correctCount,
+        requiredCorrectCount: data.requiredCorrectCount,
+        isCompletedToday: data.isCompletedToday,
+      },
+    });
+  }
+
+  /**
+   * 查询单词是否被收藏（批量）
+   */
+  async findCollectedWordsBatch(
+    userLearningId: string,
+    wordIds: string[],
+  ): Promise<Map<string, boolean>> {
+    if (wordIds.length === 0) return new Map();
+
+    // 获取所有生词本
+    const notebooks = await this.prismaService.vocabularyNotebook.findMany({
+      where: { userLearningId },
+      select: { id: true },
+    });
+
+    if (notebooks.length === 0) return new Map();
+
+    const notebookIds = notebooks.map((n) => n.id);
+
+    // 查询收藏的单词
+    const collectedWords = await this.prismaService.collectedWord.findMany({
+      where: {
+        notebookId: { in: notebookIds },
+        wordId: { in: wordIds },
+      },
+      select: {
+        wordId: true,
+      },
+    });
+
+    // 构建 Map: wordId => isCollected
+    const collectionMap = new Map<string, boolean>();
+    wordIds.forEach((id) => collectionMap.set(id, false));
+    collectedWords.forEach((cw) => collectionMap.set(cw.wordId, true));
+
+    return collectionMap;
   }
 }

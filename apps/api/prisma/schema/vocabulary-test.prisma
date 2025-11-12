@@ -1,0 +1,43 @@
+/**
+ * 词汇量测试记录
+ * 记录用户的词汇量测试历史和结果
+ */
+model VocabularyTest {
+  id                  String                 @id @default(uuid())
+  userLearningId      String                 /// 所属用户学习记录ID
+  score               Int                    /// 测试分数（0-100）
+  correctCount        Int                    /// 正确题数
+  totalCount          Int                    /// 总题数
+  level               String                 /// 水平等级（如"初级水平"）
+  estimatedVocabulary Int                    /// 预估词汇量
+  timeSpent           Int                    /// 用时（秒）
+  startedAt           DateTime               @default(now()) /// 开始时间
+  completedAt         DateTime?              /// 完成时间
+  isCompleted         Boolean                @default(false) /// 是否完成
+  testAnswers         VocabularyTestAnswer[] /// 测试答题记录
+  userLearning        UserLearning           @relation(fields: [userLearningId], references: [id], onDelete: Cascade)
+
+  @@index([userLearningId, completedAt(sort: Desc)])
+  @@index([userLearningId, isCompleted])
+}
+
+/**
+ * 词汇量测试答题记录
+ * 记录每道题的答题情况
+ */
+model VocabularyTestAnswer {
+  id            String         @id @default(uuid())
+  testId        String         /// 所属测试ID
+  questionWord  String         /// 题目单词（直接存储文本）
+  options       String[]       /// 选项列表（存储为数组）
+  userAnswer    Int            /// 用户选择的答案索引（-1表示超时未答）
+  correctAnswer Int            /// 正确答案索引
+  isCorrect     Boolean        /// 是否正确
+  difficulty    String         /// 难度（easy/medium/hard）
+  timeSpent     Int            @default(0) /// 该题用时（秒）
+  createdAt     DateTime       @default(now()) /// 创建时间
+  test          VocabularyTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+}
+

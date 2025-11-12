@@ -1,0 +1,60 @@
+/**
+ * 收藏来源枚举
+ */
+enum CollectionSource {
+  MANUAL    /// 手动添加
+  READING   /// 阅读时添加
+  QUIZ      /// 测验错题
+  AI_CHAT   /// AI 对话
+  LISTENING /// 听力练习
+  WRITING   /// 写作纠错
+}
+
+/**
+ * 生词本（容器）
+ * 每个用户可以有多个生词本，用于分类管理收藏的单词
+ */
+model VocabularyNotebook {
+  id             String          @id @default(uuid())
+  userLearningId String          /// 所属用户学习记录ID
+  name           String          @default("我的生词本") /// 生词本名称
+  description    String?         /// 描述
+  coverColor     String?         @default("#1677ff") /// 封面颜色
+  icon           String?         /// 图标（emoji 或 icon name）
+  isDefault      Boolean         @default(false) /// 是否默认生词本
+  sortOrder      Int             @default(0) /// 排序（数字越小越靠前）
+  createdAt      DateTime        @default(now()) /// 创建时间
+  updatedAt      DateTime        @updatedAt /// 更新时间
+  userLearning   UserLearning    @relation(fields: [userLearningId], references: [id], onDelete: Cascade) /// 关联用户学习记录
+  collectedWords CollectedWord[] /// 该生词本下的所有收藏单词
+
+  @@index([userLearningId, isDefault])
+  @@index([userLearningId, sortOrder])
+}
+
+/**
+ * 收藏的单词
+ * 属于某个生词本的具体单词条目
+ */
+model CollectedWord {
+  id                String             @id @default(uuid())
+  notebookId        String             /// 所属生词本ID
+  wordId            String             /// 单词ID
+  source            CollectionSource?  @default(MANUAL) /// 来源
+  context           String?            /// 上下文（最多500字）
+  note              String?            /// 用户笔记
+  tags              String[]           @default([]) /// 自定义标签
+  isMarkedAsLearned Boolean            @default(false) /// 在生词本中标记为"已学会"
+  reviewCount       Int                @default(0) /// 在生词本中复习次数
+  addedAt           DateTime           @default(now()) /// 添加时间
+  updatedAt         DateTime           @updatedAt /// 更新时间
+  lastReviewedAt    DateTime?          /// 最后复习时间
+  notebook          VocabularyNotebook @relation(fields: [notebookId], references: [id], onDelete: Cascade) /// 关联生词本
+  word              Word               @relation(fields: [wordId], references: [id], onDelete: Cascade) /// 关联单词
+
+  @@unique([notebookId, wordId])
+  @@index([notebookId, addedAt(sort: Desc)])
+  @@index([notebookId, isMarkedAsLearned])
+  @@index([source])
+}
+

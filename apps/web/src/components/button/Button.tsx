@@ -5,7 +5,7 @@ import styles from './index.module.less';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** 按钮类型 */
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'underline';
   /** 按钮尺寸 */
   size?: 'small' | 'medium' | 'large';
   /** 加载状态 */
@@ -20,6 +20,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   shape?: 'default' | 'round' | 'circle';
   /** 是否块级按钮 */
   block?: boolean;
+  /** 下划线颜色（仅对 underline variant 有效） */
+  underlineColor?: string;
   /** 子元素 */
   children?: React.ReactNode;
 }
@@ -33,6 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
   iconRight,
   shape = 'default',
   block = false,
+  underlineColor = '#ff9500',
   children,
   className,
   onClick,
@@ -90,9 +93,15 @@ export const Button: React.FC<ButtonProps> = ({
     );
   };
 
+  // 为 underline variant 添加自定义样式
+  const customStyle = variant === 'underline' ? {
+    '--underline-color': underlineColor
+  } as React.CSSProperties : undefined;
+
   return (
     <button
       className={classNames}
+      style={customStyle}
       disabled={disabled || loading}
       onClick={handleClick}
       {...props}

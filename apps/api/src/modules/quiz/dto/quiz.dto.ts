@@ -59,10 +59,20 @@ export class QuizChoiceOptionDto {
   @IsNotEmpty()
   wordId: string;
 
-  @ApiProperty({ description: '选项文本' })
+  @ApiProperty({ description: '单词拼写' })
   @IsString()
   @IsNotEmpty()
-  text: string;
+  headword: string;
+
+  @ApiProperty({ description: '中文释义' })
+  @IsString()
+  @IsNotEmpty()
+  meaningCn: string;
+
+  @ApiProperty({ description: '词性', required: false })
+  @IsOptional()
+  @IsString()
+  partOfSpeech?: string;
 }
 
 export class QuizChoiceDataDto {

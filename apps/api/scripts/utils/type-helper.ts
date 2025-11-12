@@ -2,6 +2,7 @@ import {
   ClassDeclaration,
   PropertyDeclaration,
   InterfaceDeclaration,
+  EnumDeclaration,
 } from 'ts-morph';
 import { patterns } from '../config';
 import { logger } from './logger';
@@ -20,7 +21,20 @@ export class TypeHelper {
     const className = cls.getName();
     if (!className) return '';
 
-    let content = `export interface ${className} {\n`;
+    // 检查是否有继承
+    const extendsClause = cls.getExtends();
+    const baseClass = extendsClause?.getText();
+
+    let content = `export interface ${className}`;
+
+    // 如果有继承，添加 extends 子句
+    if (baseClass) {
+      content += ` extends ${baseClass}`;
+      // 记录基类为使用的类型
+      this.recordUsedTypes(baseClass, usedTypes);
+    }
+
+    content += ' {\n';
     const properties = cls.getProperties();
 
     properties.forEach((prop: PropertyDeclaration) => {
@@ -39,6 +53,37 @@ export class TypeHelper {
   }
 
   /**
+   * 从 TypeScript 枚举生成枚举内容
+   */
+  static generateEnumFromEnum(
+    enumDecl: EnumDeclaration,
+    usedTypes: Set<string> = new Set(),
+  ): string {
+    const enumName = enumDecl.getName();
+    if (!enumName) return '';
+
+    let content = `export enum ${enumName} {\n`;
+
+    const members = enumDecl.getMembers();
+    members.forEach((member) => {
+      const memberName = member.getName();
+      const memberValue = member.getValue();
+
+      // 记录使用的类型
+      this.recordUsedTypes(memberName, usedTypes);
+
+      if (typeof memberValue === 'string') {
+        content += `  ${memberName} = '${memberValue}',\n`;
+      } else {
+        content += `  ${memberName} = ${memberValue},\n`;
+      }
+    });
+
+    content += '}\n\n';
+    return content;
+  }
+
+  /**
    * 从 TypeScript 接口生成接口内容
    */
   static generateInterfaceFromInterface(
@@ -48,7 +93,22 @@ export class TypeHelper {
     const interfaceName = intf.getName();
     if (!interfaceName) return '';
 
-    let content = `export interface ${interfaceName} {\n`;
+    // 检查是否有继承
+    const extendsClauses = intf.getExtends();
+    const baseInterfaces = extendsClauses.map((clause) => clause.getText());
+
+    let content = `export interface ${interfaceName}`;
+
+    // 如果有继承，添加 extends 子句
+    if (baseInterfaces.length > 0) {
+      content += ` extends ${baseInterfaces.join(', ')}`;
+      // 记录所有基接口为使用的类型
+      baseInterfaces.forEach((baseInterface) => {
+        this.recordUsedTypes(baseInterface, usedTypes);
+      });
+    }
+
+    content += ' {\n';
     const properties = intf.getProperties();
 
     properties.forEach((prop) => {

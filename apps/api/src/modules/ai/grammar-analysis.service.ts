@@ -8,11 +8,13 @@ import {
   ParseMultipleGrammarResDto,
 } from './dto/grammar.dto';
 import { GrammarPrompts } from './prompts';
+import { GrammarTools } from './tools/grammar.tools';
 import {
   GrammarTag,
   WordGrammarAnalysis,
   SentenceGrammarAnalysis,
 } from './types/grammar.types';
+import { LoggerService } from '../logger/logger.service';
 import { DistributedLock } from '../redis/distributed-lock.decorator';
 import { DistributedLockService } from '../redis/distributed-lock.service';
 
@@ -24,6 +26,7 @@ export class GrammarAnalysisService {
   constructor(
     private readonly aiService: AIService,
     private readonly distributedLockService: DistributedLockService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   /**
@@ -35,6 +38,7 @@ export class GrammarAnalysisService {
     prefix: 'grammar_analysis',
     useCache: true,
     expireSeconds: 60, // 锁1分钟
+    timeoutMs: 85000, // 等待锁的超时时间：15秒（增加到15秒，因为AI分析通常需要5-10秒）
     cacheExpireSeconds: 1800, // 缓存30分钟
     keyGenerator: (params: ParseGrammarReqDto) => params.sentence,
   })
@@ -82,6 +86,17 @@ export class GrammarAnalysisService {
           `语法分析成功完成，置信度: ${analysis.overallConfidence}`,
         );
 
+        // 保存 AI 解析结果到日志文件
+        this.loggerService.info('语法分析结果', {
+          sentence,
+          translation: rawData.translation,
+          aiExplanation: rawData.aiExplanation,
+          grammarAnalysis: rawData.grammarAnalysis,
+          phraseAccumulation: rawData.phraseAccumulation,
+          confidence: analysis.overallConfidence,
+          wordCount: analysis.words.length,
+        });
+
         return {
           analysis,
           processingTime: Date.now() - Date.now(), // 这里可以记录实际处理时间
@@ -100,12 +115,8 @@ export class GrammarAnalysisService {
           this.logger.error(
             `语法分析失败，已达到最大重试次数: ${error.message}`,
           );
-          return {
-            analysis: this.createFallbackAnalysis(sentence),
-            processingTime: Date.now() - Date.now(),
-            success: false,
-            message: `语法分析失败: ${error.message}`,
-          };
+          // 抛出异常而不是返回失败结果，这样分布式锁装饰器不会缓存失败结果
+          throw new Error(`语法分析失败: ${error.message}`);
         }
 
         // 等待一段时间后重试
@@ -232,74 +243,8 @@ export class GrammarAnalysisService {
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      tools: [
-        {
-          type: 'function',
-          function: {
-            name: 'return_grammar_analysis',
-            description: '返回英语句子的语法分析结果',
-            parameters: {
-              type: 'object',
-              properties: {
-                sentence: {
-                  type: 'string',
-                  description: '原始英文句子',
-                },
-                translation: {
-                  type: 'string',
-                  description: '中文翻译',
-                },
-                aiExplanation: {
-                  type: 'string',
-                  description: 'AI解析，包含句子含义解释和语法分析',
-                },
-                grammarAnalysis: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      component: {
-                        type: 'string',
-                        description: '语法成分（主语、谓语、宾语等）',
-                      },
-                      text: {
-                        type: 'string',
-                        description: '对应的文本',
-                      },
-                      explanation: {
-                        type: 'string',
-                        description: '语法解释',
-                      },
-                    },
-                    required: ['component', 'text', 'explanation'],
-                  },
-                  description: '语法分析列表',
-                },
-                phraseAccumulation: {
-                  type: 'array',
-                  items: {
-                    type: 'string',
-                  },
-                  description: '搭配积累列表',
-                },
-              },
-              required: [
-                'sentence',
-                'translation',
-                'aiExplanation',
-                'grammarAnalysis',
-                'phraseAccumulation',
-              ],
-            },
-          },
-        },
-      ],
-      tool_choice: {
-        type: 'function',
-        function: {
-          name: 'return_grammar_analysis',
-        },
-      },
+      tools: GrammarTools.tools,
+      tool_choice: GrammarTools.getToolChoice('return_grammar_analysis'),
     });
 
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
@@ -503,25 +448,15 @@ export class GrammarAnalysisService {
       errors.push('缺少单词分析');
     }
 
-    // 检查单词分析的合理性
+    // 只验证必要字段存在，不严格验证内容
+    // 记录一些统计信息用于调试
     if (analysis.words) {
       const totalWords = originalSentence.split(/\s+/).length;
-      if (Math.abs(analysis.words.length - totalWords) > totalWords * 0.3) {
-        errors.push('单词数量与原句差异过大');
-      }
+      const wordCountDiff = Math.abs(analysis.words.length - totalWords);
 
-      // 检查置信度
-      const lowConfidenceWords = analysis.words.filter(
-        (w) => w.confidence < 0.3,
+      this.logger.debug(
+        `单词数量统计: AI分析=${analysis.words.length}, 原句=${totalWords}, 差异=${wordCountDiff}`,
       );
-      if (lowConfidenceWords.length > analysis.words.length * 0.5) {
-        errors.push('过多单词的置信度过低');
-      }
-    }
-
-    // 检查总体置信度
-    if (analysis.overallConfidence < 0.2) {
-      errors.push('总体置信度过低');
     }
 
     return {

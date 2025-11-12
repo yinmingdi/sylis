@@ -1,0 +1,88 @@
+// ========================================
+// View 布局容器样式
+// ========================================
+
+.pageView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+
+  &.resizeToAvoidKeyboard {
+    // iOS 键盘适配
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.pageViewAppBar {
+  flex-shrink: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.pageViewBody {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  position: relative;
+  padding: var(--spacing-3);
+
+  &.extendBehindAppBar {
+    flex: 1;
+    margin-top: 0;
+  }
+
+  &.extendBody {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+.pageViewAppBarOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.pageViewBottomNav {
+  flex-shrink: 0;
+  width: 100%;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 90;
+}
+
+.pageViewBottomNavOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 90;
+}
+
+.pageViewFab {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  z-index: 110;
+}
+
+// ========================================
+// 暗色模式支持
+// ========================================
+
+@media (prefers-color-scheme: dark) {
+  .pageViewBottomNav,
+  .pageViewBottomNavOverlay {
+    background: #1a1a1a;
+    border-color: #333;
+  }
+}

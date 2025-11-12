@@ -1,9 +1,10 @@
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vite';
+import svgr from 'vite-plugin-svgr';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), svgr()],
 
   css: {
     modules: {
@@ -13,7 +14,9 @@ export default defineConfig({
     preprocessorOptions: {
       less: {
         javascriptEnabled: true,
-        // 这里可以添加全局 less 变量等配置
+        // 全局注入 utils.less，让所有 mixin 在所有文件中可用
+        // 使用相对路径，相对于每个 Less 文件的位置
+        additionalData: `@import "src/styles/utils.less";`,
       },
     },
   },

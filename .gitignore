@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+/papper
+
 # Editor directories and files
 .idea
 .DS_Store
@@ -36,6 +38,7 @@ build/
 dist/
 *.egg-info/
 *.egg
+
 
 
 

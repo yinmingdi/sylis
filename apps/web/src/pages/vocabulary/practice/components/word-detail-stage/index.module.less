@@ -1,0 +1,31 @@
+// 单词详情阶段样式
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+}
+
+.scrollContent {
+  flex: 1;
+  overflow-y: auto;
+}
+
+// 下一词按钮区域
+.nextWordSection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wordDetailStage {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+// 响应式设计
+@media (max-width: 375px) {
+  .nextWordSection {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+}

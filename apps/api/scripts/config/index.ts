@@ -21,7 +21,7 @@ export class ScriptConfig {
     this.backendDtoDir = join(this.scriptsDir, '../../src/modules');
     this.sharedDtoDir = join(
       this.scriptsDir,
-      '../../../../../packages/shared/dto',
+      '../../../../packages/shared/dto',
     );
     this.tsConfigPath = join(this.scriptsDir, '../../tsconfig.json');
   }

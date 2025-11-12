@@ -26,6 +26,42 @@
   --color-error: #ff006e;
   --color-info: #3a86ff;
 
+  // Success 色阶 - 绿色系
+  --color-success-50: #e6fff8;
+  --color-success-100: #ccfff1;
+  --color-success-200: #99ffe3;
+  --color-success-300: #66ffd5;
+  --color-success-400: #33edc0;
+  --color-success-500: #06d6a0;
+  --color-success-600: #05ab80;
+  --color-success-700: #048060;
+  --color-success-800: #035540;
+  --color-success-900: #022b20;
+
+  // Error 色阶 - 粉红色系
+  --color-error-50: #ffe6f0;
+  --color-error-100: #ffcce1;
+  --color-error-200: #ff99c3;
+  --color-error-300: #ff66a5;
+  --color-error-400: #ff3387;
+  --color-error-500: #ff006e;
+  --color-error-600: #cc0058;
+  --color-error-700: #990042;
+  --color-error-800: #66002c;
+  --color-error-900: #330016;
+
+  // Warning 色阶 - 黄色系
+  --color-warning-50: #fffaeb;
+  --color-warning-100: #fff5d6;
+  --color-warning-200: #ffebad;
+  --color-warning-300: #ffe085;
+  --color-warning-400: #ffd65c;
+  --color-warning-500: #ffd23f;
+  --color-warning-600: #cca832;
+  --color-warning-700: #997e26;
+  --color-warning-800: #665419;
+  --color-warning-900: #332a0d;
+
   // 中性色系 - 灰度
   --color-neutral-0: #ffffff;
   --color-neutral-50: #fafbfc;
@@ -86,9 +122,11 @@
 :root {
   // 字体族
   --font-family-sans:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+  --font-family-mono:
+    'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
 
   // 字体大小
   --font-size-xs: 0.75rem; // 12px
@@ -149,10 +187,14 @@
 
 :root {
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-sm:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-base:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-md:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-lg:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
   // 特殊阴影
@@ -194,82 +236,4 @@
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-// ==================== 断点系统 ====================
-
-// 媒体查询变量 (Less 语法)
-@screen-xs: 480px;
-@screen-sm: 640px;
-@screen-md: 768px;
-@screen-lg: 1024px;
-@screen-xl: 1280px;
-@screen-2xl: 1536px;
-
-// ==================== 实用工具类 ====================
-
-.text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.text-break {
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-// 动画类
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn var(--duration-normal) var(--ease-out);
-}
-
-.animate-slideUp {
-  animation: slideUp var(--duration-normal) var(--ease-out);
-}
-
-.animate-pulse {
-  animation: pulse 2s var(--ease-in-out) infinite;
 }

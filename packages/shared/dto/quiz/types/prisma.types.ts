@@ -1,6 +1,6 @@
-// Auto-generated type definitions
-// Source: @prisma/client
+// Auto-generated from Prisma schema
 
 export enum QuizQuestionType {
-  CHOICE = "CHOICE",
+  CHOICE = 'CHOICE',
 }
+

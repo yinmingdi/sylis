@@ -10,20 +10,31 @@ enum WordLearningStatus {
 }
 
 /**
+ * 第一轮识别时的用户选择
+ */
+enum FirstRoundChoice {
+  NOT_STARTED    /// 还未开始第一轮识别
+  RECOGNIZED     /// 点击了"认识"
+  NOT_RECOGNIZED /// 点击了"不认识"
+}
+
+/**
  * 用户学习记录模型
  * 记录用户的整体学习状态和进度
  */
 model UserLearning {
-  id            String     @id @default(uuid())
-  userId        String     @unique /// 用户ID，唯一标识
-  createdAt     DateTime   @default(now()) /// 创建时间
-  updatedAt     DateTime   @updatedAt /// 更新时间
-  currentBookId String? /// 当前学习的书籍ID
-  books         UserBook[] /// 关联的用户书籍
-  user          User       @relation(fields: [userId], references: [id]) /// 关联用户
-  words         UserWord[] /// 关联的用户单词
-
-  LearningLog LearningLog[] /// 学习日志
+  id                  String                 @id @default(uuid())
+  userId              String                 @unique /// 用户ID，唯一标识
+  createdAt           DateTime               @default(now()) /// 创建时间
+  updatedAt           DateTime               @updatedAt /// 更新时间
+  currentBookId       String?                /// 当前学习的书籍ID
+  books               UserBook[]             /// 关联的用户书籍
+  user                User                   @relation(fields: [userId], references: [id]) /// 关联用户
+  words               UserWord[]             /// 关联的用户单词
+  LearningLog         LearningLog[]          /// 学习日志
+  DailyWordProgress   DailyWordProgress[]    /// 每日单词学习进度
+  vocabularyNotebooks VocabularyNotebook[]   /// 用户的生词本
+  vocabularyTests     VocabularyTest[]       /// 用户的词汇量测试记录
 }
 
 /**
@@ -95,4 +106,33 @@ model LearningLog {
   @@unique([userLearningId, date])
   /// 按日期索引便于查询
   @@index([date])
+}
+
+/**
+ * 每日单词学习进度模型
+ * 记录单词在某一天的详细学习状态和答题进度
+ */
+model DailyWordProgress {
+  id                   String           @id @default(uuid())
+  userLearningId       String           /// 用户学习记录ID
+  wordId               String           /// 单词ID
+  date                 DateTime         /// 学习日期（标准化为当天开始时间）
+
+  firstRoundChoice     FirstRoundChoice @default(NOT_STARTED) /// 第一轮识别时的选择
+  correctCount         Int              @default(0) /// 当天答对次数
+  requiredCorrectCount Int              @default(3) /// 需要答对的次数
+  isCompletedToday     Boolean          @default(false) /// 当天是否完成
+
+  createdAt            DateTime         @default(now()) /// 创建时间
+  updatedAt            DateTime         @updatedAt /// 更新时间
+
+  userLearning         UserLearning     @relation(fields: [userLearningId], references: [id]) /// 关联用户学习记录
+  word                 Word             @relation(fields: [wordId], references: [id]) /// 关联单词
+
+  /// 保证同一用户同一单词同一天只有一条记录
+  @@unique([userLearningId, wordId, date])
+  /// 按日期查询的索引
+  @@index([date])
+  /// 查询某天未完成的单词的复合索引
+  @@index([userLearningId, date, isCompletedToday])
 }

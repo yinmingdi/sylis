@@ -1,8 +1,8 @@
 ---
-description:
-globs:
 alwaysApply: true
 ---
+
+### 项目规范
 
 - 前端: React、zustand、react-router-dom、typescript、antd-mobile,icon库 react-icons/ai
 - 后端api: NestJS、Prisma、PostgreSQL、redis、typescript,prisma使用6.7.0文件拆分
@@ -16,7 +16,12 @@ alwaysApply: true
   - 生成样式应当使用less的module语法
   - 生成的tsx，注意按功能拆分render函数避免复杂的render出现。
   - 文件夹使用xxx-xxx格式
-
+  - 组件有index.ts，[组件名].tsx,index.module.less组成，不要同时出现index.ts和index.tsx
+  - 前端接口定义从@sylis/shared/dto里来
+  - api接口都在对应的modules下，切api使用network下的request
+  - 加载动画适合使用骨架屏的时候都应该使用antd-mobile的骨架屏
+  - 不要响应式css代码
+  - 动画效果参考styles/animation和styles/utils
 - 后端文件要求
   - 接口dto文件请求dto为xxxReqDto，响应dto为 xxResDto
 

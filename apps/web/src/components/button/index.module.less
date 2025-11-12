@@ -1,5 +1,3 @@
-@import '../../styles/design-tokens.less';
-
 .button {
   position: relative;
   display: inline-flex;
@@ -13,36 +11,33 @@
   font-weight: var(--font-weight-medium);
   text-decoration: none;
   white-space: nowrap;
-  user-select: none;
   transition: all var(--duration-fast) var(--ease-out);
   border-radius: var(--radius-base);
   box-shadow: var(--shadow-xs);
-
-  &:focus-visible {
-    outline: 2px solid var(--color-border-focus);
-    outline-offset: 2px;
-  }
 
   // 尺寸变体
   &--small {
     padding: var(--spacing-2) var(--spacing-3);
     font-size: var(--font-size-sm);
     line-height: var(--line-height-tight);
-    min-height: 32px;
+    width: 80px;
+    height: 32px;
   }
 
   &--medium {
     padding: var(--spacing-3) var(--spacing-4);
     font-size: var(--font-size-base);
     line-height: var(--line-height-normal);
-    min-height: 40px;
+    width: 120px;
+    height: 40px;
   }
 
   &--large {
     padding: var(--spacing-4) var(--spacing-6);
     font-size: var(--font-size-lg);
     line-height: var(--line-height-normal);
-    min-height: 48px;
+    width: 100%;
+    height: 48px;
   }
 
   // 颜色变体
@@ -125,6 +120,51 @@
     }
   }
 
+  &--underline {
+    background: transparent;
+    color: var(--color-text-primary);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding-bottom: var(--spacing-3);
+    font-weight: var(--font-weight-bold);
+    position: relative;
+
+    // 使用伪元素创建底部装饰条
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 3px;
+      background: var(--underline-color, #ff9500);
+      border-radius: 2px;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+
+    &:hover:not(:disabled) {
+      background: transparent;
+      transform: none;
+
+      &::after {
+        opacity: 0.8;
+        transform: translateX(-50%) scaleX(1.2);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: transparent;
+      transform: none;
+
+      &::after {
+        opacity: 0.6;
+        transform: translateX(-50%) scaleX(0.8);
+      }
+    }
+  }
+
   // 形状变体
   &--round {
     border-radius: var(--radius-full);
@@ -167,6 +207,11 @@
   &--block {
     width: 100%;
     display: flex;
+
+    // 对于 large 尺寸，block 属性无效，因为 large 已经是 100% 宽度
+    &.button--large {
+      width: 100%; // 保持 100% 宽度
+    }
   }
 
   // 图标和文字包装器
@@ -225,13 +270,3 @@
   }
 }
 
-// 响应式设计
-@media (max-width: @screen-sm) {
-  .button {
-    &--large {
-      padding: var(--spacing-3) var(--spacing-5);
-      font-size: var(--font-size-base);
-      min-height: 44px;
-    }
-  }
-}

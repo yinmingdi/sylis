@@ -1,0 +1,165 @@
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+// 排序栏
+.sortBar {
+  display: flex;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  background: var(--color-surface-primary);
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.sortOption {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+
+  &:hover {
+    background: var(--color-bg-secondary);
+  }
+
+  &.active {
+    color: var(--color-primary);
+    background: rgba(46, 196, 182, 0.1);
+    border-color: var(--color-primary);
+  }
+}
+
+// 帖子列表
+.postList {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  min-height: 0; // 确保 flex 子元素可以收缩
+}
+
+// 帖子卡片容器
+.postCard {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    transform: translateY(-2px);
+
+    .arrow {
+      transform: translateX(var(--spacing-1));
+      opacity: 1;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  // 覆盖 RedditPost 组件的样式，使其适合列表显示
+  :global(.redditPost) {
+    margin-bottom: 0;
+    padding: var(--spacing-4);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border-primary);
+
+    &:hover {
+      border-color: var(--color-border-focus);
+      box-shadow: var(--shadow-card-hover);
+    }
+  }
+}
+
+// 箭头图标
+.arrow {
+  position: absolute;
+  right: var(--spacing-4);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-tertiary);
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+// 空状态
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-12);
+}
+
+// 加载文本
+.loadingText {
+  text-align: center;
+  padding: var(--spacing-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+// 动画
+@media (prefers-reduced-motion: no-preference) {
+  .postCard {
+    animation: fadeInUp 0.3s ease forwards;
+    opacity: 0;
+
+    &:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+    &:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+    &:nth-child(4) {
+      animation-delay: 0.2s;
+    }
+    &:nth-child(5) {
+      animation-delay: 0.25s;
+    }
+    &:nth-child(6) {
+      animation-delay: 0.3s;
+    }
+    &:nth-child(7) {
+      animation-delay: 0.35s;
+    }
+    &:nth-child(8) {
+      animation-delay: 0.4s;
+    }
+    &:nth-child(9) {
+      animation-delay: 0.45s;
+    }
+    &:nth-child(10) {
+      animation-delay: 0.5s;
+    }
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

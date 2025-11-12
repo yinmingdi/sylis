@@ -1,0 +1,115 @@
+.wordSearch {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  background: var(--color-bg-primary);
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.searchBar {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--color-bg-secondary);
+  border: 2px solid transparent;
+  border-radius: 20px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: var(--color-primary);
+    background: var(--color-bg-primary);
+  }
+}
+
+.searchActions {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clearButton {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  border: none;
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cancelButton {
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+// 动画效果
+@media (prefers-reduced-motion: no-preference) {
+  .header {
+    animation: fadeInDown 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .content {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+    animation-delay: 0.1s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

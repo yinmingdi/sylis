@@ -1,20 +1,24 @@
+import NiceModal from '@ebay/nice-modal-react';
 import { SafeArea } from "antd-mobile";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 import { Tabbar } from "./tabbar";
-import { shouldShowTabbar } from "./tabbar/config";
+import { useGlobalWordInteraction } from "../hooks/useGlobalWordInteraction";
 
 const Layout = () => {
-  const location = useLocation();
+
+  // 启用全局单词交互功能
+  useGlobalWordInteraction({
+    enableClick: true,
+    enableTextSelection: true,
+  });
 
   return (
-    <div>
+    <NiceModal.Provider>
       <SafeArea position='top' />
-      <div style={{ paddingBottom: shouldShowTabbar(location.pathname) ? '68px' : '0' }}>
-        <Outlet />
-      </div>
+      <Outlet />
       <Tabbar />
-    </div >
+    </NiceModal.Provider >
   );
 };
 

@@ -31,15 +31,14 @@ else
 fi
 
 # 用 concurrently 启动开发服务
+# "pnpm --filter ./apps/api run dto:watch" \
 if [ "$PYTHON_AVAILABLE" = true ]; then
   npx concurrently -k -n API,DTO,WEB,SPEECH -c green,blue,magenta,cyan \
     "pnpm --filter ./apps/api run dev" \
-    "pnpm --filter ./apps/api run dto:watch" \
     "pnpm --filter ./apps/web run dev" \
     "pnpm speech:dev"
 else
   npx concurrently -k -n API,DTO,WEB -c green,blue,magenta \
     "pnpm --filter ./apps/api run dev" \
-    "pnpm --filter ./apps/api run dto:watch" \
     "pnpm --filter ./apps/web run dev"
 fi

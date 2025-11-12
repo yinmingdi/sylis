@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 import { AIService } from './ai.service';
-import { GenerateReadingReqDto, GenerateReadingResDto } from './dto/exam.dto';
 import {
   ParseGrammarReqDto,
   ParseGrammarResDto,
@@ -10,24 +10,22 @@ import {
 } from './dto/grammar.dto';
 import { TestConnectionReqDto, TestConnectionResDto } from './dto/test.dto';
 import { GrammarAnalysisService } from './grammar-analysis.service';
-import { ReadingGenerationService } from './reading-generation.service';
 
+@ApiTags('AI服务')
 @Controller('ai')
 export class AIController {
   constructor(
     private readonly aiService: AIService,
-    private readonly readingGenerationService: ReadingGenerationService,
     private readonly grammarAnalysisService: GrammarAnalysisService,
   ) {}
 
-  @Post('generate-reading')
-  async generateReading(
-    @Body() params: GenerateReadingReqDto,
-  ): Promise<GenerateReadingResDto> {
-    return await this.readingGenerationService.generateReading(params);
-  }
-
   @Post('parse-grammar')
+  @ApiOperation({ summary: '解析语法' })
+  @ApiResponse({
+    status: 200,
+    description: '解析成功',
+    type: ParseGrammarResDto,
+  })
   async parseGrammar(
     @Body() params: ParseGrammarReqDto,
   ): Promise<ParseGrammarResDto> {
@@ -35,6 +33,12 @@ export class AIController {
   }
 
   @Post('parse-multiple-grammar')
+  @ApiOperation({ summary: '批量解析语法' })
+  @ApiResponse({
+    status: 200,
+    description: '解析成功',
+    type: ParseMultipleGrammarResDto,
+  })
   async parseMultipleGrammar(
     @Body() params: ParseMultipleGrammarReqDto,
   ): Promise<ParseMultipleGrammarResDto> {
@@ -42,6 +46,12 @@ export class AIController {
   }
 
   @Post('test-connection')
+  @ApiOperation({ summary: '测试AI连接' })
+  @ApiResponse({
+    status: 200,
+    description: '测试成功',
+    type: TestConnectionResDto,
+  })
   async testConnection(
     @Body() params: TestConnectionReqDto,
   ): Promise<TestConnectionResDto> {

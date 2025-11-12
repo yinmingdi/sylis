@@ -113,6 +113,13 @@ export class QuizChoiceRepository {
                     headword: true,
                     ukPhonetic: true,
                     usPhonetic: true,
+                    meanings: {
+                      select: {
+                        partOfSpeech: true,
+                        meaningCn: true,
+                      },
+                      take: 1,
+                    },
                   },
                 },
               },
@@ -135,13 +142,52 @@ export class QuizChoiceRepository {
   async getRandomWords(
     count: number,
     excludeIds: string[] = [],
-  ): Promise<Word[]> {
-    return this.prismaService.$queryRaw<Word[]>`
-      SELECT * FROM "Word"
-      WHERE id NOT IN (${excludeIds.map((id) => `'${id}'`).join(',') || "''"})
-      ORDER BY RANDOM()
-      LIMIT ${count}
-    `;
+  ): Promise<any[]> {
+    // 先获取总数
+    const totalCount = await this.prismaService.word.count({
+      where: {
+        id: {
+          notIn: excludeIds.length > 0 ? excludeIds : undefined,
+        },
+        meanings: {
+          some: {}, // 确保有释义
+        },
+      },
+    });
+
+    if (totalCount === 0) {
+      return [];
+    }
+
+    // 随机跳过一些记录
+    const skip = Math.max(
+      0,
+      Math.floor(Math.random() * Math.max(1, totalCount - count)),
+    );
+
+    return this.prismaService.word.findMany({
+      where: {
+        id: {
+          notIn: excludeIds.length > 0 ? excludeIds : undefined,
+        },
+        meanings: {
+          some: {}, // 确保有释义
+        },
+      },
+      select: {
+        id: true,
+        headword: true,
+        meanings: {
+          take: 1,
+          select: {
+            meaningCn: true,
+            partOfSpeech: true,
+          },
+        },
+      },
+      skip,
+      take: count,
+    });
   }
 
   async createQuizChoiceQuestion(baseId: string, answerWordId: string) {
@@ -219,6 +265,13 @@ export class QuizChoiceRepository {
                     headword: true,
                     ukPhonetic: true,
                     usPhonetic: true,
+                    meanings: {
+                      select: {
+                        partOfSpeech: true,
+                        meaningCn: true,
+                      },
+                      take: 1,
+                    },
                   },
                 },
               },

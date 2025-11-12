@@ -6,7 +6,6 @@
   background: var(--color-surface-primary);
   position: sticky;
   top: env(safe-area-inset-top);
-  z-index: var(--z-sticky);
   min-height: 60px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -30,61 +29,26 @@
 .left {
   display: flex;
   align-items: center;
-  flex: 0 0 48px;
-}
-
-.backIcon {
-  font-size: 24px;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  padding: var(--spacing-2);
-  border-radius: var(--radius-full);
-  transition: all var(--duration-fast) var(--ease-out);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-
-  &:hover {
-    background-color: var(--color-neutral-100);
-    color: var(--color-primary-500);
-    transform: translateX(-2px);
-  }
-
-  &:active {
-    background-color: var(--color-neutral-200);
-    transform: translateX(0) scale(0.95);
-    transition-duration: calc(var(--duration-fast) / 2);
-  }
-
-  // 涟漪效果
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: var(--color-primary-100);
-    transform: translate(-50%, -50%);
-    transition: all var(--duration-normal) var(--ease-out);
-    z-index: -1;
-  }
-
-  &:active::before {
-    width: 200%;
-    height: 200%;
-  }
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+  min-width: 48px;
 }
 
 .center {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
   flex: 1;
+  pointer-events: none;
+  min-width: 0;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.centerFullWidth {
+  pointer-events: auto;
 }
 
 .title {
@@ -102,21 +66,45 @@
 .right {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  min-width: 48px;
-  width: 48px;
   justify-content: flex-end;
+  flex-shrink: 0;
+  z-index: 10;
+  position: relative;
+}
+
+.actionButton {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-base);
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  padding: 0;
+
+  &:hover {
+    background: var(--color-bg-secondary);
+  }
+
+  &:active {
+    background: var(--color-bg-tertiary);
+    transform: scale(0.95);
+  }
 }
 
 // 深色主题特殊处理
 [data-theme='dark'] {
-  .backIcon {
+  .actionButton {
     &:hover {
-      background-color: var(--color-neutral-800);
+      background: var(--color-neutral-800);
     }
 
     &:active {
-      background-color: var(--color-neutral-700);
+      background: var(--color-neutral-700);
     }
   }
 }
@@ -130,20 +118,26 @@
   .title {
     font-size: var(--font-size-base);
   }
+}
 
-  .backIcon {
-    font-size: 22px;
-    padding: var(--spacing-1);
-  }
+// StickyPageHeader 容器样式
+.stickyContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--color-surface-primary);
 }
 
 // 高对比度模式
 @media (prefers-contrast: high) {
   .pageHeader {
     border-bottom-width: 2px;
-  }
-
-  .backIcon {
-    border: 1px solid var(--color-border-primary);
   }
 }

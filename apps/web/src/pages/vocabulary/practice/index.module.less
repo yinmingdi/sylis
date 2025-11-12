@@ -1,0 +1,64 @@
+// 词汇练习页面 - 参考me页面设计
+
+.content {
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  background: var(--color-bg-tertiary);
+  padding: 0 var(--spacing-4) 20px;
+}
+
+// 错误状态页面 - 参考me页面风格
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--spacing-8) var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.errorIcon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-6);
+  opacity: 0.8;
+}
+
+.errorTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+  line-height: var(--line-height-tight);
+}
+
+.errorMessage {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-8);
+  max-width: 280px;
+}
+
+.retryButton {
+  padding: var(--spacing-3) var(--spacing-6);
+  background: var(--color-primary-500);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}

@@ -1,4 +1,3 @@
-import NiceModal from '@ebay/nice-modal-react';
 import { unstableSetRender } from 'antd-mobile'; // Support since version ^5.40.0
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -24,9 +23,7 @@ unstableSetRender((node, container) => {
 function App() {
   return (
     <StrictMode>
-      <NiceModal.Provider>
-        <RouterProvider router={router} />
-      </NiceModal.Provider>
+      <RouterProvider router={router} />
     </StrictMode>
   );
 }

@@ -1,7 +1,10 @@
 // prisma/seed.ts
 import { PrismaClient } from '@prisma/client';
+import * as bcryptjs from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
+
+import { DEFAULT_CONFIGS } from '../src/modules/chat/seeds/default-configs';
 
 const prisma = new PrismaClient();
 
@@ -47,6 +50,17 @@ interface WordData {
           sentences: Array<{
             sContent: string;
             sCn: string;
+          }>;
+        };
+        realExamSentence?: {
+          sentences: Array<{
+            sContent: string;
+            sourceInfo: {
+              paper: string;
+              level: string;
+              year: string;
+              type: string;
+            };
           }>;
         };
         syno?: {
@@ -96,6 +110,7 @@ interface OptimizedSeedStats {
   meaningsCreated: number;
   synonymsCreated: number;
   sentencesCreated: number;
+  realExamSentencesCreated: number;
   phrasesCreated: number;
   relationsCreated: number;
   wordBooksCreated: number;
@@ -112,6 +127,7 @@ const stats: OptimizedSeedStats = {
   meaningsCreated: 0,
   synonymsCreated: 0,
   sentencesCreated: 0,
+  realExamSentencesCreated: 0,
   phrasesCreated: 0,
   relationsCreated: 0,
   wordBooksCreated: 0,
@@ -139,6 +155,9 @@ function logStats() {
   console.log(`📖 Meanings: ${stats.meaningsCreated} created`);
   console.log(`🔄 Synonyms: ${stats.synonymsCreated} created`);
   console.log(`💬 Sentences: ${stats.sentencesCreated} created`);
+  console.log(
+    `📝 Real Exam Sentences: ${stats.realExamSentencesCreated} created`,
+  );
   console.log(`📋 Phrases: ${stats.phrasesCreated} created`);
   console.log(`🔗 Relations: ${stats.relationsCreated} created`);
   console.log(`📚 WordBooks: ${stats.wordBooksCreated} created`);
@@ -215,6 +234,16 @@ async function processBatchWords(wordsData: WordData[], bookId: string) {
     sentenceCn: string;
   }> = [];
 
+  const realExamSentencesToCreate: Array<{
+    wordId: string;
+    sentenceEn: string;
+    sentenceCn: string | null;
+    paper: string;
+    level: string;
+    year: string;
+    examType: string;
+  }> = [];
+
   const phrasesToCreate: Array<{
     wordId: string;
     phraseText: string;
@@ -279,19 +308,30 @@ async function processBatchWords(wordsData: WordData[], bookId: string) {
     const wordId = cached.id;
     const wordContent = wordData.content.word.content;
 
-    // 准备 meanings 数据 - 使用Set去重
+    // 准备 meanings 数据 - 使用Set去重，每个词性只保留一条
     if (wordContent.trans) {
-      const meaningKeys = new Set<string>();
+      const posUsed = new Set<string>(); // 记录已使用的词性
+
       for (const trans of wordContent.trans) {
-        const key = `${wordId}-${trans.pos || 'unknown'}-${trans.tranCn}`;
-        if (!meaningKeys.has(key)) {
-          meaningKeys.add(key);
-          meaningsToCreate.push({
-            wordId,
-            partOfSpeech: trans.pos || 'unknown',
-            meaningCn: trans.tranCn,
-            meaningEn: trans.tranOther || null,
-          });
+        // 处理词性拆分，支持 "n&v" 这种格式
+        const posRaw = trans.pos || 'unknown';
+        const posList = posRaw.includes('&')
+          ? posRaw.split('&').map((p) => p.trim())
+          : [posRaw];
+
+        // 尝试写入每个拆分后的词性
+        for (const pos of posList) {
+          // 每个词性只允许写入一次
+          if (!posUsed.has(pos)) {
+            posUsed.add(pos);
+            meaningsToCreate.push({
+              wordId,
+              partOfSpeech: pos,
+              meaningCn: trans.tranCn,
+              meaningEn: trans.tranOther || null,
+            });
+            break; // 找到第一个未使用的词性后停止
+          }
         }
       }
     }
@@ -307,6 +347,28 @@ async function processBatchWords(wordsData: WordData[], bookId: string) {
             wordId,
             sentenceEn: sentence.sContent,
             sentenceCn: sentence.sCn,
+          });
+        }
+      }
+    }
+
+    // 准备真题例句数据 - 使用Set去重，每个单词每个年份级别只保留一个例句
+    if (wordContent.realExamSentence?.sentences) {
+      const realExamKeys = new Set<string>();
+      for (const examSentence of wordContent.realExamSentence.sentences) {
+        const sourceInfo = examSentence.sourceInfo;
+        // 创建唯一键：wordId-sentenceEn-year-level
+        const key = `${wordId}-${examSentence.sContent}-${sourceInfo.year}-${sourceInfo.level}`;
+        if (!realExamKeys.has(key)) {
+          realExamKeys.add(key);
+          realExamSentencesToCreate.push({
+            wordId,
+            sentenceEn: examSentence.sContent,
+            sentenceCn: null, // 真题例句通常没有中文翻译
+            paper: sourceInfo.paper || '未知', // 提供默认值
+            level: sourceInfo.level,
+            year: sourceInfo.year,
+            examType: sourceInfo.type,
           });
         }
       }
@@ -376,6 +438,29 @@ async function processBatchWords(wordsData: WordData[], bookId: string) {
           });
         }
         stats.sentencesCreated += sentencesToCreate.length;
+      }
+
+      // 批量创建真题例句 - 使用upsert避免重复
+      if (realExamSentencesToCreate.length > 0) {
+        for (const realExamSentence of realExamSentencesToCreate) {
+          await tx.realExamSentence.upsert({
+            where: {
+              wordId_sentenceEn_year_level: {
+                wordId: realExamSentence.wordId,
+                sentenceEn: realExamSentence.sentenceEn,
+                year: realExamSentence.year,
+                level: realExamSentence.level,
+              },
+            },
+            update: {
+              sentenceCn: realExamSentence.sentenceCn,
+              paper: realExamSentence.paper,
+              examType: realExamSentence.examType,
+            },
+            create: realExamSentence,
+          });
+        }
+        stats.realExamSentencesCreated += realExamSentencesToCreate.length;
       }
 
       // 批量创建短语 - 使用upsert避免重复
@@ -478,6 +563,87 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks;
 }
 
+// 创建测试用户
+async function seedTestUser() {
+  logProgress('👤 Creating test user...');
+
+  try {
+    // 生成哈希密码
+    const hashedPassword = bcryptjs.hashSync('123456', 10);
+
+    // 使用 upsert 避免重复创建
+    const user = await prisma.user.upsert({
+      where: { email: 'test@example.com' },
+      update: {},
+      create: {
+        email: 'test@example.com',
+        password: hashedPassword,
+      },
+    });
+
+    logProgress(
+      `✅ Test user created/updated: ${user.email} (password: 123456)`,
+    );
+    return user;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    logProgress(`❌ Error creating test user: ${errorMsg}`);
+    stats.errors.push({ file: 'user-seed', error: errorMsg });
+  }
+}
+
+// 初始化聊天预设配置
+async function seedChatConfigs() {
+  logProgress('💬 Initializing chat preset configurations...');
+
+  try {
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const config of DEFAULT_CONFIGS) {
+      const existingConfig = await prisma.chatConfig.findUnique({
+        where: { id: config.id },
+      });
+
+      if (existingConfig) {
+        // 更新现有配置
+        await prisma.chatConfig.update({
+          where: { id: config.id },
+          data: {
+            systemPrompt: config.systemPrompt,
+            roleName: config.roleName,
+            aiModel: config.aiModel,
+            temperature: config.temperature,
+            tags: config.tags,
+          },
+        });
+        updatedCount++;
+      } else {
+        // 创建新配置
+        await prisma.chatConfig.create({
+          data: {
+            id: config.id,
+            systemPrompt: config.systemPrompt,
+            roleName: config.roleName,
+            aiModel: config.aiModel,
+            temperature: config.temperature,
+            tags: config.tags,
+          },
+        });
+        createdCount++;
+      }
+    }
+
+    logProgress(
+      `✅ Chat configs initialized: ${createdCount} created, ${updatedCount} updated`,
+    );
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    logProgress(`❌ Error initializing chat configs: ${errorMsg}`);
+    stats.errors.push({ file: 'chat-config-seed', error: errorMsg });
+  }
+}
+
 async function main() {
   const totalStartTime = Date.now();
   logProgress('🚀 Starting optimized seed...');
@@ -491,6 +657,12 @@ async function main() {
     if (!fs.existsSync(DICTS_DIR)) {
       throw new Error(`Dicts directory not found: ${DICTS_DIR}`);
     }
+
+    // 创建测试用户
+    await seedTestUser();
+
+    // 初始化聊天配置
+    await seedChatConfigs();
 
     // 预加载缓存
     await preloadWordCache();

@@ -9,7 +9,7 @@ export const useEmailCode = () => {
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [error, setError] = useState('');
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 清理定时器
   useEffect(() => {

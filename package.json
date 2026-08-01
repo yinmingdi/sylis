@@ -1,6 +1,11 @@
 {
   "name": "sylis",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "type": "module",
+  "packageManager": "pnpm@10.23.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,7 +22,7 @@
     "clean": "pnpm -r exec rm -rf node_modules dist .next .turbo && rm -rf node_modules",
     "clean:cache": "pnpm store prune && pnpm -r exec rm -rf .turbo",
     "typecheck": "pnpm -r run typecheck --if-present",
-    "lint": "eslint .",
+    "lint": "pnpm --filter @sylis/api lint && pnpm --filter @sylis/web lint && eslint services/vocabulary-importer/src",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -29,9 +34,6 @@
     "db:seed": "pnpm --filter ./apps/api run db:seed",
     "db:studio": "pnpm --filter ./apps/api run db:studio",
     "db:reset": "pnpm --filter ./apps/api run db:reset",
-    "speech:install": "cd services/speech-service && pip3 install -e .",
-    "speech:dev": "cd services/speech-service && make dev",
-    "speech:health": "curl http://localhost:8080/health",
     "commit": "cz",
     "prepare": "husky install"
   },
@@ -45,6 +47,7 @@
     "commitizen": "^4.3.1",
     "concurrently": "^9.2.0",
     "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.29.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6"
   },

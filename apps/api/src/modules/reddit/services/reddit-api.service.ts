@@ -71,8 +71,8 @@ export class RedditApiService {
 
       this.logger.log('Successfully obtained Reddit access token');
       return this.accessToken as string;
-    } catch (error) {
-      this.logger.error('Failed to obtain Reddit access token', error);
+    } catch {
+      this.logger.error('Failed to obtain Reddit access token');
       throw new Error('Failed to authenticate with Reddit API');
     }
   }
@@ -106,10 +106,9 @@ export class RedditApiService {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        this.logger.error(`Reddit API request failed: ${error.message}`, {
+        this.logger.error('Reddit API request failed', {
           url,
           status: error.response?.status,
-          data: error.response?.data,
         });
       }
       throw error;

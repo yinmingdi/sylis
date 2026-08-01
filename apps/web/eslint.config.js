@@ -10,7 +10,7 @@ export default tseslint.config([
 
   // React特定配置
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
@@ -31,6 +31,17 @@ export default tseslint.config([
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+  {
+    files: ['vite.config.ts'],
+    languageOptions: {
+      globals: globals.node,
+      parser: tseslint.parser,
+      parserOptions: {
+        project: './tsconfig.node.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
   },
 ]);

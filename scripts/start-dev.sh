@@ -22,23 +22,8 @@ cd ../..
 
 echo "数据库服务已启动..."
 
-# 检查Python环境
-if ! command -v python3 &> /dev/null; then
-  echo "⚠️  Python3 未安装，跳过语音服务启动"
-  PYTHON_AVAILABLE=false
-else
-  PYTHON_AVAILABLE=true
-fi
-
 # 用 concurrently 启动开发服务
 # "pnpm --filter ./apps/api run dto:watch" \
-if [ "$PYTHON_AVAILABLE" = true ]; then
-  npx concurrently -k -n API,DTO,WEB,SPEECH -c green,blue,magenta,cyan \
-    "pnpm --filter ./apps/api run dev" \
-    "pnpm --filter ./apps/web run dev" \
-    "pnpm speech:dev"
-else
-  npx concurrently -k -n API,DTO,WEB -c green,blue,magenta \
-    "pnpm --filter ./apps/api run dev" \
-    "pnpm --filter ./apps/web run dev"
-fi
+npx concurrently -k -n API,WEB -c green,magenta \
+  "pnpm --filter ./apps/api run dev" \
+  "pnpm --filter ./apps/web run dev"

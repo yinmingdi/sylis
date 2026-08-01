@@ -27,9 +27,6 @@ export class TestConnectionResDto {
   @IsString()
   model: string;
 
-  @IsString()
-  baseUrl: string;
-
   @IsBoolean()
   hasApiKey: boolean;
 }

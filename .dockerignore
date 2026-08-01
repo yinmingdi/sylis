@@ -1,0 +1,15 @@
+.git
+.github
+.env
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/coverage
+**/.cache
+**/.DS_Store
+apps/api/prisma/seed-data/dicts
+img
+img.zip
+services/speech-service

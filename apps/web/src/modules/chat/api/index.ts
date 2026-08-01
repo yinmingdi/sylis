@@ -14,6 +14,7 @@ import type {
   UpdateConfigReqDto,
   ChatConfigDto,
   GetConfigsResDto,
+  ChatMessageDto,
   StreamChatReqDto,
   StreamChatEventDto,
 } from '@sylis/shared/dto';
@@ -23,6 +24,8 @@ import { useUserStore } from '../../user/store';
 
 // ChatConfig 扩展类型（添加 isPreset 字段）
 export type ChatConfig = ChatConfigDto & { isPreset?: boolean };
+export type CreateConfigReq = CreateConfigReqDto;
+export type ChatMessage = ChatMessageDto;
 
 // ==================== 会话API ====================
 

@@ -37,7 +37,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.23.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -85,6 +85,16 @@ jobs:
           NODE_ENV: production
           DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
           REDIS_URL: "redis://localhost:6379"
+          JWT_SECRET: "docs-only-jwt-secret-not-for-production-000000"
+          AI_API_KEY: "docs-placeholder-key"
+          AI_BASE_URL: "https://api.example.com/v1"
+          AI_MODEL: "docs-placeholder-model"
+          MAILER_HOST: "localhost"
+          MAILER_PORT: "1025"
+          MAILER_SECURE: "false"
+          MAILER_USER: "docs-user"
+          MAILER_PASS: "docs-password"
+          MAILER_FROM: "Sylis Docs <docs@example.com>"
         run: |
           # Verify workspace dependencies are available
           echo "Checking workspace dependencies..."

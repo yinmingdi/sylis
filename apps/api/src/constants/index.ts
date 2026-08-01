@@ -1,4 +1,9 @@
-export const jwtConstants = {
-  secret: 'jwtxw6', // 密钥
-  expiresIn: '30d', // token有效时间
+import type { JwtSignOptions } from '@nestjs/jwt';
+
+type JwtConstants = {
+  expiresIn: JwtSignOptions['expiresIn'];
+};
+
+export const jwtConstants: JwtConstants = {
+  expiresIn: '30d',
 };

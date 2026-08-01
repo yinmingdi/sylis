@@ -1,4 +1,3 @@
-import type React from 'react';
 import type { AppBarProps } from '../app-bar';
 
 // ========== SliverAppBar Props ==========
@@ -12,4 +11,3 @@ export interface SliverAppBarProps extends Omit<AppBarProps, 'className'> {
   foregroundColor?: string;
   className?: string;
 }
-

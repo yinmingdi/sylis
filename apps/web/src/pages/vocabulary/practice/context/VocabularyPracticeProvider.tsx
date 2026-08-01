@@ -1,7 +1,9 @@
+import { CollectionSource } from '@sylis/shared/dto';
 import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { VocabularyPracticeProviderProps } from './VocabularyPracticeContext';
+
 import {
   VocabularyPracticeContext,
   LearningStage,
@@ -451,7 +453,7 @@ export const VocabularyPracticeProvider: React.FC<
     await wordCollection.toggleCollection(
       currentWord.id,
       currentIsCollected,
-      'QUIZ', // 来源：从练习中收藏
+      CollectionSource.QUIZ,
     );
   }, [currentWord, wordCollection]);
 
@@ -560,4 +562,3 @@ export const VocabularyPracticeProvider: React.FC<
     </VocabularyPracticeContext.Provider>
   );
 };
-

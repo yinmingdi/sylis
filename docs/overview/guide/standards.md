@@ -21,8 +21,8 @@ sylis/
 ├── 📦 packages/               # 共享包
 │   ├── shared/                # 共享类型与 DTO
 │   └── utils/                 # 通用工具函数
-├── 🎙️ services/              # 微服务
-│   └── speech-service/        # WeNet 语音识别服务
+├── services/                  # 按需后台作业
+│   └── vocabulary-importer/   # ECDICT 词库导入器
 ├── 📖 docs/                   # 项目文档
 └── 🛠️ scripts/               # 自动化脚本
 ```
@@ -31,7 +31,7 @@ sylis/
 
 - **前端**: React 19 + TypeScript + Antd Mobile + Zustand + React Router
 - **后端**: NestJS + Prisma + PostgreSQL + Redis + TypeScript
-- **语音服务**: Python 3 + WeNet
+- **后台作业**: TypeScript + Prisma
 - **构建工具**: Vite + pnpm + ESLint + Prettier
 
 ## 前端开发规范

@@ -12,6 +12,7 @@ permissions:
   contents: read
   pull-requests: write
   checks: write
+  statuses: write
 
 jobs:
   gitflow-check:
@@ -170,6 +171,7 @@ jobs:
 
           invalid_commits=""
           commit_valid=true
+          conventional_commit_regex='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'
 
           # 检查每个commit message
           while IFS= read -r commit; do
@@ -177,11 +179,12 @@ jobs:
               commit_msg=$(echo "$commit" | sed 's/^[a-f0-9]* //')
 
               # 检查是否符合 Conventional Commits 规范
-              if [[ $commit_msg =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+ ]]; then
+              if [[ $commit_msg =~ $conventional_commit_regex ]]; then
                 echo "✅ Valid commit: $commit"
               else
                 echo "⚠️  Non-conventional commit: $commit"
                 invalid_commits="$invalid_commits\n- $commit"
+                commit_valid=false
               fi
             fi
           done <<< "$commits"

@@ -103,11 +103,11 @@ jobs:
                 fi
                 ;;
               release/*)
-                if [[ $src =~ ^feature/.+ ]] || [[ $src =~ ^bugfix/.+ ]]; then
-                  echo "✅ Valid merge to release: $src -> $target"
+                if [[ $src == "develop" ]]; then
+                  echo "✅ Valid release branch creation: $src -> $target"
                   return 0
                 else
-                  echo "❌ Invalid merge to release branch. Only feature/* and bugfix/* branches can merge to release/*"
+                  echo "❌ Invalid release branch. Only develop can merge to release/*"
                   echo "   Current: $src -> $target"
                   return 1
                 fi

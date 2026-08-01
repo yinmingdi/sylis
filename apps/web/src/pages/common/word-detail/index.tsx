@@ -1,7 +1,9 @@
+import { CollectionSource } from '@sylis/shared/dto';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import styles from './index.module.less';
+
 import {
   WordDetail,
   UnderlineActions,
@@ -55,7 +57,11 @@ const WordDetailPage = () => {
     if (!wordData?.id) return;
 
     const isCollected = wordCollection.isCollected(wordData.id);
-    await wordCollection.toggleCollection(wordData.id, isCollected, 'MANUAL');
+    await wordCollection.toggleCollection(
+      wordData.id,
+      isCollected,
+      CollectionSource.MANUAL,
+    );
   };
 
   if (loading) {

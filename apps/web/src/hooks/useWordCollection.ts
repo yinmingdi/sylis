@@ -1,3 +1,4 @@
+import { CollectionSource } from '@sylis/shared/dto';
 import { Toast } from 'antd-mobile';
 import { useState, useCallback } from 'react';
 
@@ -26,7 +27,7 @@ export function useWordCollection(options?: UseWordCollectionOptions) {
     async (
       wordId: string,
       isCollected: boolean,
-      source?: string,
+      source?: CollectionSource,
       context?: string,
     ) => {
       setLoading(true);

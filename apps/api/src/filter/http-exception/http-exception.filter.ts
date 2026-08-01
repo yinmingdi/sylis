@@ -2,6 +2,24 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/co
 
 import { LoggerService } from '../../modules/logger/logger.service';
 
+const SENSITIVE_KEY =
+  /authorization|cookie|password|passwd|pass|secret|token|api[-_]?key/i;
+
+function redactSensitive(value: unknown, depth = 0): unknown {
+  if (depth > 5 || value === null || value === undefined) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitive(item, depth + 1));
+  }
+  if (typeof value !== 'object') return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      SENSITIVE_KEY.test(key) ? '[REDACTED]' : redactSensitive(item, depth + 1),
+    ]),
+  );
+}
+
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: LoggerService) {} // 注入 LoggerService
@@ -42,10 +60,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     this.logger.log('请求信息:', {
       url,
       method,
-      headers,
-      body,
-      query,
-      params,
+      headers: redactSensitive(headers),
+      body: redactSensitive(body),
+      query: redactSensitive(query),
+      params: redactSensitive(params),
     });
 
     // 记录请求的响应时间和状态

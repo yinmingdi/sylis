@@ -5,7 +5,6 @@ import svgr from 'vite-plugin-svgr';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), svgr()],
-
   css: {
     modules: {
       // 这里可以自定义 less module 的类名生成规则
@@ -23,7 +22,7 @@ export default defineConfig({
 
   server: {
     host: true, // 开启host服务，允许外部访问
-    port: 5173, // 指定端口
+    port: 5178, // 指定端口
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

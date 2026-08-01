@@ -22,6 +22,7 @@ model Word {
   quizChoiceOptions  QuizChoiceOption[]  /// 关联测验选择项
   dailyWordProgress  DailyWordProgress[] /// 每日学习进度（Prisma 要求的反向关系，实际业务中不使用）
   collectedWords     CollectedWord[]     /// 被收藏的记录
+  lexiconMetadata    WordLexiconMetadata?
 }
 
 /**
@@ -121,5 +122,4 @@ model WordRelation {
 
   @@unique([wordId, relatedWordId, pos]) /// 确保相同的单词关联关系唯一
 }
-
 

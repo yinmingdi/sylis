@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main, "release/**"]
+  push:
+    branches: [develop, main, "release/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  quality:
+    name: Build and test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sylis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sylis"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sylis
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-jwt-secret-not-for-production-000000
+      JWT_EXPIRES_IN: 30d
+      AI_API_KEY: ci-placeholder-key
+      AI_BASE_URL: https://api.example.com/v1
+      AI_MODEL: ci-placeholder-model
+      MAILER_HOST: localhost
+      MAILER_PORT: 1025
+      MAILER_SECURE: "false"
+      MAILER_USER: ci-user
+      MAILER_PASS: ci-password
+      MAILER_FROM: Sylis CI <ci@example.com>
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.23.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Build shared utilities
+        run: pnpm --filter @sylis/utils build
+      - name: Generate Prisma client
+        run: pnpm --filter @sylis/api prisma:generate
+      - name: Apply migrations to a fresh database
+        run: pnpm --filter @sylis/api exec prisma migrate deploy
+      - name: API tests and build
+        run: |
+          pnpm --filter @sylis/api test --runInBand
+          pnpm --filter @sylis/api build
+      - name: Vocabulary importer tests and build
+        run: |
+          pnpm --filter @sylis/vocabulary-importer test
+          pnpm --filter @sylis/vocabulary-importer typecheck
+          pnpm --filter @sylis/vocabulary-importer build
+      - name: Vocabulary importer dry-run and idempotency
+        run: |
+          fixture=services/vocabulary-importer/test/fixtures/ecdict.csv
+          checksum=$(sha256sum "$fixture" | cut -d ' ' -f 1)
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --dry-run
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum"
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum"
+      - name: Web typecheck and build
+        run: |
+          pnpm --filter @sylis/web typecheck
+          pnpm --filter @sylis/web build
+      - name: API health smoke test
+        run: |
+          pnpm --filter @sylis/api start:prod > /tmp/sylis-api.log 2>&1 &
+          curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:3000/health
+      - name: Build and smoke test web image
+        run: |
+          docker build -f apps/web/Dockerfile -t sylis-web:ci .
+          docker run --detach --name sylis-web-ci -p 8080:8080 -e PORT=8080 sylis-web:ci
+          curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://localhost:8080/health

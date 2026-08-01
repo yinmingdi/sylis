@@ -39,7 +39,6 @@ export class AuthService {
 
     // 5. 发送邮件
     await this.mailerService.sendMail({
-      from: process.env.MAILER_USER,
       to: email,
       subject: '【Sylis】注册验证码',
       template: 'register', // 对应 register.hbs

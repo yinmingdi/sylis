@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { AiFillAudio } from 'react-icons/ai';
+import type React from 'react';
 
-import { SoundButton, FollowReadModal } from '../index';
-import type { AssessmentResult } from '../index';
+import { SoundButton } from '../index';
 import styles from './index.module.less';
 
 // 单词释义数据结构
@@ -24,7 +22,6 @@ interface WordHeaderProps {
   data: WordHeaderData;
   currentVoice?: 'us' | 'uk';
   onPlayAudio?: () => void;
-  onFollowReadComplete?: (result: AssessmentResult) => void;
   style?: React.CSSProperties;
   className?: string;
   requiredCorrectCount?: number;
@@ -35,13 +32,11 @@ const WordHeader: React.FC<WordHeaderProps> = ({
   data,
   currentVoice = 'us',
   onPlayAudio,
-  onFollowReadComplete,
   style,
   className,
   requiredCorrectCount,
   correctCount = 0,
 }) => {
-  const [showFollowReadModal, setShowFollowReadModal] = useState(false);
   const renderExamTags = () => {
     if (!data.examTags || data.examTags.length === 0) return null;
 
@@ -54,11 +49,6 @@ const WordHeader: React.FC<WordHeaderProps> = ({
         ))}
       </div>
     );
-  };
-
-  const handleFollowReadComplete = (result: AssessmentResult) => {
-    onFollowReadComplete?.(result);
-    console.log('跟读评估结果:', result);
   };
 
   const renderMeanings = () => {
@@ -97,7 +87,7 @@ const WordHeader: React.FC<WordHeaderProps> = ({
       className={`${styles.wordInfo} ${className || ''}`}
       style={style}
     >
-      {/* Word Title with Sound and Follow Read */}
+      {/* Word title with pronunciation audio */}
       <div className={styles.wordTitleRow}>
         <div className={styles.wordContainer}>
           <h2 className={styles.word}>{data.headword}</h2>
@@ -114,12 +104,6 @@ const WordHeader: React.FC<WordHeaderProps> = ({
           )}
         </div>
         <div className={styles.actionButtons}>
-          <div
-            onClick={() => setShowFollowReadModal(true)}
-            className={styles.followReadButton}
-          >
-            <AiFillAudio />
-          </div>
           <SoundButton
             word={data.headword}
             type={currentVoice === 'uk' ? 1 : 2}
@@ -142,16 +126,6 @@ const WordHeader: React.FC<WordHeaderProps> = ({
 
       {/* Meanings */}
       {data.meanings && data.meanings.length > 0 && renderMeanings()}
-
-      {/* Follow Read Modal */}
-      <FollowReadModal
-        visible={showFollowReadModal}
-        onClose={() => setShowFollowReadModal(false)}
-        referenceText={data.headword}
-        phoneticText={currentVoice === 'us' ? data.usPhonetic : (data.ukPhonetic || data.usPhonetic)}
-        showWaveform={true}
-        onAssessmentComplete={handleFollowReadComplete}
-      />
     </div>
   );
 };

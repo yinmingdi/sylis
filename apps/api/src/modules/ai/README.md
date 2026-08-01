@@ -71,23 +71,19 @@ console.log('测试结果:', result);
 
 确保在 `.env` 文件中配置了以下环境变量：
 
-```bash
-# 后端配置
-AI_KEY=your_openai_api_key
-AI_URL=https://api.openai.com/v1  # 或其他兼容的API地址
-AI_MODEL=gpt-3.5-turbo             # 或其他模型
-
-# 前端配置
-VITE_APP_AI_KEY=your_openai_api_key
-VITE_APP_AI_URL=https://api.openai.com/v1
-VITE_APP_AI_MODEL=gpt-3.5-turbo
+```env
+AI_API_KEY=replace-with-provider-key
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=replace-with-enabled-model
 ```
+
+AI 密钥只能配置在后端。任何 `VITE_*` 变量都会进入浏览器构建产物，禁止存放密钥。
 
 ## 调试建议
 
 1. **检查API密钥**: 确认 `hasApiKey` 为 `true`
 2. **检查网络连接**: 查看 `responseTime` 和 `error` 信息
-3. **验证API地址**: 确认 `baseUrl` 配置正确
+3. **验证API地址**: 确认后端 `AI_BASE_URL` 配置正确
 4. **测试模型**: 确认 `model` 参数支持
 5. **查看日志**: 后端会输出详细的连接日志
 

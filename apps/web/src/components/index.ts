@@ -20,7 +20,6 @@ export { VirtualPopover } from './virtual-popover';
 export {
   InteractiveText,
   type InteractiveTextProps,
-  type InteractiveTextParagraph,
 } from './interactive-text';
 export {
   default as WordSearch,
@@ -40,7 +39,7 @@ export { default as WordQuizChoice } from './word-quiz-choice';
 export { default as WordQuizRecall } from './word-quiz-recall';
 export type {
   WordQuizRecallData,
-  WordMeaning,
+  WordMeaning as WordQuizRecallMeaning,
   RecallAnswer,
 } from './word-quiz-recall';
 export { default as WordSpelling } from './word-spelling';
@@ -54,16 +53,6 @@ export {
   type GrammarAnalysisProps,
   type GrammarAnalysisModalProps,
 } from './grammar-analysis';
-export {
-  default as FollowRead,
-  type FollowReadProps,
-  type RecordingState,
-  type AssessmentResult,
-} from './follow-read';
-export {
-  default as FollowReadModal,
-  type FollowReadModalProps,
-} from './follow-read-modal';
 export {
   WordDetailModal,
   type WordDetailModalProps,

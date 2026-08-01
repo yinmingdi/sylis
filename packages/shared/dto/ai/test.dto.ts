@@ -12,7 +12,5 @@ export interface TestConnectionResDto {
   error?: string;
   testResponse?: string;
   model: string;
-  baseUrl: string;
   hasApiKey: boolean;
 }
-

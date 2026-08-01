@@ -89,15 +89,6 @@ export const globalIgnores = {
     // All files in dist directories (build outputs)
     '**/dist/**',
 
-    // Python (for speech service)
-    'services/speech-service/**/*.pyc',
-    'services/speech-service/**/__pycache__/',
-    'services/speech-service/**/*.pyo',
-    'services/speech-service/**/*.pyd',
-    'services/speech-service/**/.Python',
-    'services/speech-service/**/env/',
-    'services/speech-service/**/venv/',
-
     // Docker
     'Dockerfile*',
     'docker-compose*.yml',
@@ -126,6 +117,7 @@ export const globalIgnores = {
     '**/*.spec.ts',
     '**/*.spec.tsx',
     '**/*.e2e-spec.ts',
+    '**/*.example.ts',
   ],
 };
 

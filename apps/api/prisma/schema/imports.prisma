@@ -1,0 +1,36 @@
+model DictionaryImportRun {
+  id           String    @id @default(uuid())
+  source       String
+  sourceCommit String
+  checksum     String
+  status       String
+  selected     Int       @default(0)
+  inserted     Int       @default(0)
+  updated      Int       @default(0)
+  skipped      Int       @default(0)
+  error        String?
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+
+  @@index([source, startedAt])
+}
+
+model WordLexiconMetadata {
+  id            String   @id @default(uuid())
+  wordId        String   @unique
+  source        String
+  sourceCommit  String
+  tags          String[]
+  bncRank       Int?
+  frequencyRank Int?
+  oxford        Boolean  @default(false)
+  collins       Int?
+  exchange      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  word          Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+
+  @@index([source])
+  @@index([bncRank])
+  @@index([frequencyRank])
+}

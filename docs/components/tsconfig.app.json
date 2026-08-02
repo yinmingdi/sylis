@@ -28,7 +28,7 @@
         "../../*"
       ],
       "@sylis/shared": [
-        "../../packages/shared/src"
+        "../../packages/shared"
       ],
       "@sylis/utils": [
         "../../packages/utils/src"
@@ -40,7 +40,9 @@
     "../../apps/*/src/**/*.ts",
     "../../apps/*/src/**/*.tsx",
     "../../packages/*/src/**/*.ts",
-    "../../packages/*/src/**/*.tsx"
+    "../../packages/*/src/**/*.tsx",
+    "../../packages/shared/**/*.ts",
+    "../../packages/shared/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

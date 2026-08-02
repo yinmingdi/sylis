@@ -9,6 +9,7 @@ export interface WordDetailResDto {
   meanings: {
     partOfSpeech: string;
     meaningCn: string;
+    meaningEn?: string;
     source?: "LEGACY" | "ECDICT" | "DERIVED" | "AI";
   }[];
   exampleSentences: {

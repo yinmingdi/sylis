@@ -55,6 +55,54 @@
   overflow-y: auto;
 }
 
+.meaningsTab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 12px 0 20px;
+}
+
+.meaningList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meaningItem {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.partOfSpeech,
+.definitionLabel {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meaningText,
+.definitionText {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.englishDefinitions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.definitionText {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
 .emptyState {
   flex: 1;
   display: flex;

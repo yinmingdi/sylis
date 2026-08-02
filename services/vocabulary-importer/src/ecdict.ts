@@ -61,6 +61,10 @@ function positiveInteger(value?: string) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+function normalizeEcdictText(value: string) {
+  return value.replace(/\\r\\n|\\n|\\r/g, "\n").replace(/\r\n?/g, "\n");
+}
+
 export function selectEcdictRow(
   row: EcdictRow,
   scope: ImportScope = "learning",
@@ -85,9 +89,10 @@ export function selectEcdictRow(
       ?.split(/[\s,/]+/)
       .find(Boolean)
       ?.replace(/\.$/, "") || "unknown";
-  const definition = row.definition?.trim() || undefined;
-  const meanings = (row.translation ?? "")
-    .split(/\r?\n/)
+  const definition =
+    normalizeEcdictText(row.definition ?? "").trim() || undefined;
+  const meanings = normalizeEcdictText(row.translation ?? "")
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {

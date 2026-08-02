@@ -6,6 +6,7 @@ interface ExampleSentence {
   sentenceEn: string;
   sentenceCn: string;
   headword: string;
+  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
 }
 
 interface ExampleSentencesProps {
@@ -13,12 +14,16 @@ interface ExampleSentencesProps {
   onPlayAudio?: (sentence: ExampleSentence) => void;
 }
 
-const ExampleSentences = ({ sentences, onPlayAudio }: ExampleSentencesProps) => {
+const ExampleSentences = ({
+  sentences,
+  onPlayAudio,
+}: ExampleSentencesProps) => {
   const items: CommonListItem[] = sentences.map((sentence) => ({
     id: sentence.id,
     primary: sentence.sentenceEn,
     secondary: sentence.sentenceCn,
     highlightWord: sentence.headword,
+    source: sentence.source,
   }));
 
   const handlePlayAudio = (item: CommonListItem) => {
@@ -28,8 +33,14 @@ const ExampleSentences = ({ sentences, onPlayAudio }: ExampleSentencesProps) => 
     }
   };
 
-  return <CommonList items={items} showAudio onPlayAudio={handlePlayAudio} wordToPlay={sentences[0]?.headword} />;
+  return (
+    <CommonList
+      items={items}
+      showAudio
+      onPlayAudio={handlePlayAudio}
+      wordToPlay={sentences[0]?.headword}
+    />
+  );
 };
 
 export default ExampleSentences;
-

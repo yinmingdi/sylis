@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 
+import { createAIClient } from './ai-client';
 import { TestConnectionReqDto, TestConnectionResDto } from './dto/test.dto';
 
 @Injectable()
@@ -12,9 +13,10 @@ export class AIService {
 
   constructor(configService: ConfigService) {
     this.model = configService.getOrThrow<string>('AI_MODEL');
-    this.client = new OpenAI({
+    this.client = createAIClient({
       apiKey: configService.getOrThrow<string>('AI_API_KEY'),
       baseURL: configService.getOrThrow<string>('AI_BASE_URL'),
+      model: this.model,
     });
   }
 
@@ -40,7 +42,7 @@ export class AIService {
     const testMessage = params.testMessage || 'Hello, this is a test message.';
 
     try {
-      this.logger.log('Testing OpenAI connection...');
+      this.logger.log('Testing AI provider connection...');
 
       // 测试简单的聊天完成
       const response = await this.client.chat.completions.create({
@@ -58,7 +60,9 @@ export class AIService {
       const responseTime = Date.now() - startTime;
       const testResponse = response.choices[0]?.message?.content || '';
 
-      this.logger.log(`OpenAI connection test successful in ${responseTime}ms`);
+      this.logger.log(
+        `AI provider connection test successful in ${responseTime}ms`,
+      );
 
       return {
         success: true,

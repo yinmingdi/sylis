@@ -1,4 +1,4 @@
-import { Book } from '@prisma/client';
+import { Book, BookCategory, ContentSource, Prisma } from '@prisma/client';
 
 export class GetBooksResDto implements Book {
   id: string;
@@ -12,4 +12,8 @@ export class GetBooksResDto implements Book {
   reciteUserNum: number | null;
   offlinedata: string | null;
   size: number | null;
+  source: ContentSource | null;
+  category: BookCategory | null;
+  sortOrder: number;
+  criteria: Prisma.JsonValue | null;
 }

@@ -20,6 +20,7 @@ export class WordDetailResDto {
   meanings: {
     partOfSpeech: string;
     meaningCn: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 
   @ApiProperty({ description: '例句列表', type: [Object] })
@@ -28,6 +29,7 @@ export class WordDetailResDto {
     sentenceEn: string;
     sentenceCn: string;
     headword: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 
   @ApiProperty({ description: '考试标签', type: [String] })
@@ -46,6 +48,7 @@ export class WordDetailResDto {
     level: string;
     year: string;
     examType: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 
   @ApiProperty({ description: '短语列表', type: [Object] })
@@ -53,6 +56,7 @@ export class WordDetailResDto {
     id: string;
     phraseText: string;
     phraseCn: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 
   @ApiProperty({ description: '近义词列表', type: [Object] })
@@ -61,6 +65,7 @@ export class WordDetailResDto {
     partOfSpeech: string;
     meaningCn: string;
     synonymText: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 
   @ApiProperty({ description: '同根词列表', type: [Object] })
@@ -69,5 +74,7 @@ export class WordDetailResDto {
     relatedWord: string;
     meaningCn: string;
     pos?: string;
+    relationType?: string;
+    source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
   }[];
 }

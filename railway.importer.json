@@ -5,7 +5,7 @@
     "buildCommand": "pnpm --filter @sylis/api prisma:generate && pnpm --filter @sylis/vocabulary-importer build"
   },
   "deploy": {
-    "startCommand": "pnpm --filter @sylis/vocabulary-importer start",
+    "startCommand": "pnpm --filter @sylis/vocabulary-importer start --scope all",
     "restartPolicyType": "NEVER"
   }
 }

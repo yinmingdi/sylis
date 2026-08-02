@@ -7,6 +7,8 @@ export class BooksRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
   books() {
-    return this.prismaService.book.findMany();
+    return this.prismaService.book.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
   }
 }

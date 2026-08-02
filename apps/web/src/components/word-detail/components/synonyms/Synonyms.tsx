@@ -6,6 +6,7 @@ interface Synonym {
   partOfSpeech: string;
   meaningCn: string;
   synonymText: string;
+  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
 }
 
 interface SynonymsProps {
@@ -18,10 +19,10 @@ const Synonyms = ({ synonyms }: SynonymsProps) => {
     id: synonym.id,
     primary: synonym.synonymText,
     secondary: `${synonym.partOfSpeech}. ${synonym.meaningCn}`,
+    source: synonym.source,
   }));
 
   return <CommonList items={items} />;
 };
 
 export default Synonyms;
-

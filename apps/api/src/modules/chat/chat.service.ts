@@ -394,7 +394,7 @@ export class ChatService {
     needGenerateTitle: boolean,
   ) {
     const client = this.aiService.getClient();
-    const model = config.aiModel || this.aiService.getModel();
+    const model = this.aiService.getModel();
 
     const stream = await client.chat.completions.create({
       model,

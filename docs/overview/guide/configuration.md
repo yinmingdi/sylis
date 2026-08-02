@@ -9,9 +9,10 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/sylis
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=replace-with-at-least-32-random-characters
 JWT_EXPIRES_IN=30d
-AI_API_KEY=replace-with-provider-key
-AI_BASE_URL=https://api.openai.com/v1
-AI_MODEL=replace-with-enabled-model
+AI_API_KEY=replace-with-fresh-deepseek-runtime-key
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-v4-flash
+AI_ENRICHMENT_ENABLED=false
 MAILER_HOST=smtp.example.com
 MAILER_PORT=587
 MAILER_SECURE=false
@@ -28,6 +29,6 @@ Web 使用同源 `/api`，生产运行时只有 Caddy 的 `API_UPSTREAM`。禁�
 
 ## Railway
 
-staging 和 production 必须使用独立 PostgreSQL、Redis、JWT、AI 与 SMTP 凭据。数据库和 Redis 使用 Railway 服务变量引用；其余秘密使用环境级 sealed variables。GitHub Actions 只使用测试占位值，不保存 Railway Token 或任何生产密钥。
+staging 和 production 必须使用独立 PostgreSQL、Redis、JWT、AI 与 SMTP 凭据。API 的 `AI_API_KEY` 与手动作业的 `AI_ENRICHMENT_API_KEY` 也必须分开并设置额度。数据库和 Redis 使用 Railway 服务变量引用；其余秘密使用环境级 sealed variables。GitHub Actions 只使用测试占位值，不保存 Railway Token 或任何生产密钥。
 
 详细步骤参见仓库根目录的 `RAILWAY_DEPLOYMENT.md`。

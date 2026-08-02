@@ -5,6 +5,7 @@ interface Phrase {
   id: string;
   phraseText: string;
   phraseCn: string;
+  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
 }
 
 interface PhrasesProps {
@@ -16,10 +17,10 @@ const Phrases = ({ phrases }: PhrasesProps) => {
     id: phrase.id,
     primary: phrase.phraseText,
     secondary: phrase.phraseCn,
+    source: phrase.source,
   }));
 
   return <CommonList items={items} />;
 };
 
 export default Phrases;
-

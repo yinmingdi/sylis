@@ -2,13 +2,13 @@
 
 ## 概述
 
-AI模块现在包含了网络连接测试功能，方便开发者调试OpenAI的连接情况。
+AI模块包含网络连接测试功能，方便开发者调试 DeepSeek 连接状态。
 
 ## 后端接口
 
 ### POST /api/ai/test-connection
 
-测试OpenAI连接状态的接口。
+测试 DeepSeek 连接状态的接口。
 
 **请求参数:**
 
@@ -72,9 +72,9 @@ console.log('测试结果:', result);
 确保在 `.env` 文件中配置了以下环境变量：
 
 ```env
-AI_API_KEY=replace-with-provider-key
-AI_BASE_URL=https://api.openai.com/v1
-AI_MODEL=replace-with-enabled-model
+AI_API_KEY=replace-with-fresh-deepseek-key
+AI_BASE_URL=https://api.deepseek.com
+AI_MODEL=deepseek-v4-flash
 ```
 
 AI 密钥只能配置在后端。任何 `VITE_*` 变量都会进入浏览器构建产物，禁止存放密钥。

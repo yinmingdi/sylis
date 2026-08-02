@@ -237,7 +237,7 @@ export class GrammarAnalysisService {
     const userPrompt = GrammarPrompts.buildUserPrompt(sentence);
 
     const response = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: this.aiService.getModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

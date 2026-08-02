@@ -23,6 +23,7 @@ model Word {
   dailyWordProgress  DailyWordProgress[] /// 每日学习进度（Prisma 要求的反向关系，实际业务中不使用）
   collectedWords     CollectedWord[]     /// 被收藏的记录
   lexiconMetadata    WordLexiconMetadata?
+  enrichment         WordEnrichment?
 }
 
 /**
@@ -35,6 +36,7 @@ model Meaning {
   partOfSpeech String /// 词性
   meaningCn    String /// 中文含义
   meaningEn    String? /// 英文含义
+  source       ContentSource @default(LEGACY)
   word         Word      @relation(fields: [wordId], references: [id]) /// 关联单词
   synonyms     Synonym[] /// 关联同义词
 
@@ -49,6 +51,7 @@ model Synonym {
   id          String  @id @default(uuid())
   meaningId   String /// 词义ID
   synonymText String /// 同义词文本
+  source      ContentSource @default(LEGACY)
   meaning     Meaning @relation(fields: [meaningId], references: [id]) /// 关联词义
 
   @@unique([meaningId, synonymText]) /// 确保同一词义的相同同义词文本唯一
@@ -63,6 +66,7 @@ model ExampleSentence {
   wordId     String /// 单词ID
   sentenceEn String /// 英文例句
   sentenceCn String /// 中文例句
+  source     ContentSource @default(LEGACY)
   word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
 
   @@unique([wordId, sentenceEn]) /// 确保同一单词的相同英文例句唯一
@@ -83,6 +87,7 @@ model RealExamSentence {
   level      String   /// 考试级别（如"CET4", "CET6", "考研"）
   year       String   /// 年份（如"2017.6"）
   examType   String   /// 题型（如"阅读理解", "听力", "写作"）
+  source     ContentSource @default(LEGACY)
 
   word       Word     @relation(fields: [wordId], references: [id]) /// 关联单词
   createdAt  DateTime @default(now())
@@ -101,6 +106,7 @@ model Phrase {
   wordId     String /// 单词ID
   phraseText String /// 短语文本
   phraseCn   String /// 短语中文翻译
+  source     ContentSource @default(LEGACY)
   word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
 
   @@unique([wordId, phraseText]) /// 确保同一单词的相同短语文本唯一
@@ -117,9 +123,10 @@ model WordRelation {
   wordId        String /// 源单词ID
   relatedWordId String /// 关联单词ID
   pos           String? /// 词性简写（如n, v, adj, adv等，用于同根词等情况）
+  relationType  String?
+  source        ContentSource @default(LEGACY)
   relatedWord   Word             @relation("WordRelationsTo", fields: [relatedWordId], references: [id]) /// 关联的目标单词
   word          Word             @relation("WordRelationsFrom", fields: [wordId], references: [id]) /// 关联的源单词
 
-  @@unique([wordId, relatedWordId, pos]) /// 确保相同的单词关联关系唯一
+  @@unique([wordId, relatedWordId, relationType]) /// 确保相同的单词关联关系唯一
 }
-

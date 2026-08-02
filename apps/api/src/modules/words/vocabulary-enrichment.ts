@@ -137,10 +137,24 @@ export async function enrichVocabularyWord(
   const missingSynonyms = word.meanings.some(
     (meaning) => meaning._count.synonyms === 0,
   );
-  if (
-    word.meanings.length === 0 ||
-    (!missingExamples && !missingPhrases && !missingSynonyms)
-  ) {
+  if (word.meanings.length === 0) {
+    await prisma.wordEnrichment.upsert({
+      where: { wordId },
+      create: {
+        wordId,
+        status: 'SKIPPED',
+        contentVersion: VOCABULARY_CONTENT_VERSION,
+      },
+      update: {
+        status: 'SKIPPED',
+        contentVersion: VOCABULARY_CONTENT_VERSION,
+        completedAt: null,
+        lastError: null,
+      },
+    });
+    return { generated: false, inputTokens: 0, outputTokens: 0, costCny: 0 };
+  }
+  if (!missingExamples && !missingPhrases && !missingSynonyms) {
     await prisma.wordEnrichment.upsert({
       where: { wordId },
       create: {

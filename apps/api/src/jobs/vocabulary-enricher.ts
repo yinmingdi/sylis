@@ -49,9 +49,15 @@ async function loadTargets(prisma: PrismaClient) {
     INNER JOIN "Book" AS book ON book."id" = word_book."bookId"
     LEFT JOIN "WordEnrichment" AS enrichment ON enrichment."wordId" = word."id"
     WHERE book."source" = 'ECDICT'::"ContentSource"
+      AND EXISTS (
+        SELECT 1 FROM "Meaning" AS meaning WHERE meaning."wordId" = word."id"
+      )
       AND (
         enrichment."id" IS NULL
-        OR enrichment."status" <> 'COMPLETED'::"EnrichmentStatus"
+        OR enrichment."status" NOT IN (
+          'COMPLETED'::"EnrichmentStatus",
+          'SKIPPED'::"EnrichmentStatus"
+        )
         OR enrichment."contentVersion" <> ${VOCABULARY_CONTENT_VERSION}
       )
     ORDER BY word."id" ASC

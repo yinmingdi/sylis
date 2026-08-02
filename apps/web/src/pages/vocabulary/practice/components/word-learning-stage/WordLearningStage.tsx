@@ -27,6 +27,7 @@ const WordLearningStage: React.FC<WordLearningStageProps> = ({
     headword: currentWord.headword,
     usPhonetic: currentWord.usPhonetic || undefined,
     ukPhonetic: currentWord.ukPhonetic || undefined,
+    meanings: currentWord.meanings,
     exampleSentences: currentWord.exampleSentences,
   };
 
@@ -44,4 +45,3 @@ const WordLearningStage: React.FC<WordLearningStageProps> = ({
 };
 
 export default WordLearningStage;
-

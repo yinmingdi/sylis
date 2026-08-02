@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
+const normalizeDictionaryText = (value: string) =>
+  value
+    .replace(/\\r\\n|\\n|\\r/g, '\n')
+    .replace(/\r\n?/g, '\n')
+    .trim();
+
 @Injectable()
 export class WordsRepository {
   constructor(private readonly prismaService: PrismaService) {}
@@ -34,7 +40,7 @@ export class WordsRepository {
         id: word.id,
         headword: word.headword,
         partOfSpeech: word.meanings[0]?.partOfSpeech,
-        translation: word.meanings[0]?.meaningCn || '',
+        translation: normalizeDictionaryText(word.meanings[0]?.meaningCn || ''),
       }))
       .sort((a, b) => {
         const keywordLower = keyword.toLowerCase();
@@ -142,7 +148,7 @@ export class WordsRepository {
         if (word.meanings.length > 0) {
           synonymWordMap.set(word.headword, {
             partOfSpeech: word.meanings[0].partOfSpeech,
-            meaningCn: word.meanings[0].meaningCn,
+            meaningCn: normalizeDictionaryText(word.meanings[0].meaningCn),
           });
         }
       });
@@ -220,7 +226,10 @@ export class WordsRepository {
         ukPhonetic: word.ukPhonetic,
         meanings: word.meanings.map((meaning) => ({
           partOfSpeech: meaning.partOfSpeech,
-          meaningCn: meaning.meaningCn,
+          meaningCn: normalizeDictionaryText(meaning.meaningCn),
+          meaningEn: meaning.meaningEn
+            ? normalizeDictionaryText(meaning.meaningEn)
+            : undefined,
           source: meaning.source,
         })),
         exampleSentences: word.exampleSentences.map((sentence) => ({
@@ -242,7 +251,9 @@ export class WordsRepository {
         wordRelations: word.wordRelationsFrom.map((relation) => ({
           id: relation.id,
           relatedWord: relation.relatedWord.headword,
-          meaningCn: relation.relatedWord.meanings[0]?.meaningCn || '',
+          meaningCn: normalizeDictionaryText(
+            relation.relatedWord.meanings[0]?.meaningCn || '',
+          ),
           pos: relation.pos ?? undefined,
           relationType: relation.relationType ?? undefined,
           source: relation.source,

@@ -8,6 +8,11 @@ export interface WordData {
   headword: string;
   usPhonetic?: string;
   ukPhonetic?: string;
+  meanings?: Array<{
+    partOfSpeech: string;
+    meaningCn: string;
+    meaningEn?: string;
+  }>;
   exampleSentences?: Array<{
     sentenceEn: string;
     sentenceCn?: string;
@@ -34,6 +39,10 @@ const WordRecognition: React.FC<WordRecognitionProps> = ({
   onKnowWord,
 }) => {
   const firstExample = word.exampleSentences?.[0];
+  const phonetic =
+    (currentVoice === 'us' ? word.usPhonetic : word.ukPhonetic) ||
+    word.usPhonetic ||
+    word.ukPhonetic;
 
   const actions = [
     {
@@ -60,9 +69,9 @@ const WordRecognition: React.FC<WordRecognitionProps> = ({
 
           {/* 音标 */}
           <div className={styles.wordPronunciation}>
-            <span className={styles.phoneticText}>
-              /{currentVoice === 'us' ? word.usPhonetic : word.ukPhonetic}/
-            </span>
+            {phonetic && (
+              <span className={styles.phoneticText}>/{phonetic}/</span>
+            )}
 
             <SoundButton
               word={word.headword}
@@ -73,20 +82,47 @@ const WordRecognition: React.FC<WordRecognitionProps> = ({
         </div>
       </div>
 
-      {/* 例句区域 */}
+      {/* 提示区域 */}
       {showHint && (
         <div className={styles.exampleSection}>
           <div className={styles.exampleHeader}>
-            <span className={styles.exampleLabel}>例句</span>
+            <span className={styles.exampleLabel}>释义</span>
             <SoundButton
               word={word.headword}
               type={currentVoice === 'uk' ? 1 : 2}
               size="medium"
             />
           </div>
-          <div className={styles.exampleSentence}>
-            <InteractiveText content={firstExample?.sentenceEn || ''} />
+          <div className={styles.meaningList}>
+            {word.meanings && word.meanings.length > 0 ? (
+              word.meanings.map((meaning, index) => (
+                <div
+                  key={`${meaning.partOfSpeech}-${index}`}
+                  className={styles.meaningItem}
+                >
+                  {meaning.partOfSpeech &&
+                    meaning.partOfSpeech !== 'unknown' && (
+                      <span className={styles.partOfSpeech}>
+                        {meaning.partOfSpeech}.
+                      </span>
+                    )}
+                  <span className={styles.meaningText}>
+                    {meaning.meaningCn}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className={styles.emptyMeaning}>暂无释义</div>
+            )}
           </div>
+          {firstExample && (
+            <div className={styles.exampleBlock}>
+              <span className={styles.exampleLabel}>例句</span>
+              <div className={styles.exampleSentence}>
+                <InteractiveText content={firstExample.sentenceEn} />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -96,7 +132,7 @@ const WordRecognition: React.FC<WordRecognitionProps> = ({
         {!showHint && (
           <div className={styles.hintSection}>
             <div className={styles.hintButton} onClick={onToggleHint}>
-              <span className={styles.hintText}>尝试会想释义</span>
+              <span className={styles.hintText}>尝试回想释义</span>
               <span className={styles.hintText}>点击空白处查看提示</span>
             </div>
           </div>
@@ -110,4 +146,3 @@ const WordRecognition: React.FC<WordRecognitionProps> = ({
 };
 
 export default WordRecognition;
-

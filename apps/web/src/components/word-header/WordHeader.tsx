@@ -7,6 +7,7 @@ import styles from './index.module.less';
 export interface WordMeaning {
   partOfSpeech: string;
   meaningCn: string;
+  meaningEn?: string;
 }
 
 // 单词头部数据结构
@@ -37,6 +38,11 @@ const WordHeader: React.FC<WordHeaderProps> = ({
   requiredCorrectCount,
   correctCount = 0,
 }) => {
+  const phonetic =
+    (currentVoice === 'us' ? data.usPhonetic : data.ukPhonetic) ||
+    data.usPhonetic ||
+    data.ukPhonetic;
+
   const renderExamTags = () => {
     if (!data.examTags || data.examTags.length === 0) return null;
 
@@ -55,19 +61,24 @@ const WordHeader: React.FC<WordHeaderProps> = ({
     if (!data.meanings || data.meanings.length === 0) return null;
 
     // 按词性分组，获取所有词性和解释
-    const groupedMeanings = data.meanings.reduce((acc, meaning) => {
-      if (!acc[meaning.partOfSpeech]) {
-        acc[meaning.partOfSpeech] = [];
-      }
-      acc[meaning.partOfSpeech].push(meaning);
-      return acc;
-    }, {} as Record<string, typeof data.meanings>);
+    const groupedMeanings = data.meanings.reduce(
+      (acc, meaning) => {
+        if (!acc[meaning.partOfSpeech]) {
+          acc[meaning.partOfSpeech] = [];
+        }
+        acc[meaning.partOfSpeech].push(meaning);
+        return acc;
+      },
+      {} as Record<string, typeof data.meanings>,
+    );
 
     return (
       <div className={styles.meanings}>
         {Object.entries(groupedMeanings).map(([partOfSpeech, meanings]) => (
           <div key={partOfSpeech} className={styles.meaningItem}>
-            {partOfSpeech && <span className={styles.partOfSpeech}>{partOfSpeech}.</span>}
+            {partOfSpeech && partOfSpeech !== 'unknown' && (
+              <span className={styles.partOfSpeech}>{partOfSpeech}.</span>
+            )}
             <span className={styles.meaningText}>
               {meanings.map((m, idx) => (
                 <span key={idx}>
@@ -83,10 +94,7 @@ const WordHeader: React.FC<WordHeaderProps> = ({
   };
 
   return (
-    <div
-      className={`${styles.wordInfo} ${className || ''}`}
-      style={style}
-    >
+    <div className={`${styles.wordInfo} ${className || ''}`} style={style}>
       {/* Word title with pronunciation audio */}
       <div className={styles.wordTitleRow}>
         <div className={styles.wordContainer}>
@@ -96,8 +104,9 @@ const WordHeader: React.FC<WordHeaderProps> = ({
               {Array.from({ length: requiredCorrectCount }).map((_, index) => (
                 <div
                   key={index}
-                  className={`${styles.progressDot} ${index < correctCount ? styles.completed : ''
-                    }`}
+                  className={`${styles.progressDot} ${
+                    index < correctCount ? styles.completed : ''
+                  }`}
                 />
               ))}
             </div>
@@ -110,16 +119,11 @@ const WordHeader: React.FC<WordHeaderProps> = ({
             size="medium"
             onClick={onPlayAudio}
           />
-
         </div>
       </div>
 
       {/* Phonetic */}
-      {(data.usPhonetic || data.ukPhonetic) && (
-        <div className={styles.phonetic}>
-          /{currentVoice === 'us' ? data.usPhonetic : data.ukPhonetic || data.usPhonetic}/
-        </div>
-      )}
+      {phonetic && <div className={styles.phonetic}>/{phonetic}/</div>}
 
       {/* Exam Tags */}
       {renderExamTags()}

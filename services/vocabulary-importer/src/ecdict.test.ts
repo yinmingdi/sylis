@@ -22,6 +22,28 @@ test("selects exam-tagged words and parses meanings", () => {
   );
 });
 
+test("parses escaped ECDICT line breaks in translations and definitions", () => {
+  const word = selectEcdictRow({
+    word: "escaped",
+    translation: "n. 第一行\\nv. 第二行",
+    definition: "first definition\\nsecond definition",
+    tag: "cet4",
+  });
+
+  assert.deepEqual(word?.meanings, [
+    {
+      partOfSpeech: "n",
+      meaningCn: "第一行",
+      meaningEn: "first definition\nsecond definition",
+    },
+    {
+      partOfSpeech: "v",
+      meaningCn: "第二行",
+      meaningEn: "first definition\nsecond definition",
+    },
+  ]);
+});
+
 test("selects top-frequency and Oxford words", () => {
   assert.ok(selectEcdictRow({ word: "alpha", bnc: "29999" }));
   assert.ok(selectEcdictRow({ word: "beta", oxford: "1" }));

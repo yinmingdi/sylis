@@ -5,7 +5,7 @@ interface Phrase {
   id: string;
   phraseText: string;
   phraseCn: string;
-  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
+  source?: 'ECDICT' | 'YOUDAO' | 'AI';
 }
 
 interface PhrasesProps {

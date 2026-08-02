@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { projectWordContent, WORD_CONTENT_INCLUDE } from '../words/word-content';
 
 export interface UserWordWithDetails {
   id: string;
@@ -40,26 +41,18 @@ export class WeakVocabularyAnalyzerRepository {
   async getAllUserWords(
     userLearningId: string,
   ): Promise<UserWordWithDetails[]> {
-    return this.prismaService.userWord.findMany({
+    const rows = await this.prismaService.userWord.findMany({
       where: {
         userLearningId,
       },
       include: {
-        word: {
-          include: {
-            meanings: {
-              select: {
-                partOfSpeech: true,
-                meaningCn: true,
-              },
-            },
-          },
-        },
+        word: { include: WORD_CONTENT_INCLUDE },
       },
       orderBy: {
         lastReview: 'desc', // 按最后复习时间排序
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...row, word: projectWordContent(row.word) }));
   }
 
   /**
@@ -80,30 +73,16 @@ export class WeakVocabularyAnalyzerRepository {
       };
     }
 
-    return this.prismaService.userWord.findMany({
+    const rows = await this.prismaService.userWord.findMany({
       where,
       include: {
-        word: {
-          include: {
-            meanings: {
-              select: {
-                partOfSpeech: true,
-                meaningCn: true,
-              },
-            },
-            wordBooks: bookId
-              ? {
-                  where: { bookId },
-                  select: { bookId: true },
-                }
-              : false,
-          },
-        },
+        word: { include: WORD_CONTENT_INCLUDE },
       },
       orderBy: {
         lastReview: 'desc',
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...row, word: projectWordContent(row.word) }));
   }
 
   /**

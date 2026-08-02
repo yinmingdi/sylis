@@ -49,7 +49,7 @@ export class VocabularyEnrichmentService {
           setTimeout(() => resolve(undefined), 8_000),
         ),
       ]);
-      return result?.success === true;
+      return result !== undefined;
     } catch (error) {
       this.logger.warn(
         `On-demand vocabulary enrichment failed for ${wordId}: ${

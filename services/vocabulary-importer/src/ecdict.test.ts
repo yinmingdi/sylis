@@ -44,6 +44,38 @@ test("parses escaped ECDICT line breaks in translations and definitions", () => 
   ]);
 });
 
+test("uses the row part of speech for unlabelled gloss lines", () => {
+  const word = selectEcdictRow({
+    word: "fallback",
+    pos: "n",
+    translation: "后备值",
+    definition: "a value used when the preferred value is unavailable",
+    tag: "cet4",
+  });
+
+  assert.equal(word?.senses[0]?.lexicalCategory, "NOUN");
+  assert.equal(word?.senses[0]?.partOfSpeech, "n");
+});
+
+test("keeps transitivity labels as separate senses under the verb lexeme", () => {
+  const word = selectEcdictRow({
+    word: "change",
+    translation: "vt. 改变\nvi. 变化",
+    tag: "cet4",
+  });
+
+  assert.deepEqual(
+    word?.senses.map((sense) => ({
+      category: sense.lexicalCategory,
+      grammarLabels: sense.grammarLabels,
+    })),
+    [
+      { category: "VERB", grammarLabels: ["vt"] },
+      { category: "VERB", grammarLabels: ["vi"] },
+    ],
+  );
+});
+
 test("selects top-frequency and Oxford words", () => {
   assert.ok(selectEcdictRow({ word: "alpha", bnc: "29999" }));
   assert.ok(selectEcdictRow({ word: "beta", oxford: "1" }));

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CollectionSource } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { projectWordContent, WORD_CONTENT_INCLUDE } from '../words/word-content';
 
 @Injectable()
 export class VocabularyNotebookRepository {
@@ -172,7 +173,7 @@ export class VocabularyNotebookRepository {
         include: {
           word: {
             include: {
-              meanings: true,
+              ...WORD_CONTENT_INCLUDE,
               userWords: {
                 where: {
                   userLearningId,
@@ -193,7 +194,15 @@ export class VocabularyNotebookRepository {
       this.prisma.collectedWord.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    return {
+      items: (items as any[]).map((item) => ({
+        ...item,
+        word: { ...projectWordContent(item.word), userWords: item.word.userWords },
+      })),
+      total,
+      page,
+      limit,
+    };
   }
 
   /**

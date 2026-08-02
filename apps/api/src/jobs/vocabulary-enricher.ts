@@ -61,7 +61,9 @@ async function loadTargets(prisma: PrismaClient) {
 async function main() {
   requiredEnvironment('DATABASE_URL');
   const apiKey = requiredEnvironment('AI_ENRICHMENT_API_KEY');
-  const baseURL = requiredEnvironment('AI_BASE_URL');
+  const baseURL =
+    process.env.AI_ENRICHMENT_BASE_URL?.trim() ||
+    requiredEnvironment('AI_BASE_URL');
   const model = requiredEnvironment('AI_MODEL');
   const mode = parseMode();
   const pilotSize = parsePilotSize();

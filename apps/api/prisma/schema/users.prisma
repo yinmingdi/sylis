@@ -3,12 +3,12 @@
  * 存储用户基本信息和认证数据
  */
 model User {
-  id           String            @id @default(uuid())
-  email        String?           @unique /// 邮箱地址，唯一
-  phone        String?           @unique /// 手机号码，唯一
-  isVerified   Boolean           @default(false) /// 是否已验证
-  createdAt    DateTime          @default(now()) /// 创建时间
-  updatedAt    DateTime          @updatedAt /// 更新时间
+  id           String        @id @default(uuid())
+  email        String?       @unique /// 邮箱地址，唯一
+  phone        String?       @unique /// 手机号码，唯一
+  isVerified   Boolean       @default(false) /// 是否已验证
+  createdAt    DateTime      @default(now()) /// 创建时间
+  updatedAt    DateTime      @updatedAt /// 更新时间
   password     String /// 密码
   userLearning UserLearning? /// 关联用户学习记录
   profile      UserProfile? /// 关联用户资料

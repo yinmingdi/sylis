@@ -6,7 +6,7 @@ interface Synonym {
   partOfSpeech: string;
   meaningCn: string;
   synonymText: string;
-  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
+  source?: 'ECDICT' | 'YOUDAO' | 'AI';
 }
 
 interface SynonymsProps {

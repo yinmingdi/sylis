@@ -1,3 +1,10 @@
+enum BookCategory {
+  EXAM
+  CORE
+  COLLINS
+  FREQUENCY
+}
+
 /**
  * 书籍模型
  * 存储词汇书或教材的基本信息
@@ -14,6 +21,10 @@ model Book {
   reciteUserNum Int? /// 背诵用户数量
   offlinedata   String? /// 离线数据
   size          Int? /// 大小
+  source        ContentSource?
+  category      BookCategory?
+  sortOrder     Int               @default(0)
+  criteria      Json?
   userBooks     UserBook[] /// 关联用户书籍
   wordBooks     WordBook[] /// 关联单词书籍
 }
@@ -29,4 +40,7 @@ model WordBook {
   wordRank Int /// 单词在书中的排序
   book     Book   @relation(fields: [bookId], references: [id]) /// 关联书籍
   word     Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+
+  @@unique([bookId, wordId])
+  @@index([bookId, wordRank])
 }

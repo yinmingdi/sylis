@@ -4,6 +4,7 @@ import { AIService } from '../ai/ai.service';
 import { SearchWordReqDto, SearchWordResDto } from './dto/search-word.dto';
 import { TranslateTextReqDto } from './dto/translate.dto';
 import { WordDetailResDto } from './dto/word-detail.dto';
+import { VocabularyEnrichmentService } from './vocabulary-enrichment.service';
 import { WordsRepository } from './words.repository';
 
 @Injectable()
@@ -13,14 +14,27 @@ export class WordsService {
   constructor(
     private readonly wordsRepository: WordsRepository,
     private readonly aiService: AIService,
+    private readonly vocabularyEnrichment: VocabularyEnrichmentService,
   ) {}
 
   async searchWords(dto: SearchWordReqDto): Promise<SearchWordResDto[]> {
     return this.wordsRepository.searchWords(dto.keyword, dto.limit || 20);
   }
 
-  async getWordDetail(wordOrId: string): Promise<WordDetailResDto> {
-    return this.wordsRepository.getWordDetail(wordOrId);
+  async getWordDetail(
+    wordOrId: string,
+    userId?: string,
+  ): Promise<WordDetailResDto> {
+    const existing = await this.wordsRepository.getWordDetail(wordOrId);
+    if (!userId || !existing.id) return existing;
+
+    const enriched = await this.vocabularyEnrichment.enrichOnDemand(
+      existing.id,
+      userId,
+    );
+    return enriched
+      ? this.wordsRepository.getWordDetail(existing.id)
+      : existing;
   }
 
   async getWordDetailsByIds(ids: string[]): Promise<WordDetailResDto[]> {

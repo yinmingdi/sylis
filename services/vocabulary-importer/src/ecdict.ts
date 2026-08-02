@@ -1,18 +1,20 @@
-export const ECDICT_COMMIT = 'bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b';
+export const ECDICT_COMMIT = "bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b";
 export const ECDICT_SHA256 =
-  '1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf';
+  "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf";
 export const ECDICT_URL = `https://raw.githubusercontent.com/skywind3000/ECDICT/${ECDICT_COMMIT}/ecdict.csv`;
 
 const EXAM_TAGS = new Set([
-  'zk',
-  'gk',
-  'cet4',
-  'cet6',
-  'ky',
-  'toefl',
-  'ielts',
-  'gre',
+  "zk",
+  "gk",
+  "cet4",
+  "cet6",
+  "ky",
+  "toefl",
+  "ielts",
+  "gre",
 ]);
+
+export type ImportScope = "learning" | "all";
 
 export interface EcdictRow {
   word?: string;
@@ -49,34 +51,42 @@ export interface SelectedWord {
   };
 }
 
+export interface MorphologyRelation {
+  relationType: string;
+  headword: string;
+}
+
 function positiveInteger(value?: string) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-export function selectEcdictRow(row: EcdictRow): SelectedWord | null {
+export function selectEcdictRow(
+  row: EcdictRow,
+  scope: ImportScope = "learning",
+): SelectedWord | null {
   const headword = row.word?.trim().toLowerCase();
   if (!headword) return null;
 
-  const tags = (row.tag ?? '')
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean);
+  const tags = (row.tag ?? "").toLowerCase().split(/\s+/).filter(Boolean);
   const bncRank = positiveInteger(row.bnc);
   const frequencyRank = positiveInteger(row.frq);
-  const oxford = row.oxford === '1';
+  const oxford = row.oxford === "1";
   const selected =
     tags.some((tag) => EXAM_TAGS.has(tag)) ||
     oxford ||
     (bncRank !== undefined && bncRank <= 30_000) ||
     (frequencyRank !== undefined && frequencyRank <= 30_000);
 
-  if (!selected) return null;
+  if (scope === "learning" && !selected) return null;
 
   const fallbackPartOfSpeech =
-    row.pos?.split(/[\s,/]+/).find(Boolean)?.replace(/\.$/, '') || 'unknown';
+    row.pos
+      ?.split(/[\s,/]+/)
+      .find(Boolean)
+      ?.replace(/\.$/, "") || "unknown";
   const definition = row.definition?.trim() || undefined;
-  const meanings = (row.translation ?? '')
+  const meanings = (row.translation ?? "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -104,4 +114,25 @@ export function selectEcdictRow(row: EcdictRow): SelectedWord | null {
       exchange: row.exchange?.trim() || undefined,
     },
   };
+}
+
+export function parseExchange(exchange?: string): MorphologyRelation[] {
+  if (!exchange) return [];
+
+  const seen = new Set<string>();
+  const relations: MorphologyRelation[] = [];
+  for (const segment of exchange.split("/")) {
+    const separator = segment.indexOf(":");
+    if (separator < 1) continue;
+    const relationType = segment.slice(0, separator).trim().toLowerCase();
+    const values = segment.slice(separator + 1).split(",");
+    for (const value of values) {
+      const headword = value.trim().toLowerCase();
+      const key = `${relationType}:${headword}`;
+      if (!headword || seen.has(key)) continue;
+      seen.add(key);
+      relations.push({ relationType, headword });
+    }
+  }
+  return relations;
 }

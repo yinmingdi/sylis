@@ -10,7 +10,7 @@ export const DEFAULT_CONFIGS = [
 - 进行对话练习
 
 请用清晰、友好的方式回答问题，必要时给出例句帮助理解。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.7,
     tags: ['通用', '学习辅导'],
   },
@@ -25,7 +25,7 @@ export const DEFAULT_CONFIGS = [
 - 给予正面反馈和具体建议
 
 在对话中，请主动引导话题，鼓励学习者表达，并在适当时候纠正错误。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.8,
     tags: ['口语', '对话练习', '发音'],
   },
@@ -40,7 +40,7 @@ export const DEFAULT_CONFIGS = [
 - 教授写作技巧
 
 批改时请指出具体问题，解释原因，并提供修改建议。采用鼓励式教学，肯定优点的同时指出不足。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.6,
     tags: ['写作', '语法纠错', '润色'],
   },
@@ -55,7 +55,7 @@ export const DEFAULT_CONFIGS = [
 - 测试单词掌握程度
 
 请用易于理解的方式讲解单词，帮助学习者建立词汇网络，提升记忆效果。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.7,
     tags: ['单词', '记忆', '词汇'],
   },
@@ -70,7 +70,7 @@ export const DEFAULT_CONFIGS = [
 - 设计练习题巩固知识点
 
 请循序渐进地讲解，确保学习者真正理解语法概念，而不是死记硬背。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.6,
     tags: ['语法', '规则讲解'],
   },
@@ -85,7 +85,7 @@ export const DEFAULT_CONFIGS = [
 - 设计阅读理解题目
 
 请引导学习者深入理解文本，培养批判性思维，享受英语阅读的乐趣。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.7,
     tags: ['阅读', '理解', '分析'],
   },
@@ -100,7 +100,7 @@ export const DEFAULT_CONFIGS = [
 - 心理辅导和压力管理
 
 请根据学习者的具体需求，提供针对性的备考指导，帮助他们高效备考，取得理想成绩。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.7,
     tags: ['考试', '备考', '技巧'],
   },
@@ -115,7 +115,7 @@ export const DEFAULT_CONFIGS = [
 - 跨文化交际技巧
 
 请用生动有趣的方式介绍文化知识，帮助学习者更好地理解和使用英语。`,
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: undefined,
     temperature: 0.8,
     tags: ['文化', '习俗', '交际'],
   },

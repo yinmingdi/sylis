@@ -1,4 +1,12 @@
-import { Form, Input, TextArea, Button, Slider, Toast, Picker } from 'antd-mobile';
+import {
+  Form,
+  Input,
+  TextArea,
+  Button,
+  Slider,
+  Toast,
+  Picker,
+} from 'antd-mobile';
 import React, { useState } from 'react';
 
 import styles from './ConfigForm.module.less';
@@ -11,18 +19,18 @@ export interface ConfigFormProps {
 }
 
 // AI 模型选项
-const AI_MODELS = [
-  { label: 'GPT-3.5 Turbo（推荐）', value: 'gpt-3.5-turbo' },
-  { label: 'GPT-4', value: 'gpt-4' },
-  { label: 'GPT-4 Turbo（最新）', value: 'gpt-4-turbo' },
-];
+const AI_MODELS = [{ label: 'DeepSeek V4 Flash', value: 'deepseek-v4-flash' }];
 
-export const ConfigForm: React.FC<ConfigFormProps> = ({ presets, onSubmit, onCancel }) => {
+export const ConfigForm: React.FC<ConfigFormProps> = ({
+  presets,
+  onSubmit,
+  onCancel,
+}) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<CreateConfigReq>({
     roleName: '',
     systemPrompt: '',
-    aiModel: 'gpt-3.5-turbo',
+    aiModel: 'deepseek-v4-flash',
     temperature: 0.7,
   });
 
@@ -37,7 +45,7 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ presets, onSubmit, onCan
       setFormData({
         roleName: preset.roleName || '',
         systemPrompt: preset.systemPrompt || '',
-        aiModel: preset.aiModel || 'gpt-3.5-turbo',
+        aiModel: preset.aiModel || 'deepseek-v4-flash',
         temperature: preset.temperature ?? 0.7,
       });
     }
@@ -95,19 +103,22 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ presets, onSubmit, onCan
           }}
         >
           <Picker
-            columns={[presets.map((preset) => ({
-              label: preset.roleName || '未命名',
-              value: preset.id,
-            }))]}
+            columns={[
+              presets.map((preset) => ({
+                label: preset.roleName || '未命名',
+                value: preset.id,
+              })),
+            ]}
             onConfirm={handlePresetConfirm}
           >
             {(value) => {
               if (!value || value.length === 0) return '请选择预设模板';
               const selectedItem = value[0];
-              const presetId = typeof selectedItem === 'object' && selectedItem !== null
-                ? (selectedItem as any).value
-                : selectedItem;
-              const preset = presets.find(p => p.id === presetId);
+              const presetId =
+                typeof selectedItem === 'object' && selectedItem !== null
+                  ? (selectedItem as any).value
+                  : selectedItem;
+              const preset = presets.find((p) => p.id === presetId);
               return preset?.roleName || '请选择预设模板';
             }}
           </Picker>
@@ -131,12 +142,11 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ presets, onSubmit, onCan
             pickerRef.current?.open();
           }}
         >
-          <Picker
-            columns={[AI_MODELS]}
-            onConfirm={handleModelConfirm}
-          >
+          <Picker columns={[AI_MODELS]} onConfirm={handleModelConfirm}>
             {(value) => {
-              const model = AI_MODELS.find(m => m.value === (value?.[0] || formData.aiModel));
+              const model = AI_MODELS.find(
+                (m) => m.value === (value?.[0] || formData.aiModel),
+              );
               return model?.label || '请选择 AI 模型';
             }}
           </Picker>
@@ -179,12 +189,7 @@ export const ConfigForm: React.FC<ConfigFormProps> = ({ presets, onSubmit, onCan
         <Button block onClick={onCancel} disabled={loading}>
           取消
         </Button>
-        <Button
-          block
-          color="primary"
-          onClick={handleSubmit}
-          loading={loading}
-        >
+        <Button block color="primary" onClick={handleSubmit} loading={loading}>
           创建
         </Button>
       </div>

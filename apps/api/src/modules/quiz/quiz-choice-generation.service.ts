@@ -83,7 +83,7 @@ export class QuizChoiceGenerationService {
     });
 
     const response = await this.aiService.getClient().chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: this.aiService.getModel(),
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

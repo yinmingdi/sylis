@@ -1,22 +1,34 @@
-import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { PrismaClient } from "@prisma/client";
+import { parse } from "csv-parse";
+import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { PrismaClient } from '@prisma/client';
-import { parse } from 'csv-parse';
 
+import { materializeEcdictBooks } from "./books.js";
 import {
   ECDICT_COMMIT,
   ECDICT_SHA256,
   ECDICT_URL,
   type EcdictRow,
+  type ImportScope,
   type SelectedWord,
+  parseExchange,
   selectEcdictRow,
-} from './ecdict.js';
+} from "./ecdict.js";
 
-const LOCK_NAME = 'sylis:ecdict-import';
+const LOCK_NAME = "sylis:ecdict-import";
+const MORPHOLOGY_LABELS: Record<string, string> = {
+  p: "过去式",
+  d: "过去分词",
+  i: "现在分词",
+  "3": "第三人称单数",
+  r: "比较级",
+  t: "最高级",
+  s: "复数",
+};
 
 interface ImportOptions {
   source: string;
@@ -24,6 +36,8 @@ interface ImportOptions {
   dryRun: boolean;
   limit?: number;
   batchSize: number;
+  scope: ImportScope;
+  materializeBooks: boolean;
 }
 
 interface ImportStats {
@@ -31,11 +45,13 @@ interface ImportStats {
   inserted: number;
   updated: number;
   skipped: number;
+  relations: number;
+  books: number;
 }
 
 function readValue(args: string[], index: number, flag: string) {
   const value = args[index + 1];
-  if (!value || value.startsWith('--')) {
+  if (!value || value.startsWith("--")) {
     throw new Error(`${flag} requires a value`);
   }
   return value;
@@ -45,55 +61,75 @@ export function parseArguments(args: string[]): ImportOptions {
   const options: ImportOptions = {
     source: process.env.ECDICT_SOURCE_URL || ECDICT_URL,
     checksum: process.env.ECDICT_SHA256 || ECDICT_SHA256,
-    dryRun: process.env.ECDICT_DRY_RUN === 'true',
-    limit: process.env.ECDICT_LIMIT ? Number(process.env.ECDICT_LIMIT) : undefined,
+    dryRun: process.env.ECDICT_DRY_RUN === "true",
+    limit: process.env.ECDICT_LIMIT
+      ? Number(process.env.ECDICT_LIMIT)
+      : undefined,
     batchSize: process.env.ECDICT_BATCH_SIZE
       ? Number(process.env.ECDICT_BATCH_SIZE)
-      : 100,
+      : 1_000,
+    scope: process.env.ECDICT_SCOPE === "learning" ? "learning" : "all",
+    materializeBooks: process.env.ECDICT_MATERIALIZE_BOOKS !== "false",
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
-    if (flag === '--dry-run') {
+    if (flag === "--dry-run") {
       options.dryRun = true;
-    } else if (flag === '--source') {
+    } else if (flag === "--source") {
       options.source = readValue(args, index, flag);
       index += 1;
-    } else if (flag === '--sha256') {
+    } else if (flag === "--sha256") {
       options.checksum = readValue(args, index, flag).toLowerCase();
       index += 1;
-    } else if (flag === '--limit') {
+    } else if (flag === "--limit") {
       options.limit = Number(readValue(args, index, flag));
       index += 1;
-    } else if (flag === '--batch-size') {
+    } else if (flag === "--batch-size") {
       options.batchSize = Number(readValue(args, index, flag));
       index += 1;
+    } else if (flag === "--scope") {
+      const scope = readValue(args, index, flag);
+      if (scope !== "learning" && scope !== "all") {
+        throw new Error("--scope must be either learning or all");
+      }
+      options.scope = scope;
+      index += 1;
+    } else if (flag === "--no-books") {
+      options.materializeBooks = false;
     } else {
       throw new Error(`Unknown argument: ${flag}`);
     }
   }
 
-  if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1)) {
-    throw new Error('--limit must be a positive integer');
+  if (
+    options.limit !== undefined &&
+    (!Number.isInteger(options.limit) || options.limit < 1)
+  ) {
+    throw new Error("--limit must be a positive integer");
   }
-  if (!Number.isInteger(options.batchSize) || options.batchSize < 1 || options.batchSize > 500) {
-    throw new Error('--batch-size must be an integer between 1 and 500');
+  if (
+    !Number.isInteger(options.batchSize) ||
+    options.batchSize < 1 ||
+    options.batchSize > 5_000
+  ) {
+    throw new Error("--batch-size must be an integer between 1 and 5000");
   }
   if (!/^[a-f0-9]{64}$/.test(options.checksum)) {
-    throw new Error('--sha256 must be a 64-character hexadecimal digest');
+    throw new Error("--sha256 must be a 64-character hexadecimal digest");
   }
 
   return options;
 }
 
 async function resolveSource(source: string) {
-  if (!source.startsWith('http://') && !source.startsWith('https://')) {
+  if (!source.startsWith("http://") && !source.startsWith("https://")) {
     return { filePath: source, cleanup: async () => undefined };
   }
 
-  const directory = await mkdtemp(join(tmpdir(), 'sylis-ecdict-'));
-  const filePath = join(directory, 'ecdict.csv');
-  const response = await fetch(source, { redirect: 'follow' });
+  const directory = await mkdtemp(join(tmpdir(), "sylis-ecdict-"));
+  const filePath = join(directory, "ecdict.csv");
+  const response = await fetch(source, { redirect: "follow" });
   if (!response.ok) {
     throw new Error(`ECDICT download failed with HTTP ${response.status}`);
   }
@@ -106,80 +142,86 @@ async function resolveSource(source: string) {
 }
 
 async function sha256(filePath: string) {
-  const hash = createHash('sha256');
+  const hash = createHash("sha256");
   for await (const chunk of createReadStream(filePath)) {
     hash.update(chunk as Buffer);
   }
-  return hash.digest('hex');
+  return hash.digest("hex");
 }
 
 async function importBatch(
   prisma: PrismaClient,
   records: SelectedWord[],
-): Promise<Pick<ImportStats, 'inserted' | 'updated'>> {
+): Promise<Pick<ImportStats, "inserted" | "updated">> {
   const existing = await prisma.word.findMany({
     where: { headword: { in: records.map((record) => record.headword) } },
     select: { headword: true },
   });
   const existingHeadwords = new Set(existing.map((word) => word.headword));
 
-  const words = await Promise.all(
-    records.map((record) =>
-      prisma.word.upsert({
-        where: { headword: record.headword },
-        create: {
-          headword: record.headword,
-          ukPhonetic: record.phonetic,
-          usPhonetic: record.phonetic,
-          star: record.star,
-        },
-        update: {
-          ukPhonetic: record.phonetic,
-          usPhonetic: record.phonetic,
-          star: record.star,
-        },
-        select: { id: true, headword: true },
-      }),
-    ),
-  );
+  await prisma.word.createMany({
+    data: records.map((record) => ({
+      headword: record.headword,
+      ukPhonetic: record.phonetic,
+      usPhonetic: record.phonetic,
+      star: record.star,
+    })),
+    skipDuplicates: true,
+  });
+  const words = await prisma.word.findMany({
+    where: { headword: { in: records.map((record) => record.headword) } },
+    select: { id: true, headword: true },
+  });
   const wordIds = new Map(words.map((word) => [word.headword, word.id]));
 
   const meanings = records.flatMap((record) => {
     const wordId = wordIds.get(record.headword);
     if (!wordId) return [];
-    return record.meanings.map((meaning) => ({ wordId, ...meaning }));
+    return record.meanings.map((meaning) => ({
+      wordId,
+      ...meaning,
+      source: "ECDICT" as const,
+    }));
   });
   if (meanings.length > 0) {
     await prisma.meaning.createMany({ data: meanings, skipDuplicates: true });
   }
 
-  await Promise.all(
-    records.map((record) => {
+  await prisma.wordLexiconMetadata.createMany({
+    data: records.map((record) => {
       const wordId = wordIds.get(record.headword);
-      if (!wordId) throw new Error('Imported word is missing its generated id');
-      const data = {
-        source: 'ECDICT',
+      if (!wordId) throw new Error("Imported word is missing its generated id");
+      return {
+        wordId,
+        source: "ECDICT",
         sourceCommit: ECDICT_COMMIT,
         ...record.metadata,
       };
-      return prisma.wordLexiconMetadata.upsert({
-        where: { wordId },
-        create: { wordId, ...data },
-        update: data,
-      });
     }),
-  );
+    skipDuplicates: true,
+  });
 
-  const updated = records.filter((record) => existingHeadwords.has(record.headword)).length;
+  const updated = records.filter((record) =>
+    existingHeadwords.has(record.headword),
+  ).length;
   return { inserted: records.length - updated, updated };
 }
 
 async function scanFile(
   filePath: string,
   options: ImportOptions,
-  onBatch?: (records: SelectedWord[]) => Promise<Pick<ImportStats, 'inserted' | 'updated'>>,
+  onBatch?: (
+    records: SelectedWord[],
+  ) => Promise<Pick<ImportStats, "inserted" | "updated">>,
 ) {
-  const stats: ImportStats = { selected: 0, inserted: 0, updated: 0, skipped: 0 };
+  const stats: ImportStats = {
+    selected: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    relations: 0,
+    books: 0,
+  };
   const parser = createReadStream(filePath).pipe(
     parse({
       bom: true,
@@ -191,7 +233,11 @@ async function scanFile(
   let batch: SelectedWord[] = [];
 
   const flush = async () => {
-    if (batch.length === 0 || !onBatch) return;
+    if (batch.length === 0) return;
+    if (!onBatch) {
+      batch = [];
+      return;
+    }
     const result = await onBatch(batch);
     stats.inserted += result.inserted;
     stats.updated += result.updated;
@@ -199,7 +245,7 @@ async function scanFile(
   };
 
   for await (const raw of parser) {
-    const selected = selectEcdictRow(raw as EcdictRow);
+    const selected = selectEcdictRow(raw as EcdictRow, options.scope);
     if (!selected) {
       stats.skipped += 1;
       continue;
@@ -214,6 +260,69 @@ async function scanFile(
   return stats;
 }
 
+async function deriveMorphology(prisma: PrismaClient) {
+  const pageSize = 2_000;
+  let cursor: string | undefined;
+  let created = 0;
+
+  await prisma.wordRelation.deleteMany({ where: { source: "DERIVED" } });
+
+  while (true) {
+    const metadata = await prisma.wordLexiconMetadata.findMany({
+      where: { source: "ECDICT", exchange: { not: null } },
+      orderBy: { id: "asc" },
+      take: pageSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      select: { id: true, wordId: true, exchange: true },
+    });
+    if (metadata.length === 0) break;
+    cursor = metadata.at(-1)?.id;
+
+    const parsed = metadata.map((entry) => ({
+      wordId: entry.wordId,
+      relations: parseExchange(entry.exchange ?? undefined),
+    }));
+    const targetHeadwords = Array.from(
+      new Set(
+        parsed.flatMap((entry) =>
+          entry.relations.map((relation) => relation.headword),
+        ),
+      ),
+    );
+    const targets = await prisma.word.findMany({
+      where: { headword: { in: targetHeadwords } },
+      select: { id: true, headword: true },
+    });
+    const targetIds = new Map(
+      targets.map((target) => [target.headword, target.id]),
+    );
+    const relations = parsed.flatMap((entry) =>
+      entry.relations.flatMap((relation) => {
+        const relatedWordId = targetIds.get(relation.headword);
+        if (!relatedWordId || relatedWordId === entry.wordId) return [];
+        return [
+          {
+            wordId: entry.wordId,
+            relatedWordId,
+            relationType: relation.relationType,
+            pos: MORPHOLOGY_LABELS[relation.relationType] ?? relation.relationType,
+            source: "DERIVED" as const,
+          },
+        ];
+      }),
+    );
+    if (relations.length > 0) {
+      const result = await prisma.wordRelation.createMany({
+        data: relations,
+        skipDuplicates: true,
+      });
+      created += result.count;
+    }
+  }
+
+  return created;
+}
+
 async function run() {
   const options = parseArguments(process.argv.slice(2));
   const source = await resolveSource(options.source);
@@ -221,17 +330,21 @@ async function run() {
   try {
     const actualChecksum = await sha256(source.filePath);
     if (actualChecksum !== options.checksum) {
-      throw new Error('ECDICT checksum mismatch; refusing to import unverified data');
+      throw new Error(
+        "ECDICT checksum mismatch; refusing to import unverified data",
+      );
     }
 
     if (options.dryRun) {
       const stats = await scanFile(source.filePath, options);
-      console.log(JSON.stringify({ mode: 'dry-run', checksum: actualChecksum, ...stats }));
+      console.log(
+        JSON.stringify({ mode: "dry-run", checksum: actualChecksum, ...stats }),
+      );
       return;
     }
 
     if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL is required for a real import');
+      throw new Error("DATABASE_URL is required for a real import");
     }
 
     const prisma = new PrismaClient();
@@ -242,14 +355,16 @@ async function run() {
         SELECT pg_try_advisory_lock(hashtext(${LOCK_NAME})) AS acquired
       `;
       lockAcquired = lock[0]?.acquired === true;
-      if (!lockAcquired) throw new Error('Another ECDICT import is already running');
+      if (!lockAcquired)
+        throw new Error("Another ECDICT import is already running");
 
       const importRun = await prisma.dictionaryImportRun.create({
         data: {
-          source: 'ECDICT',
+          source: "ECDICT",
           sourceCommit: ECDICT_COMMIT,
           checksum: actualChecksum,
-          status: 'RUNNING',
+          status: "RUNNING",
+          scope: options.scope,
         },
       });
       runId = importRun.id;
@@ -257,18 +372,27 @@ async function run() {
       const stats = await scanFile(source.filePath, options, (records) =>
         importBatch(prisma, records),
       );
+      stats.relations = await deriveMorphology(prisma);
+      if (options.materializeBooks) {
+        stats.books = await materializeEcdictBooks(prisma);
+      }
       await prisma.dictionaryImportRun.update({
         where: { id: runId },
-        data: { ...stats, status: 'COMPLETED', finishedAt: new Date() },
+        data: { ...stats, status: "COMPLETED", finishedAt: new Date() },
       });
-      console.log(JSON.stringify({ mode: 'import', checksum: actualChecksum, ...stats }));
+      console.log(
+        JSON.stringify({ mode: "import", checksum: actualChecksum, ...stats }),
+      );
     } catch (error) {
       if (runId) {
         await prisma.dictionaryImportRun.update({
           where: { id: runId },
           data: {
-            status: 'FAILED',
-            error: error instanceof Error ? error.message.slice(0, 500) : 'Unknown import error',
+            status: "FAILED",
+            error:
+              error instanceof Error
+                ? error.message.slice(0, 500)
+                : "Unknown import error",
             finishedAt: new Date(),
           },
         });
@@ -286,6 +410,8 @@ async function run() {
 }
 
 run().catch((error) => {
-  console.error(error instanceof Error ? error.message : 'Vocabulary import failed');
+  console.error(
+    error instanceof Error ? error.message : "Vocabulary import failed",
+  );
   process.exitCode = 1;
 });

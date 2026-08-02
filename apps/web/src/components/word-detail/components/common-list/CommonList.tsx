@@ -7,7 +7,7 @@ export interface CommonListItem {
   primary: string; // 主要内容（英文）
   secondary?: string; // 次要内容（中文）
   metadata?: string; // 元数据（来源等）
-  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
+  source?: 'ECDICT' | 'YOUDAO' | 'AI';
   highlightWord?: string; // 需要高亮的单词
 }
 

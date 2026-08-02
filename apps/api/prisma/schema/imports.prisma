@@ -1,3 +1,127 @@
+enum ContentSource {
+  ECDICT
+  YOUDAO
+  AI
+}
+
+enum ContentTrust {
+  SOURCE_BACKED
+  AI_EXPERIMENTAL
+  HUMAN_VERIFIED
+  REJECTED
+}
+
+enum LexicalCategory {
+  NOUN
+  VERB
+  ADJECTIVE
+  ADVERB
+  PRONOUN
+  PREPOSITION
+  CONJUNCTION
+  DETERMINER
+  ARTICLE
+  NUMERAL
+  INTERJECTION
+  AUXILIARY
+  PHRASE
+  PROPER_NOUN
+  ABBREVIATION
+  OTHER
+}
+
+enum LexicalFormType {
+  CANONICAL
+  INFLECTED
+  VARIANT
+}
+
+enum PronunciationRegion {
+  GENERAL
+  UK
+  US
+}
+
+enum ExampleKind {
+  GENERAL
+  SOURCE_LABELED_EXAM
+  AI_SIMULATION
+}
+
+enum SemanticRelationType {
+  SYNONYM
+  ANTONYM
+}
+
+enum LexemeRelationType {
+  WORD_FAMILY
+  DERIVED_FROM
+  VARIANT
+  ABBREVIATION
+}
+
+enum MediaType {
+  IMAGE
+  AUDIO
+}
+
+enum PracticeQuestionKind {
+  MULTIPLE_CHOICE
+  AI_SIMULATION
+}
+
+model LexiconSourceVersion {
+  id            String                    @id @default(uuid())
+  source        ContentSource
+  version       String
+  checksum      String
+  artifactUri   String?
+  status        String
+  imported      Int                       @default(0)
+  rejected      Int                       @default(0)
+  createdAt     DateTime                  @default(now())
+  activatedAt   DateTime?
+  sourceRecords LexiconSourceRecord[]
+  activations   LexiconSourceActivation[]
+
+  @@unique([source, version])
+  @@index([source, status])
+}
+
+model LexiconSourceActivation {
+  source      ContentSource        @id
+  versionId   String               @unique
+  version     LexiconSourceVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  activatedAt DateTime             @default(now())
+}
+
+model LexiconSourceRecord {
+  id                String                 @id @default(uuid())
+  versionId         String
+  wordId            String
+  sourceKey         String
+  sourceOrder       Int                    @default(0)
+  rawPayloadHash    String
+  rawPayloadUri     String?
+  version           LexiconSourceVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  word              Word                   @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  lexicalForms      LexicalForm[]
+  pronunciations    FormPronunciation[]
+  senses            LexicalSense[]
+  glosses           SenseGloss[]
+  examples          UsageExample[]
+  citations         ExampleCitation[]
+  collocations      Collocation[]
+  semanticRelations SemanticRelation[]
+  lexemeRelations   LexemeRelation[]
+  mnemonics         Mnemonic[]
+  media             WordMedia[]
+  questions         WordPracticeQuestion[]
+
+  @@unique([versionId, sourceKey])
+  @@index([wordId, versionId])
+}
+
 model DictionaryImportRun {
   id           String    @id @default(uuid())
   source       String
@@ -19,20 +143,21 @@ model DictionaryImportRun {
 }
 
 model WordLexiconMetadata {
-  id            String   @id @default(uuid())
-  wordId        String   @unique
-  source        String
-  sourceCommit  String
+  id            String        @id @default(uuid())
+  wordId        String
+  source        ContentSource
+  sourceVersion String
   tags          String[]
   bncRank       Int?
   frequencyRank Int?
-  oxford        Boolean  @default(false)
+  oxford        Boolean       @default(false)
   collins       Int?
   exchange      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  word          Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  word          Word          @relation(fields: [wordId], references: [id], onDelete: Cascade)
 
+  @@unique([wordId, source, sourceVersion])
   @@index([source])
   @@index([bncRank])
   @@index([frequencyRank])
@@ -77,13 +202,6 @@ model VocabularyEnrichmentRun {
   finishedAt       DateTime?
 
   @@index([status, startedAt])
-}
-
-enum ContentSource {
-  LEGACY
-  ECDICT
-  DERIVED
-  AI
 }
 
 enum EnrichmentStatus {

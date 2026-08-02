@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { QuizQuestionType, Word } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { projectWordContent, WORD_CONTENT_INCLUDE } from '../words/word-content';
 
 export interface CreateChoiceQuizData {
   type: QuizQuestionType;
@@ -72,14 +73,7 @@ export class QuizChoiceRepository {
         skip: params.skip,
         take: params.take,
         include: {
-          word: {
-            select: {
-              id: true,
-              headword: true,
-              ukPhonetic: true,
-              usPhonetic: true,
-            },
-          },
+          word: { include: WORD_CONTENT_INCLUDE },
         },
         orderBy: {
           createdAt: 'desc',
@@ -88,40 +82,19 @@ export class QuizChoiceRepository {
       this.prismaService.quizQuestion.count({ where }),
     ]);
 
-    return { quizzes, total };
+    return { quizzes: (quizzes as any[]).map((quiz) => ({ ...quiz, word: quiz.word ? projectWordContent(quiz.word) : null })), total };
   }
 
   async getQuizById(id: string) {
-    return this.prismaService.quizQuestion.findUnique({
+    const result: any = await this.prismaService.quizQuestion.findUnique({
       where: { id },
       include: {
-        word: {
-          select: {
-            id: true,
-            headword: true,
-            ukPhonetic: true,
-            usPhonetic: true,
-          },
-        },
+        word: { include: WORD_CONTENT_INCLUDE },
         choiceQuestion: {
           include: {
             options: {
               include: {
-                word: {
-                  select: {
-                    id: true,
-                    headword: true,
-                    ukPhonetic: true,
-                    usPhonetic: true,
-                    meanings: {
-                      select: {
-                        partOfSpeech: true,
-                        meaningCn: true,
-                      },
-                      take: 1,
-                    },
-                  },
-                },
+                word: { include: WORD_CONTENT_INCLUDE },
               },
               orderBy: {
                 createdAt: 'asc',
@@ -130,7 +103,12 @@ export class QuizChoiceRepository {
           },
         },
       },
-    });
+    } as any);
+    if (result?.word) (result as any).word = projectWordContent((result as any).word);
+    if ((result as any)?.choiceQuestion) {
+      (result as any).choiceQuestion.options = (result as any).choiceQuestion.options.map((option: any) => ({ ...option, word: projectWordContent(option.word) }));
+    }
+    return result;
   }
 
   async getWordById(id: string): Promise<Word | null> {
@@ -149,9 +127,7 @@ export class QuizChoiceRepository {
         id: {
           notIn: excludeIds.length > 0 ? excludeIds : undefined,
         },
-        meanings: {
-          some: {}, // 确保有释义
-        },
+        lemmaLexemes: { some: { senses: { some: {} } } },
       },
     });
 
@@ -170,24 +146,15 @@ export class QuizChoiceRepository {
         id: {
           notIn: excludeIds.length > 0 ? excludeIds : undefined,
         },
-        meanings: {
-          some: {}, // 确保有释义
-        },
+        lemmaLexemes: { some: { senses: { some: {} } } },
       },
-      select: {
-        id: true,
-        headword: true,
-        meanings: {
-          take: 1,
-          select: {
-            meaningCn: true,
-            partOfSpeech: true,
-          },
-        },
-      },
+      include: WORD_CONTENT_INCLUDE,
       skip,
       take: count,
-    });
+    } as any).then((words: any[]) => words.map((word) => {
+      const projected = projectWordContent(word);
+      return { id: projected.id, headword: projected.headword, meanings: projected.meanings.slice(0, 1) };
+    }));
   }
 
   async createQuizChoiceQuestion(baseId: string, answerWordId: string) {
@@ -260,19 +227,7 @@ export class QuizChoiceRepository {
             options: {
               include: {
                 word: {
-                  select: {
-                    id: true,
-                    headword: true,
-                    ukPhonetic: true,
-                    usPhonetic: true,
-                    meanings: {
-                      select: {
-                        partOfSpeech: true,
-                        meaningCn: true,
-                      },
-                      take: 1,
-                    },
-                  },
+                    include: WORD_CONTENT_INCLUDE,
                 },
               },
               orderBy: {
@@ -282,7 +237,7 @@ export class QuizChoiceRepository {
           },
         },
       },
-    });
+    } as any).then((quizzes: any[]) => quizzes.map((quiz) => ({ ...quiz, choiceQuestion: quiz.choiceQuestion ? { ...quiz.choiceQuestion, options: quiz.choiceQuestion.options.map((option: any) => ({ ...option, word: projectWordContent(option.word) })) } : null })));
   }
 
   /**

@@ -13,7 +13,7 @@ export interface GetBooksResDto {
   reciteUserNum: number | null;
   offlinedata: string | null;
   size: number | null;
-  source: "LEGACY" | "ECDICT" | "DERIVED" | "AI" | null;
+  source: "ECDICT" | "YOUDAO" | "AI" | null;
   category: "EXAM" | "CORE" | "COLLINS" | "FREQUENCY" | null;
   sortOrder: number;
   criteria: unknown;

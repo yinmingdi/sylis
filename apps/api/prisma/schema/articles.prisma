@@ -18,7 +18,7 @@ enum ArticleLength {
 }
 
 model Article {
-  id          String           @id @default(cuid())
+  id          String            @id @default(cuid())
   title       String
   content     String
   wordCount   Int
@@ -28,8 +28,8 @@ model Article {
   length      ArticleLength
   usedWords   Json?
   userId      String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@map("articles")
 }

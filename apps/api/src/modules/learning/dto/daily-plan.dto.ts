@@ -91,13 +91,13 @@ export class BatchUpdateWordsReqDto {
  */
 export class DailyPlanWordDto extends WordDetailResDto {
   @ApiProperty({ description: '英式发音音频URL', required: false })
-  ukAudio?: string;
+  declare ukAudio?: string;
 
   @ApiProperty({ description: '美式发音音频URL', required: false })
-  usAudio?: string;
+  declare usAudio?: string;
 
   @ApiProperty({ description: '星级' })
-  star: number;
+  declare star: number;
 
   @ApiProperty({ description: '学习状态', enum: WordLearningStatus })
   status: WordLearningStatus;

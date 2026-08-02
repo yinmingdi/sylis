@@ -6,7 +6,7 @@ interface ExampleSentence {
   sentenceEn: string;
   sentenceCn: string;
   headword: string;
-  source?: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
+  source?: 'ECDICT' | 'YOUDAO' | 'AI';
 }
 
 interface ExampleSentencesProps {

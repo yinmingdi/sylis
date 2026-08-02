@@ -64,9 +64,7 @@ export class VocabularyTestService {
       let wordIds = await this.prisma.word.findMany({
         where: {
           star: { in: [1, 2, 3] }, // 优先选择1-3星级的单词
-          meanings: {
-            some: {}, // 确保有释义
-          },
+          lemmaLexemes: { some: { senses: { some: {} } } },
         },
         select: {
           id: true,
@@ -87,9 +85,7 @@ export class VocabularyTestService {
         );
         wordIds = await this.prisma.word.findMany({
           where: {
-            meanings: {
-              some: {}, // 确保有释义
-            },
+            lemmaLexemes: { some: { senses: { some: {} } } },
           },
           select: {
             id: true,

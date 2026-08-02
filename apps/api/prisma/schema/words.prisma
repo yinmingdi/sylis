@@ -1,132 +1,314 @@
 /**
- * 单词模型
- * 存储单词的基本信息和各种关联数据
+ * Search and learning anchor. A Word is a searchable spelling; a Lexeme
+ * below it represents a particular part of speech or homograph.
  */
 model Word {
-  id                 String              @id @default(uuid())
-  headword           String              @unique /// 单词拼写（添加唯一索引）
-  ukPhonetic         String?             /// 英式音标
-  usPhonetic         String?             /// 美式音标
-  ukAudio            String?             /// 英式发音音频URL
-  usAudio            String?             /// 美式发音音频URL
-  star               Int                 @default(0) /// 星级或重要程度
-  exampleSentences   ExampleSentence[]   /// 关联例句
-  realExamSentences  RealExamSentence[]  /// 关联真题例句
-  meanings           Meaning[]           /// 关联词义
-  phrases            Phrase[]            /// 关联短语
-  userWords          UserWord[]          /// 关联用户单词学习状态
-  wordBooks          WordBook[]          /// 关联单词书籍
-  wordRelationsTo    WordRelation[]      @relation("WordRelationsTo") /// 单词关联关系（目标）
-  wordRelationsFrom  WordRelation[]      @relation("WordRelationsFrom") /// 单词关联关系（来源）
-  quizQuestions      QuizQuestion[]      /// 关联测验题目
-  quizChoiceOptions  QuizChoiceOption[]  /// 关联测验选择项
-  dailyWordProgress  DailyWordProgress[] /// 每日学习进度（Prisma 要求的反向关系，实际业务中不使用）
-  collectedWords     CollectedWord[]     /// 被收藏的记录
-  lexiconMetadata    WordLexiconMetadata?
+  id                 String                   @id @default(uuid())
+  headword           String
+  normalizedHeadword String                   @unique
+  star               Int                      @default(0)
+  lexicalForms       LexicalForm[]            @relation("IndexedWordForms")
+  userWords          UserWord[]
+  wordBooks          WordBook[]
+  quizQuestions      QuizQuestion[]
+  quizChoiceOptions  QuizChoiceOption[]
+  dailyWordProgress  DailyWordProgress[]
+  collectedWords     CollectedWord[]
+  lexiconMetadata    WordLexiconMetadata[]
   enrichment         WordEnrichment?
+  usageExamples      UsageExample[]
+  collocations       Collocation[]
+  media              WordMedia[]
+  practiceQuestions  WordPracticeQuestion[]
+  sourceRecords      LexiconSourceRecord[]
+  lemmaLexemes       Lexeme[]                 @relation("LemmaWord")
+  completeness       WordContentCompleteness?
+  mnemonics          Mnemonic[]
+
+  @@index([headword])
 }
 
-/**
- * 词义模型
- * 存储单词的不同词性和含义
- */
-model Meaning {
-  id           String    @id @default(uuid())
-  wordId       String /// 单词ID
-  partOfSpeech String /// 词性
-  meaningCn    String /// 中文含义
-  meaningEn    String? /// 英文含义
-  source       ContentSource @default(LEGACY)
-  word         Word      @relation(fields: [wordId], references: [id]) /// 关联单词
-  synonyms     Synonym[] /// 关联同义词
+model Lexeme {
+  id                String                 @id @default(uuid())
+  lemmaWordId       String
+  language          String                 @default("en")
+  lexicalCategory   LexicalCategory
+  homographNo       Int                    @default(1)
+  displayOrder      Int                    @default(0)
+  lemmaWord         Word                   @relation("LemmaWord", fields: [lemmaWordId], references: [id], onDelete: Cascade)
+  forms             LexicalForm[]
+  senses            LexicalSense[]
+  examples          UsageExample[]
+  collocations      Collocation[]
+  practiceQuestions WordPracticeQuestion[]
+  sourceRelations   LexemeRelation[]       @relation("SourceLexemeRelations")
+  targetRelations   LexemeRelation[]       @relation("TargetLexemeRelations")
+  semanticRelations SemanticRelation[]     @relation("SourceLexemeSemantics")
+  targetSemantics   SemanticRelation[]     @relation("TargetLexemeSemantics")
+  mnemonics         Mnemonic[]
 
-  @@unique([wordId, partOfSpeech, meaningCn]) /// 确保同一单词的相同词性和含义唯一
+  @@unique([lemmaWordId, lexicalCategory, homographNo])
+  @@index([lexicalCategory])
 }
 
-/**
- * 同义词模型
- * 存储词义的同义词
- */
-model Synonym {
-  id          String  @id @default(uuid())
-  meaningId   String /// 词义ID
-  synonymText String /// 同义词文本
-  source      ContentSource @default(LEGACY)
-  meaning     Meaning @relation(fields: [meaningId], references: [id]) /// 关联词义
+model LexicalForm {
+  id             String               @id @default(uuid())
+  lexemeId       String
+  indexedWordId  String?
+  formType       LexicalFormType
+  writtenForm    String
+  normalizedForm String
+  featureKey     String               @default("")
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  displayOrder   Int                  @default(0)
+  lexeme         Lexeme               @relation(fields: [lexemeId], references: [id], onDelete: Cascade)
+  indexedWord    Word?                @relation("IndexedWordForms", fields: [indexedWordId], references: [id], onDelete: SetNull)
+  pronunciation  FormPronunciation[]
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
-  @@unique([meaningId, synonymText]) /// 确保同一词义的相同同义词文本唯一
+  @@unique([lexemeId, normalizedForm, featureKey, source, sourceVersion])
+  @@index([indexedWordId])
+  @@index([normalizedForm])
 }
 
-/**
- * 例句模型
- * 存储单词的例句
- */
-model ExampleSentence {
-  id         String @id @default(uuid())
-  wordId     String /// 单词ID
-  sentenceEn String /// 英文例句
-  sentenceCn String /// 中文例句
-  source     ContentSource @default(LEGACY)
-  word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+model FormPronunciation {
+  id             String               @id @default(uuid())
+  lexicalFormId  String
+  region         PronunciationRegion
+  ipa            String?
+  audioUrl       String?
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  lexicalForm    LexicalForm          @relation(fields: [lexicalFormId], references: [id], onDelete: Cascade)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
-  @@unique([wordId, sentenceEn]) /// 确保同一单词的相同英文例句唯一
+  @@unique([lexicalFormId, region, source, sourceVersion])
 }
 
-/**
- * 真题例句模型
- * 存储来自真实考试的例句及其来源信息
- */
-model RealExamSentence {
-  id         String   @id @default(uuid())
-  wordId     String   /// 单词ID
-  sentenceEn String   /// 英文例句（原句）
-  sentenceCn String?  /// 中文翻译（可选）
+model LexicalSense {
+  id              String                 @id @default(uuid())
+  lexemeId        String
+  sourceRecordId  String?
+  sourceSenseKey  String
+  displayOrder    Int                    @default(0)
+  grammarLabels   String[]               @default([])
+  source          ContentSource
+  sourceVersion   String
+  trust           ContentTrust           @default(SOURCE_BACKED)
+  confidence      Float?
+  lexeme          Lexeme                 @relation(fields: [lexemeId], references: [id], onDelete: Cascade)
+  glosses         SenseGloss[]
+  examples        UsageExample[]
+  collocations    Collocation[]
+  semantics       SemanticRelation[]     @relation("SourceSenseSemantics")
+  targetSemantics SemanticRelation[]     @relation("TargetSenseSemantics")
+  mnemonics       Mnemonic[]
+  questions       WordPracticeQuestion[]
+  sourceRecord    LexiconSourceRecord?   @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
-  // 来源信息
-  paper      String   /// 试卷套数（如"第三套"）
-  level      String   /// 考试级别（如"CET4", "CET6", "考研"）
-  year       String   /// 年份（如"2017.6"）
-  examType   String   /// 题型（如"阅读理解", "听力", "写作"）
-  source     ContentSource @default(LEGACY)
-
-  word       Word     @relation(fields: [wordId], references: [id]) /// 关联单词
-  createdAt  DateTime @default(now())
-
-  @@unique([wordId, sentenceEn, year, level]) /// 确保同一单词相同例句在同一年份同一级别考试中唯一
-  @@index([level, year]) /// 按级别和年份查询的索引
-  @@index([wordId, level]) /// 按单词和级别查询的索引
+  @@unique([sourceRecordId, sourceSenseKey])
+  @@index([lexemeId, displayOrder])
 }
 
-/**
- * 短语模型
- * 存储与单词相关的短语
- */
-model Phrase {
-  id         String @id @default(uuid())
-  wordId     String /// 单词ID
-  phraseText String /// 短语文本
-  phraseCn   String /// 短语中文翻译
-  source     ContentSource @default(LEGACY)
-  word       Word   @relation(fields: [wordId], references: [id]) /// 关联单词
+model SenseGloss {
+  id             String               @id @default(uuid())
+  senseId        String
+  languageTag    String
+  text           String
+  normalized     String
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  sense          LexicalSense         @relation(fields: [senseId], references: [id], onDelete: Cascade)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
-  @@unique([wordId, phraseText]) /// 确保同一单词的相同短语文本唯一
+  @@unique([senseId, languageTag, normalized])
 }
 
+model UsageExample {
+  id             String               @id @default(uuid())
+  wordId         String
+  lexemeId       String?
+  senseId        String?
+  kind           ExampleKind
+  sentenceEn     String
+  sentenceCn     String?
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  word           Word                 @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  lexeme         Lexeme?              @relation(fields: [lexemeId], references: [id], onDelete: SetNull)
+  sense          LexicalSense?        @relation(fields: [senseId], references: [id], onDelete: SetNull)
+  citation       ExampleCitation?
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
+  @@unique([wordId, sentenceEn, source, sourceVersion])
+  @@index([senseId])
+}
 
-/**
- * 单词关联关系模型
- * 存储单词之间的关联关系（如同根词、反义词、近义词等）
- */
-model WordRelation {
-  id            String            @id @default(uuid())
-  wordId        String /// 源单词ID
-  relatedWordId String /// 关联单词ID
-  pos           String? /// 词性简写（如n, v, adj, adv等，用于同根词等情况）
-  relationType  String?
-  source        ContentSource @default(LEGACY)
-  relatedWord   Word             @relation("WordRelationsTo", fields: [relatedWordId], references: [id]) /// 关联的目标单词
-  word          Word             @relation("WordRelationsFrom", fields: [wordId], references: [id]) /// 关联的源单词
+model ExampleCitation {
+  id             String               @id @default(uuid())
+  exampleId      String               @unique
+  sourceRecordId String?
+  paper          String?
+  level          String?
+  year           String?
+  examType       String?
+  verified       Boolean              @default(false)
+  example        UsageExample         @relation(fields: [exampleId], references: [id], onDelete: Cascade)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
 
-  @@unique([wordId, relatedWordId, relationType]) /// 确保相同的单词关联关系唯一
+  @@index([level, year])
+}
+
+model Collocation {
+  id             String               @id @default(uuid())
+  wordId         String
+  lexemeId       String?
+  senseId        String?
+  phraseText     String
+  phraseCn       String?
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  word           Word                 @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  lexeme         Lexeme?              @relation(fields: [lexemeId], references: [id], onDelete: SetNull)
+  sense          LexicalSense?        @relation(fields: [senseId], references: [id], onDelete: SetNull)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([wordId, phraseText, source, sourceVersion])
+}
+
+model SemanticRelation {
+  id             String               @id @default(uuid())
+  sourceLexemeId String
+  sourceSenseId  String?
+  targetLexemeId String?
+  targetSenseId  String?
+  targetText     String
+  targetMeaning  String?
+  relationType   SemanticRelationType
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  sourceLexeme   Lexeme               @relation("SourceLexemeSemantics", fields: [sourceLexemeId], references: [id], onDelete: Cascade)
+  sourceSense    LexicalSense?        @relation("SourceSenseSemantics", fields: [sourceSenseId], references: [id], onDelete: SetNull)
+  targetSense    LexicalSense?        @relation("TargetSenseSemantics", fields: [targetSenseId], references: [id], onDelete: SetNull)
+  targetLexeme   Lexeme?              @relation("TargetLexemeSemantics", fields: [targetLexemeId], references: [id], onDelete: SetNull)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceLexemeId, sourceSenseId, relationType, targetText, source, sourceVersion])
+  @@index([targetLexemeId])
+}
+
+model LexemeRelation {
+  id             String               @id @default(uuid())
+  sourceLexemeId String
+  targetLexemeId String?
+  targetText     String
+  targetMeaning  String?
+  relationType   LexemeRelationType
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  sourceLexeme   Lexeme               @relation("SourceLexemeRelations", fields: [sourceLexemeId], references: [id], onDelete: Cascade)
+  targetLexeme   Lexeme?              @relation("TargetLexemeRelations", fields: [targetLexemeId], references: [id], onDelete: SetNull)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceLexemeId, relationType, targetText, source, sourceVersion])
+}
+
+model Mnemonic {
+  id             String               @id @default(uuid())
+  wordId         String
+  lexemeId       String?
+  senseId        String?
+  text           String
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  word           Word                 @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  lexeme         Lexeme?              @relation(fields: [lexemeId], references: [id], onDelete: SetNull)
+  sense          LexicalSense?        @relation(fields: [senseId], references: [id], onDelete: SetNull)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([wordId, text, source, sourceVersion])
+}
+
+model WordMedia {
+  id             String               @id @default(uuid())
+  wordId         String
+  mediaType      MediaType
+  uri            String
+  altText        String?
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  word           Word                 @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([wordId, mediaType, uri, source, sourceVersion])
+}
+
+model WordPracticeQuestion {
+  id             String               @id @default(uuid())
+  wordId         String
+  lexemeId       String?
+  senseId        String?
+  kind           PracticeQuestionKind
+  stem           String
+  explanation    String?
+  correctIndex   Int?
+  sourceRecordId String?
+  source         ContentSource
+  sourceVersion  String
+  trust          ContentTrust         @default(SOURCE_BACKED)
+  isExperimental Boolean              @default(false)
+  word           Word                 @relation(fields: [wordId], references: [id], onDelete: Cascade)
+  lexeme         Lexeme?              @relation(fields: [lexemeId], references: [id], onDelete: SetNull)
+  sense          LexicalSense?        @relation(fields: [senseId], references: [id], onDelete: SetNull)
+  choices        WordPracticeChoice[]
+  sourceRecord   LexiconSourceRecord? @relation(fields: [sourceRecordId], references: [id], onDelete: SetNull)
+
+  @@unique([wordId, stem, source, sourceVersion])
+}
+
+model WordPracticeChoice {
+  id          String               @id @default(uuid())
+  questionId  String
+  choiceIndex Int
+  text        String
+  question    WordPracticeQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, choiceIndex])
+}
+
+model WordContentCompleteness {
+  id             String   @id @default(uuid())
+  wordId         String   @unique
+  profile        String
+  status         String
+  missingFields  String[] @default([])
+  fieldStates    Json
+  contentVersion String
+  updatedAt      DateTime @updatedAt
+  word           Word     @relation(fields: [wordId], references: [id], onDelete: Cascade)
 }

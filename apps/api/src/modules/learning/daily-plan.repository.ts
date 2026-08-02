@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
   WordLearningStatus,
-  Word,
   UserWord,
   LearningLog,
   DailyWordProgress,
@@ -9,13 +8,10 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { projectWordContent, WORD_CONTENT_INCLUDE } from '../words/word-content';
 
 // 类型定义
-type WordWithDetails = Word & {
-  meanings: any[];
-  exampleSentences: any[];
-  userWords: UserWord[];
-};
+type WordWithDetails = any;
 
 @Injectable()
 export class DailyPlanRepository {
@@ -84,15 +80,14 @@ export class DailyPlanRepository {
   ): Promise<WordWithDetails[]> {
     if (wordIds.length === 0) return [];
 
-    return this.prismaService.word.findMany({
+    const rows = await this.prismaService.word.findMany({
       where: {
         id: {
           in: wordIds,
         },
       },
       include: {
-        meanings: true,
-        exampleSentences: true,
+        ...WORD_CONTENT_INCLUDE,
         userWords: {
           where: { userLearningId },
         },
@@ -100,7 +95,8 @@ export class DailyPlanRepository {
       orderBy: {
         id: 'asc', // 保持顺序
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...projectWordContent(row), userWords: row.userWords }));
   }
 
   /**
@@ -112,7 +108,7 @@ export class DailyPlanRepository {
   ): Promise<WordWithDetails[]> {
     if (wordIds.length === 0) return [];
 
-    return this.prismaService.word.findMany({
+    const rows = await this.prismaService.word.findMany({
       where: {
         id: {
           in: wordIds,
@@ -124,8 +120,7 @@ export class DailyPlanRepository {
         },
       },
       include: {
-        meanings: true,
-        exampleSentences: true,
+        ...WORD_CONTENT_INCLUDE,
         userWords: {
           where: { userLearningId },
         },
@@ -133,7 +128,8 @@ export class DailyPlanRepository {
       orderBy: {
         id: 'asc', // 保持顺序
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...projectWordContent(row), userWords: row.userWords }));
   }
 
   /**
@@ -160,8 +156,7 @@ export class DailyPlanRepository {
       include: {
         word: {
           include: {
-            meanings: true,
-            exampleSentences: true,
+            ...WORD_CONTENT_INCLUDE,
             userWords: {
               where: { userLearningId },
             },
@@ -174,7 +169,7 @@ export class DailyPlanRepository {
       take: limit,
     });
 
-    return wordBooks.map((wb) => wb.word);
+    return wordBooks.map((wb: any) => ({ ...projectWordContent(wb.word), userWords: wb.word.userWords }));
   }
 
   /**
@@ -190,7 +185,7 @@ export class DailyPlanRepository {
     const endOfDay = new Date(targetDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    return this.prismaService.word.findMany({
+    const rows = await this.prismaService.word.findMany({
       where: {
         id: excludeWordIds.length > 0 ? { notIn: excludeWordIds } : undefined,
         wordBooks: {
@@ -213,8 +208,7 @@ export class DailyPlanRepository {
         },
       },
       include: {
-        meanings: true,
-        exampleSentences: true,
+        ...WORD_CONTENT_INCLUDE,
         userWords: {
           where: { userLearningId },
         },
@@ -225,7 +219,8 @@ export class DailyPlanRepository {
           _count: 'asc', // 优先复习次数少的
         },
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...projectWordContent(row), userWords: row.userWords }));
   }
 
   /**
@@ -383,20 +378,20 @@ export class DailyPlanRepository {
   ): Promise<WordWithDetails[]> {
     if (wordIds.length === 0) return [];
 
-    return this.prismaService.word.findMany({
+    const rows = await this.prismaService.word.findMany({
       where: {
         id: {
           in: wordIds,
         },
       },
       include: {
-        meanings: true,
-        exampleSentences: true,
+        ...WORD_CONTENT_INCLUDE,
         userWords: {
           where: { userLearningId },
         },
       },
-    });
+    } as any);
+    return rows.map((row: any) => ({ ...projectWordContent(row), userWords: row.userWords }));
   }
 
   /**

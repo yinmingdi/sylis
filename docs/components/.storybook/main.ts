@@ -75,7 +75,7 @@ const config: StorybookConfig = {
       alias: {
         ...config.resolve?.alias,
         "@": resolve(__dirname, "../../../"),
-        "@sylis/shared": resolve(__dirname, "../../../packages/shared/src"),
+        "@sylis/shared": resolve(__dirname, "../../../packages/shared"),
         "@sylis/utils": resolve(__dirname, "../../../packages/utils/src"),
       },
     };

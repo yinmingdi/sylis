@@ -12,6 +12,8 @@
     "dev:debug": "nest start --debug --watch",
     "dev:prod": "node dist/src/main.js",
     "start:prod": "node dist/src/main.js",
+    "vocabulary:enrich": "node dist/src/jobs/vocabulary-enricher.js",
+    "vocabulary:verify": "node dist/src/jobs/verify-vocabulary.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest",

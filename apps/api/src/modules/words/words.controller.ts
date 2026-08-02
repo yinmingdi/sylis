@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Query, Param } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Param, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import type { Request } from 'express';
 
 import { SearchWordReqDto, SearchWordResDto } from './dto/search-word.dto';
 import { TranslateTextReqDto } from './dto/translate.dto';
@@ -35,7 +36,8 @@ export class WordsController {
   @ApiResponse({ type: WordDetailResDto })
   async getWordDetail(
     @Param('wordOrId') wordOrId: string,
+    @Req() request: Request & { user?: { id: string } },
   ): Promise<WordDetailResDto> {
-    return this.wordsService.getWordDetail(wordOrId);
+    return this.wordsService.getWordDetail(wordOrId, request.user?.id);
   }
 }

@@ -81,9 +81,9 @@ export class WordsRepository {
         exampleSentences: true,
         realExamSentences: true,
         phrases: true,
-        wordRelationsTo: {
+        wordRelationsFrom: {
           include: {
-            word: {
+            relatedWord: {
               select: {
                 headword: true,
                 meanings: {
@@ -181,6 +181,7 @@ export class WordsRepository {
           level: sentence.level,
           year: sentence.year,
           examType: sentence.examType,
+          source: sentence.source,
         }))
         .sort((a, b) => {
           if (a.sentenceCn && !b.sentenceCn) return -1;
@@ -194,6 +195,7 @@ export class WordsRepository {
         partOfSpeech: string;
         meaningCn: string;
         synonymText: string;
+        source: 'LEGACY' | 'ECDICT' | 'DERIVED' | 'AI';
       }[] = [];
 
       word.meanings.forEach((meaning) => {
@@ -205,6 +207,7 @@ export class WordsRepository {
               partOfSpeech: synonymInfo.partOfSpeech,
               meaningCn: synonymInfo.meaningCn,
               synonymText: synonym.synonymText,
+              source: synonym.source,
             });
           }
         });
@@ -218,12 +221,14 @@ export class WordsRepository {
         meanings: word.meanings.map((meaning) => ({
           partOfSpeech: meaning.partOfSpeech,
           meaningCn: meaning.meaningCn,
+          source: meaning.source,
         })),
         exampleSentences: word.exampleSentences.map((sentence) => ({
           id: sentence.id,
           sentenceEn: sentence.sentenceEn,
           sentenceCn: sentence.sentenceCn,
           headword: word.headword,
+          source: sentence.source,
         })),
         examTags: Array.from(allTags),
         realExamSentences,
@@ -231,13 +236,16 @@ export class WordsRepository {
           id: phrase.id,
           phraseText: phrase.phraseText,
           phraseCn: phrase.phraseCn,
+          source: phrase.source,
         })),
         synonyms: synonymsList,
-        wordRelations: word.wordRelationsTo.map((relation) => ({
+        wordRelations: word.wordRelationsFrom.map((relation) => ({
           id: relation.id,
-          relatedWord: relation.word.headword,
-          meaningCn: relation.word.meanings[0]?.meaningCn || '',
+          relatedWord: relation.relatedWord.headword,
+          meaningCn: relation.relatedWord.meanings[0]?.meaningCn || '',
           pos: relation.pos ?? undefined,
+          relationType: relation.relationType ?? undefined,
+          source: relation.source,
         })),
       };
     });

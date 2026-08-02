@@ -59,8 +59,9 @@ jobs:
       JWT_SECRET: ci-only-jwt-secret-not-for-production-000000
       JWT_EXPIRES_IN: 30d
       AI_API_KEY: ci-placeholder-key
-      AI_BASE_URL: https://api.example.com/v1
-      AI_MODEL: ci-placeholder-model
+      AI_BASE_URL: https://api.deepseek.com
+      AI_MODEL: deepseek-v4-flash
+      AI_ENRICHMENT_ENABLED: "false"
       MAILER_HOST: localhost
       MAILER_PORT: 1025
       MAILER_SECURE: "false"
@@ -101,9 +102,9 @@ jobs:
         run: |
           fixture=services/vocabulary-importer/test/fixtures/ecdict.csv
           checksum=$(sha256sum "$fixture" | cut -d ' ' -f 1)
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --dry-run
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum"
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum"
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --dry-run
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all
       - name: Web typecheck and build
         run: |
           pnpm --filter @sylis/web typecheck

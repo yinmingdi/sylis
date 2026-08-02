@@ -19,8 +19,13 @@ interface WordDetailProps {
   correctCount?: number;
 }
 
-const WordDetail = ({ data, className, requiredCorrectCount, correctCount }: WordDetailProps) => {
-  const [activeTab, setActiveTab] = useState('example');
+const WordDetail = ({
+  data,
+  className,
+  requiredCorrectCount,
+  correctCount,
+}: WordDetailProps) => {
+  const [activeTab, setActiveTab] = useState('meaning');
 
   const handlePlayAudio = () => {
     // 音频播放由 SoundButton 组件内部处理
@@ -36,7 +41,49 @@ const WordDetail = ({ data, className, requiredCorrectCount, correctCount }: Wor
     meanings: data.meanings,
   };
 
+  const englishDefinitions = Array.from(
+    new Set(
+      data.meanings
+        .map((meaning) => meaning.meaningEn?.trim())
+        .filter((meaning): meaning is string => Boolean(meaning)),
+    ),
+  );
+
   const tabs = [
+    {
+      key: 'meaning',
+      title: '释义',
+      hasData: data.meanings.length > 0,
+      content: (
+        <div className={styles.meaningsTab}>
+          <div className={styles.meaningList}>
+            {data.meanings.map((meaning, index) => (
+              <div
+                key={`${meaning.partOfSpeech}-${index}`}
+                className={styles.meaningItem}
+              >
+                <span className={styles.partOfSpeech}>
+                  {meaning.partOfSpeech && meaning.partOfSpeech !== 'unknown'
+                    ? meaning.partOfSpeech
+                    : '释义'}
+                </span>
+                <span className={styles.meaningText}>{meaning.meaningCn}</span>
+              </div>
+            ))}
+          </div>
+          {englishDefinitions.length > 0 && (
+            <div className={styles.englishDefinitions}>
+              <div className={styles.definitionLabel}>英文释义</div>
+              {englishDefinitions.map((definition) => (
+                <p key={definition} className={styles.definitionText}>
+                  {definition}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      ),
+    },
     {
       key: 'example',
       title: '例句',
@@ -84,43 +131,37 @@ const WordDetail = ({ data, className, requiredCorrectCount, correctCount }: Wor
   const visibleTabs = tabs.filter((tab) => tab.hasData);
 
   // 如果当前选中的 tab 被过滤掉了，选择第一个可见的 tab
-  const currentTab = visibleTabs.find((tab) => tab.key === activeTab) || visibleTabs[0];
-  if (currentTab && currentTab.key !== activeTab) {
-    setActiveTab(currentTab.key);
-  }
+  const currentTab =
+    visibleTabs.find((tab) => tab.key === activeTab) || visibleTabs[0];
 
   const renderTabContent = () => {
     if (visibleTabs.length === 0) {
       return (
         <div className={styles.tabsContainer}>
-          <div className={styles.emptyState}>暂无相关数据</div>
+          <div className={styles.emptyState}>暂无释义或扩展词汇内容</div>
         </div>
       );
     }
 
-    const currentTabData = visibleTabs.find((tab) => tab.key === activeTab);
-
     return (
       <div className={styles.tabsContainer}>
         {/* Tab Content */}
-        <div className={styles.tabContent}>
-          {currentTabData?.content}
-        </div>
+        <div className={styles.tabContent}>{currentTab?.content}</div>
 
         {/* Tab Buttons */}
         <div className={styles.tabButtons}>
           {visibleTabs.map((tab) => (
             <button
               key={tab.key}
-              className={`${styles.tabButton} ${activeTab === tab.key ? styles.tabButtonActive : ''
-                }`}
+              className={`${styles.tabButton} ${
+                currentTab?.key === tab.key ? styles.tabButtonActive : ''
+              }`}
               onClick={() => setActiveTab(tab.key)}
             >
               {tab.title}
             </button>
           ))}
         </div>
-
       </div>
     );
   };

@@ -7,10 +7,10 @@
 model UserSubreddit {
   id            String   @id @default(uuid())
   userId        String
-  subredditName String   /// 板块名称，如 "todayilearned"
-  displayName   String?  /// 显示名称
-  category      String?  /// 分类：daily, tech, entertainment, learning, gaming 等
-  difficulty    String?  /// 难度：beginner, intermediate, advanced
+  subredditName String /// 板块名称，如 "todayilearned"
+  displayName   String? /// 显示名称
+  category      String? /// 分类：daily, tech, entertainment, learning, gaming 等
+  difficulty    String? /// 难度：beginner, intermediate, advanced
   subscribedAt  DateTime @default(now())
 
   @@unique([userId, subredditName])
@@ -19,15 +19,15 @@ model UserSubreddit {
 
 /// 用户 Reddit 阅读历史
 model UserRedditHistory {
-  id       String @id @default(uuid())
-  userId   String
-  redditId String /// Reddit 帖子 ID (如 "t3_abc123")
+  id        String @id @default(uuid())
+  userId    String
+  redditId  String /// Reddit 帖子 ID (如 "t3_abc123")
   subreddit String /// 板块名称
-  title    String /// 帖子标题
-  url      String /// Reddit URL
+  title     String /// 帖子标题
+  url       String /// Reddit URL
 
   // 学习数据
-  wordsLearned Int  @default(0) /// 从这篇文章学到的新单词数
+  wordsLearned Int     @default(0) /// 从这篇文章学到的新单词数
   readDuration Int? /// 阅读时长（秒）
   difficulty   String? /// 内容难度评级
 
@@ -42,10 +42,10 @@ model UserRedditHistory {
 model UserRedditSaved {
   id        String  @id @default(uuid())
   userId    String
-  redditId  String  /// Reddit 帖子 ID
-  subreddit String  /// 板块名称
-  title     String  /// 帖子标题
-  url       String  /// Reddit URL
+  redditId  String /// Reddit 帖子 ID
+  subreddit String /// 板块名称
+  title     String /// 帖子标题
+  url       String /// Reddit URL
   thumbnail String? /// 缩略图 URL
   notes     String? @db.Text /// 用户笔记
 
@@ -64,4 +64,3 @@ model UserRedditStats {
   totalReadTime     Int      @default(0) /// 总阅读时长（秒）
   updatedAt         DateTime @updatedAt
 }
-

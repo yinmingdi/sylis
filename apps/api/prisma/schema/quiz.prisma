@@ -11,12 +11,12 @@ enum QuizQuestionType {
  * 存储测验题目的基本信息，支持多种题型
  */
 model QuizQuestion {
-  id             String            @id @default(uuid()) /// 题目唯一标识
+  id             String              @id @default(uuid()) /// 题目唯一标识
   type           QuizQuestionType /// 题目类型
   wordId         String? /// 关联单词ID（可选）
-  word           Word?             @relation(fields: [wordId], references: [id]) /// 关联的单词
-  createdAt      DateTime          @default(now()) /// 创建时间
-  updatedAt      DateTime          @updatedAt /// 更新时间
+  word           Word?               @relation(fields: [wordId], references: [id]) /// 关联的单词
+  createdAt      DateTime            @default(now()) /// 创建时间
+  updatedAt      DateTime            @updatedAt /// 更新时间
   choiceQuestion QuizChoiceQuestion? /// 选择题详细信息（当type为CHOICE时使用）
 }
 

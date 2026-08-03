@@ -36,11 +36,37 @@ export interface MeaningInput {
   meaningEn?: string;
 }
 
+export type LexicalCategoryName =
+  | "NOUN"
+  | "VERB"
+  | "ADJECTIVE"
+  | "ADVERB"
+  | "PRONOUN"
+  | "PREPOSITION"
+  | "CONJUNCTION"
+  | "DETERMINER"
+  | "ARTICLE"
+  | "NUMERAL"
+  | "INTERJECTION"
+  | "AUXILIARY"
+  | "PHRASE"
+  | "PROPER_NOUN"
+  | "ABBREVIATION"
+  | "OTHER";
+
+export interface SenseInput {
+  partOfSpeech: string;
+  lexicalCategory: LexicalCategoryName;
+  grammarLabels: string[];
+  glosses: Array<{ languageTag: string; text: string }>;
+}
+
 export interface SelectedWord {
   headword: string;
   phonetic?: string;
   star: number;
   meanings: MeaningInput[];
+  senses: SenseInput[];
   metadata: {
     tags: string[];
     bncRank?: number;
@@ -65,6 +91,64 @@ function normalizeEcdictText(value: string) {
   return value.replace(/\\r\\n|\\n|\\r/g, "\n").replace(/\r\n?/g, "\n");
 }
 
+const POS_MAP: Record<string, LexicalCategoryName> = {
+  n: "NOUN",
+  noun: "NOUN",
+  v: "VERB",
+  verb: "VERB",
+  vt: "VERB",
+  vi: "VERB",
+  adj: "ADJECTIVE",
+  adjective: "ADJECTIVE",
+  a: "ADJECTIVE",
+  adv: "ADVERB",
+  adverb: "ADVERB",
+  pron: "PRONOUN",
+  pronoun: "PRONOUN",
+  prep: "PREPOSITION",
+  preposition: "PREPOSITION",
+  conj: "CONJUNCTION",
+  conjunction: "CONJUNCTION",
+  det: "DETERMINER",
+  determiner: "DETERMINER",
+  art: "ARTICLE",
+  article: "ARTICLE",
+  num: "NUMERAL",
+  numeral: "NUMERAL",
+  int: "INTERJECTION",
+  interj: "INTERJECTION",
+  interjection: "INTERJECTION",
+  aux: "AUXILIARY",
+  auxiliary: "AUXILIARY",
+  phr: "PHRASE",
+  phrase: "PHRASE",
+  abbr: "ABBREVIATION",
+  abbreviation: "ABBREVIATION",
+  pn: "PROPER_NOUN",
+};
+
+export function normalizePartOfSpeech(value?: string): string {
+  return value?.trim().toLowerCase().replace(/\.$/, "") || "other";
+}
+
+export function lexicalCategoryForPartOfSpeech(value?: string): LexicalCategoryName {
+  return POS_MAP[normalizePartOfSpeech(value)] ?? "OTHER";
+}
+
+function parseGlossLines(value: string | undefined) {
+  return normalizeEcdictText(value ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([a-z-]+)\.\s*(.+)$/i);
+      return {
+        pos: normalizePartOfSpeech(match?.[1]),
+        text: (match?.[2] ?? line).trim(),
+      };
+    });
+}
+
 export function selectEcdictRow(
   row: EcdictRow,
   scope: ImportScope = "learning",
@@ -84,25 +168,61 @@ export function selectEcdictRow(
 
   if (scope === "learning" && !selected) return null;
 
-  const fallbackPartOfSpeech =
-    row.pos
-      ?.split(/[\s,/]+/)
-      .find(Boolean)
-      ?.replace(/\.$/, "") || "unknown";
-  const definition =
-    normalizeEcdictText(row.definition ?? "").trim() || undefined;
-  const meanings = normalizeEcdictText(row.translation ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const match = line.match(/^([a-z-]+)\.\s*(.+)$/i);
-      return {
-        partOfSpeech: match?.[1]?.toLowerCase() || fallbackPartOfSpeech,
-        meaningCn: match?.[2]?.trim() || line,
-        meaningEn: definition,
-      };
-    });
+  const fallbackPartOfSpeech = normalizePartOfSpeech(
+    row.pos?.split(/[\s,/]+/).find(Boolean),
+  );
+  const translations = parseGlossLines(row.translation);
+  const definitions = parseGlossLines(row.definition);
+  const grouped = new Map<string, SenseInput>();
+  const ensureSense = (pos: string) => {
+    const key = !pos || pos === "other" ? fallbackPartOfSpeech : pos;
+    const existing = grouped.get(key);
+    if (existing) return existing;
+    const sense: SenseInput = {
+      partOfSpeech: key,
+      lexicalCategory: lexicalCategoryForPartOfSpeech(key),
+      grammarLabels: key === "vt" || key === "vi" ? [key] : [],
+      glosses: [],
+    };
+    grouped.set(key, sense);
+    return sense;
+  };
+  for (const translation of translations) {
+    const sense = ensureSense(translation.pos);
+    sense.glosses.push({ languageTag: "zh-CN", text: translation.text });
+  }
+  for (const definition of definitions) {
+    if (definition.pos === "other" && translations.length > 0) {
+      // ECDICT definitions are frequently unlabelled. Keep them as English
+      // glosses on the first translated sense instead of inventing an OTHER
+      // part of speech or pretending there is a one-to-one alignment.
+      const firstSense = ensureSense(translations[0]?.pos || fallbackPartOfSpeech);
+      firstSense.glosses.push({ languageTag: "en", text: definition.text });
+      continue;
+    }
+    const sense = ensureSense(definition.pos);
+    sense.glosses.push({ languageTag: "en", text: definition.text });
+  }
+  if (grouped.size === 0) ensureSense(fallbackPartOfSpeech);
+  const senses = Array.from(grouped.values());
+  const meanings = senses.flatMap((sense) => {
+    const cn = sense.glosses
+      .filter((gloss) => gloss.languageTag === "zh-CN")
+      .map((gloss) => gloss.text)
+      .join("；");
+    const en = sense.glosses
+      .filter((gloss) => gloss.languageTag === "en")
+      .map((gloss) => gloss.text)
+      .join("; ");
+    const unlabelledDefinitions = normalizeEcdictText(row.definition ?? "").trim();
+    return cn || en
+      ? [{
+          partOfSpeech: sense.partOfSpeech,
+          meaningCn: cn,
+          meaningEn: unlabelledDefinitions || en || undefined,
+        }]
+      : [];
+  });
 
   const collins = positiveInteger(row.collins);
   return {
@@ -110,6 +230,7 @@ export function selectEcdictRow(
     phonetic: row.phonetic?.trim() || undefined,
     star: Math.min(collins ?? 0, 5),
     meanings,
+    senses,
     metadata: {
       tags,
       bncRank,

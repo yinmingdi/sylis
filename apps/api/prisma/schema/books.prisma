@@ -10,7 +10,7 @@ enum BookCategory {
  * 存储词汇书或教材的基本信息
  */
 model Book {
-  id            String     @id @default(uuid())
+  id            String         @id @default(uuid())
   name          String /// 书籍名称
   introduce     String? /// 书籍介绍
   coverUrl      String? /// 封面图片URL
@@ -23,7 +23,7 @@ model Book {
   size          Int? /// 大小
   source        ContentSource?
   category      BookCategory?
-  sortOrder     Int               @default(0)
+  sortOrder     Int            @default(0)
   criteria      Json?
   userBooks     UserBook[] /// 关联用户书籍
   wordBooks     WordBook[] /// 关联单词书籍

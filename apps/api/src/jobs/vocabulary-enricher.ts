@@ -49,15 +49,9 @@ async function loadTargets(prisma: PrismaClient) {
     INNER JOIN "Book" AS book ON book."id" = word_book."bookId"
     LEFT JOIN "WordEnrichment" AS enrichment ON enrichment."wordId" = word."id"
     WHERE book."source" = 'ECDICT'::"ContentSource"
-      AND EXISTS (
-        SELECT 1 FROM "Meaning" AS meaning WHERE meaning."wordId" = word."id"
-      )
       AND (
         enrichment."id" IS NULL
-        OR enrichment."status" NOT IN (
-          'COMPLETED'::"EnrichmentStatus",
-          'SKIPPED'::"EnrichmentStatus"
-        )
+        OR enrichment."status" <> 'COMPLETED'::"EnrichmentStatus"
         OR enrichment."contentVersion" <> ${VOCABULARY_CONTENT_VERSION}
       )
     ORDER BY word."id" ASC
@@ -67,7 +61,9 @@ async function loadTargets(prisma: PrismaClient) {
 async function main() {
   requiredEnvironment('DATABASE_URL');
   const apiKey = requiredEnvironment('AI_ENRICHMENT_API_KEY');
-  const baseURL = requiredEnvironment('AI_BASE_URL');
+  const baseURL =
+    process.env.AI_ENRICHMENT_BASE_URL?.trim() ||
+    requiredEnvironment('AI_BASE_URL');
   const model = requiredEnvironment('AI_MODEL');
   const mode = parseMode();
   const pilotSize = parsePilotSize();

@@ -62,6 +62,7 @@ Set only the following on `vocabulary-importer`:
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 ECDICT_DRY_RUN=true
 ECDICT_SCOPE=all
+ECDICT_EXPECTED_SELECTED=770611
 ```
 
 The source URL, pinned commit and checksum have safe defaults in the importer.
@@ -86,10 +87,31 @@ revoked and replaced before deployment.
 
 - Connect `web` and `api` to `main`.
 - Enable GitHub autodeploy and `Wait for CI` for both services.
-- Leave importer autodeploy disabled.
+- Leave importer and enricher autodeploy disabled.
+- Deploy the importer only through the manual `Deploy vocabulary importer`
+  GitHub Actions workflow. The workflow checks out the dispatched `main` commit;
+  do not run `railway up` from a developer workstation.
 - Protect `develop` and `main`; require `CI / Build and test`, `CI / Secret scan`
   and `GitFlow Compliance Check`. Keep required approvals at zero for a
   single-maintainer repository.
+
+Create or reuse the `sylis / production` GitHub deployment environment. Store a
+Railway project token scoped only to the `production` environment as the
+`RAILWAY_TOKEN` environment secret. Add these non-secret environment variables:
+
+```text
+RAILWAY_PROJECT_ID=<sylis project ID>
+RAILWAY_ENVIRONMENT_ID=<production environment ID>
+RAILWAY_IMPORTER_SERVICE_ID=<vocabulary-importer service ID>
+```
+
+In the GitHub environment settings, set `Deployment branches and tags` to
+`Selected branches and tags` and allow only the `main` branch. This prevents a
+workflow modified on another branch from reading the production Railway token.
+
+Do not put `DATABASE_URL`, AI, SMTP, JWT or Reddit credentials in GitHub. The
+workflow receives those values only indirectly through the Railway service at
+runtime.
 
 Feature and bugfix branches merge into `develop`. Create `release/*` from
 `develop` and merge it into `main`. Create `hotfix/*` from `main`, then merge it
@@ -102,10 +124,12 @@ back into both `main` and `develop`.
 3. Merge `release/v0.1.0` into `main`; CI completion releases production.
 4. Confirm `/health`, login, email, AI chat, Redis-backed operations and
    same-origin `/api` requests.
-5. Deploy the importer with `ECDICT_DRY_RUN=true` and inspect its JSON count.
-6. Change the importer to `ECDICT_DRY_RUN=false`, deploy it manually, then verify
-   the full valid-row count, 24 books, book association counts and
-   `DictionaryImportRun.status=COMPLETED`.
+5. From the `main` branch, manually run `Deploy vocabulary importer` in
+   `dry-run` mode and inspect its JSON count.
+6. Run the same workflow in `import` mode with confirmation value `IMPORT`. It
+   starts one deployment that validates the pinned checksum and all 770,611 rows
+   against the same downloaded file before writing, validates 24 books after the
+   import, and restores `ECDICT_DRY_RUN=true`.
 7. Run the enricher with `ENRICHMENT_MODE=pilot`. Review the recorded token cost,
    projected cost and its automatic 125% cap in `VocabularyEnrichmentRun`.
 8. Only after accepting that estimate, set `ENRICHMENT_MODE=full` and run the

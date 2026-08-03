@@ -5,6 +5,7 @@ import { createReadStream } from "node:fs";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { materializeEcdictBooks } from "./books.js";
 import {
@@ -47,6 +48,7 @@ interface ImportOptions {
   batchSize: number;
   scope: ImportScope;
   materializeBooks: boolean;
+  expectedSelected?: number;
 }
 
 interface ImportStats {
@@ -73,6 +75,7 @@ export function parseArguments(args: string[]): ImportOptions {
     batchSize: process.env.ECDICT_BATCH_SIZE ? Number(process.env.ECDICT_BATCH_SIZE) : 250,
     scope: process.env.ECDICT_SCOPE === "learning" ? "learning" : "all",
     materializeBooks: process.env.ECDICT_MATERIALIZE_BOOKS !== "false",
+    expectedSelected: process.env.ECDICT_EXPECTED_SELECTED ? Number(process.env.ECDICT_EXPECTED_SELECTED) : undefined,
   };
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
@@ -81,6 +84,7 @@ export function parseArguments(args: string[]): ImportOptions {
     else if (flag === "--sha256") { options.checksum = readValue(args, index, flag).toLowerCase(); index += 1; }
     else if (flag === "--limit") { options.limit = Number(readValue(args, index, flag)); index += 1; }
     else if (flag === "--batch-size") { options.batchSize = Number(readValue(args, index, flag)); index += 1; }
+    else if (flag === "--expected-selected") { options.expectedSelected = Number(readValue(args, index, flag)); index += 1; }
     else if (flag === "--scope") {
       const scope = readValue(args, index, flag);
       if (scope !== "learning" && scope !== "all") throw new Error("--scope must be either learning or all");
@@ -90,6 +94,7 @@ export function parseArguments(args: string[]): ImportOptions {
   }
   if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1)) throw new Error("--limit must be a positive integer");
   if (!Number.isInteger(options.batchSize) || options.batchSize < 1 || options.batchSize > 5_000) throw new Error("--batch-size must be an integer between 1 and 5000");
+  if (options.expectedSelected !== undefined && (!Number.isInteger(options.expectedSelected) || options.expectedSelected < 1)) throw new Error("--expected-selected must be a positive integer");
   if (!/^[a-f0-9]{64}$/.test(options.checksum)) throw new Error("--sha256 must be a 64-character hexadecimal digest");
   return options;
 }
@@ -216,13 +221,21 @@ async function scanFile(filePath: string, options: ImportOptions, checksum: stri
   return stats;
 }
 
+export function validatePreflight(stats: Pick<ImportStats, "selected" | "skipped">, expectedSelected?: number) {
+  if (expectedSelected === undefined) return;
+  if (stats.selected !== expectedSelected || stats.skipped !== 0) throw new Error(`ECDICT preflight expected ${expectedSelected} selected and 0 skipped rows; received ${stats.selected} selected and ${stats.skipped} skipped`);
+}
+
 async function run() {
   const options = parseArguments(process.argv.slice(2));
   const source = await resolveSource(options.source);
   try {
     const actualChecksum = await sha256(source.filePath);
     if (actualChecksum !== options.checksum) throw new Error("ECDICT checksum mismatch; refusing to import unverified data");
-    if (options.dryRun) { console.log(JSON.stringify({ mode: "dry-run", checksum: actualChecksum, ...(await scanFile(source.filePath, options, actualChecksum)) })); return; }
+    const preflight = await scanFile(source.filePath, options, actualChecksum);
+    validatePreflight(preflight, options.expectedSelected);
+    if (options.dryRun) { console.log(JSON.stringify({ mode: "dry-run", checksum: actualChecksum, ...preflight })); return; }
+    console.log(JSON.stringify({ mode: "preflight", checksum: actualChecksum, ...preflight }));
     if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required for a real import");
     const prisma = new PrismaClient();
     let runId: string | undefined;
@@ -248,4 +261,6 @@ async function run() {
   } finally { await source.cleanup(); }
 }
 
-run().catch((error) => { console.error(error instanceof Error ? error.message : "Vocabulary import failed"); process.exitCode = 1; });
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  run().catch((error) => { console.error(error instanceof Error ? error.message : "Vocabulary import failed"); process.exitCode = 1; });
+}

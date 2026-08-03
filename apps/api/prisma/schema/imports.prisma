@@ -102,6 +102,7 @@ model LexiconSourceRecord {
   sourceKey         String
   sourceOrder       Int                    @default(0)
   rawPayloadHash    String
+  projectionVersion Int                    @default(1)
   rawPayloadUri     String?
   version           LexiconSourceVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
   word              Word                   @relation(fields: [wordId], references: [id], onDelete: Cascade)

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  findLatestProgress,
   parseDeploymentUpload,
   parseJsonLines,
   validateSummary,
@@ -18,6 +19,23 @@ test("parses Railway NDJSON while ignoring progress output", () => {
       'Starting Container\n{"mode":"dry-run","selected":770611}\n',
     ),
     [{ mode: "dry-run", selected: 770_611 }],
+  );
+});
+
+test("reads the latest importer progress from Railway JSON logs", () => {
+  assert.deepEqual(
+    findLatestProgress(
+      [
+        '{"mode":"progress","phase":"stage","processed":25000}',
+        '{"level":"info","mode":"progress","phase":"stage","processed":50000}',
+      ].join("\n"),
+    ),
+    {
+      level: "info",
+      mode: "progress",
+      phase: "stage",
+      processed: 50_000,
+    },
   );
 });
 

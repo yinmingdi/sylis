@@ -106,6 +106,7 @@ jobs:
           pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3 --dry-run
           pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
           pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
+          pnpm --filter @sylis/vocabulary-importer verify:fixture
       - name: Web typecheck and build
         run: |
           pnpm --filter @sylis/web typecheck

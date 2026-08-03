@@ -17,6 +17,13 @@ export interface EcdictBookDefinition {
   criterion: BookCriterion;
 }
 
+export interface EcdictBookProgress {
+  processed: number;
+  total: number;
+  bookId: string;
+  wordCount: number;
+}
+
 const examBooks: EcdictBookDefinition[] = [
   ["zk", "中考英语词汇", "中考"],
   ["gk", "高考英语词汇", "高考"],
@@ -118,10 +125,13 @@ function rankOf(
   );
 }
 
-export async function materializeEcdictBooks(prisma: PrismaClient) {
+export async function materializeEcdictBooks(
+  prisma: PrismaClient,
+  onProgress: (progress: EcdictBookProgress) => void = () => undefined,
+) {
   const associationBatchSize = 5_000;
 
-  for (const book of ECDICT_BOOKS) {
+  for (const [bookIndex, book] of ECDICT_BOOKS.entries()) {
     const words = await prisma.wordLexiconMetadata.findMany({
       where: { source: "ECDICT", ...criterionWhere(book.criterion) },
       select: {
@@ -192,6 +202,12 @@ export async function materializeEcdictBooks(prisma: PrismaClient) {
       },
       { timeout: 600_000 },
     );
+    onProgress({
+      processed: bookIndex + 1,
+      total: ECDICT_BOOKS.length,
+      bookId: book.id,
+      wordCount: words.length,
+    });
   }
 
   return ECDICT_BOOKS.length;

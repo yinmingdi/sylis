@@ -149,6 +149,20 @@ function parseGlossLines(value: string | undefined) {
     });
 }
 
+function appendGloss(
+  sense: SenseInput,
+  languageTag: string,
+  text: string,
+) {
+  const normalized = text.trim().toLowerCase();
+  const duplicate = sense.glosses.some(
+    (gloss) =>
+      gloss.languageTag === languageTag &&
+      gloss.text.trim().toLowerCase() === normalized,
+  );
+  if (!duplicate) sense.glosses.push({ languageTag, text });
+}
+
 export function selectEcdictRow(
   row: EcdictRow,
   scope: ImportScope = "learning",
@@ -189,7 +203,7 @@ export function selectEcdictRow(
   };
   for (const translation of translations) {
     const sense = ensureSense(translation.pos);
-    sense.glosses.push({ languageTag: "zh-CN", text: translation.text });
+    appendGloss(sense, "zh-CN", translation.text);
   }
   for (const definition of definitions) {
     if (definition.pos === "other" && translations.length > 0) {
@@ -197,11 +211,11 @@ export function selectEcdictRow(
       // glosses on the first translated sense instead of inventing an OTHER
       // part of speech or pretending there is a one-to-one alignment.
       const firstSense = ensureSense(translations[0]?.pos || fallbackPartOfSpeech);
-      firstSense.glosses.push({ languageTag: "en", text: definition.text });
+      appendGloss(firstSense, "en", definition.text);
       continue;
     }
     const sense = ensureSense(definition.pos);
-    sense.glosses.push({ languageTag: "en", text: definition.text });
+    appendGloss(sense, "en", definition.text);
   }
   if (grouped.size === 0) ensureSense(fallbackPartOfSpeech);
   const senses = Array.from(grouped.values());

@@ -76,6 +76,21 @@ test("keeps transitivity labels as separate senses under the verb lexeme", () =>
   );
 });
 
+test("de-duplicates normalized glosses within the same sense and language", () => {
+  const word = selectEcdictRow({
+    word: "duplicate",
+    translation: "n. 重复释义\nn. 重复释义",
+    definition: "n. Repeated gloss\nn. repeated gloss",
+    tag: "cet4",
+  });
+
+  assert.deepEqual(word?.senses[0]?.glosses, [
+    { languageTag: "zh-CN", text: "重复释义" },
+    { languageTag: "en", text: "Repeated gloss" },
+  ]);
+  assert.equal(word?.meanings[0]?.meaningCn, "重复释义");
+});
+
 test("selects top-frequency and Oxford words", () => {
   assert.ok(selectEcdictRow({ word: "alpha", bnc: "29999" }));
   assert.ok(selectEcdictRow({ word: "beta", oxford: "1" }));

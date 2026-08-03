@@ -10,6 +10,11 @@ pnpm --filter @sylis/vocabulary-importer start --source ./ecdict.csv --scope all
 pnpm --filter @sylis/vocabulary-importer start --source ./ecdict.csv --scope all
 ```
 
+Set `ECDICT_EXPECTED_SELECTED` (or pass `--expected-selected`) in production to
+make the read-only scan reject an incomplete source before any database writes.
+Formal imports scan and validate the same downloaded file before opening the
+database connection.
+
 The default remote source and SHA-256 are pinned in `src/ecdict.ts`. A custom
 fixture must provide its digest with `--sha256`.
 

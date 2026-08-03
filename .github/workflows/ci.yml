@@ -98,13 +98,14 @@ jobs:
           pnpm --filter @sylis/vocabulary-importer test
           pnpm --filter @sylis/vocabulary-importer typecheck
           pnpm --filter @sylis/vocabulary-importer build
+          node --test scripts/deploy-vocabulary-importer.test.mjs
       - name: Vocabulary importer dry-run and idempotency
         run: |
           fixture=services/vocabulary-importer/test/fixtures/ecdict.csv
           checksum=$(sha256sum "$fixture" | cut -d ' ' -f 1)
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --dry-run
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3 --dry-run
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
+          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
       - name: Web typecheck and build
         run: |
           pnpm --filter @sylis/web typecheck

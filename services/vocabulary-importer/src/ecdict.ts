@@ -1,4 +1,5 @@
 export const ECDICT_COMMIT = "bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b";
+export const ECDICT_PROJECTION_VERSION = 2;
 export const ECDICT_SHA256 =
   "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf";
 export const ECDICT_URL = `https://raw.githubusercontent.com/skywind3000/ECDICT/${ECDICT_COMMIT}/ecdict.csv`;
@@ -131,7 +132,9 @@ export function normalizePartOfSpeech(value?: string): string {
   return value?.trim().toLowerCase().replace(/\.$/, "") || "other";
 }
 
-export function lexicalCategoryForPartOfSpeech(value?: string): LexicalCategoryName {
+export function lexicalCategoryForPartOfSpeech(
+  value?: string,
+): LexicalCategoryName {
   return POS_MAP[normalizePartOfSpeech(value)] ?? "OTHER";
 }
 
@@ -149,11 +152,7 @@ function parseGlossLines(value: string | undefined) {
     });
 }
 
-function appendGloss(
-  sense: SenseInput,
-  languageTag: string,
-  text: string,
-) {
+function appendGloss(sense: SenseInput, languageTag: string, text: string) {
   const normalized = text.trim().toLowerCase();
   const duplicate = sense.glosses.some(
     (gloss) =>
@@ -210,7 +209,9 @@ export function selectEcdictRow(
       // ECDICT definitions are frequently unlabelled. Keep them as English
       // glosses on the first translated sense instead of inventing an OTHER
       // part of speech or pretending there is a one-to-one alignment.
-      const firstSense = ensureSense(translations[0]?.pos || fallbackPartOfSpeech);
+      const firstSense = ensureSense(
+        translations[0]?.pos || fallbackPartOfSpeech,
+      );
       appendGloss(firstSense, "en", definition.text);
       continue;
     }
@@ -228,13 +229,17 @@ export function selectEcdictRow(
       .filter((gloss) => gloss.languageTag === "en")
       .map((gloss) => gloss.text)
       .join("; ");
-    const unlabelledDefinitions = normalizeEcdictText(row.definition ?? "").trim();
+    const unlabelledDefinitions = normalizeEcdictText(
+      row.definition ?? "",
+    ).trim();
     return cn || en
-      ? [{
-          partOfSpeech: sense.partOfSpeech,
-          meaningCn: cn,
-          meaningEn: unlabelledDefinitions || en || undefined,
-        }]
+      ? [
+          {
+            partOfSpeech: sense.partOfSpeech,
+            meaningCn: cn,
+            meaningEn: unlabelledDefinitions || en || undefined,
+          },
+        ]
       : [];
   });
 

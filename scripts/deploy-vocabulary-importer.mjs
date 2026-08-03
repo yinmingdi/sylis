@@ -83,6 +83,12 @@ function findSummary(output, expectedMode) {
   return parseJsonLines(output).find((record) => record.mode === expectedMode);
 }
 
+export function findLatestProgress(output) {
+  return parseJsonLines(output).findLast(
+    (record) => record.mode === "progress" && typeof record.phase === "string",
+  );
+}
+
 export function parseDeploymentUpload(output) {
   const result = parseJsonLines(output).find(
     (record) => typeof record.deploymentId === "string",
@@ -191,10 +197,20 @@ export function validateSummary(
 
 async function waitForSummary(deploymentId, expectedMode, timeoutMinutes) {
   const deadline = Date.now() + timeoutMinutes * 60_000;
+  let lastProgress = "";
   while (Date.now() < deadline) {
     const logs = deploymentLogs(deploymentId);
     const summary = findSummary(logs, expectedMode);
     if (summary) return summary;
+
+    const progress = findLatestProgress(logs);
+    if (progress) {
+      const serialized = JSON.stringify(progress);
+      if (serialized !== lastProgress) {
+        console.log(serialized);
+        lastProgress = serialized;
+      }
+    }
 
     const status = deploymentStatus(deploymentId);
     if (failedStatuses.has(status)) {

@@ -15,6 +15,21 @@ make the read-only scan reject an incomplete source before any database writes.
 Formal imports scan and validate the same downloaded file before opening the
 database connection.
 
+The writer streams normalized rows into an unlogged PostgreSQL staging table
+with `COPY`, then rebuilds changed canonical projections with set-based SQL in
+one transaction. Source payload hashes and a projection schema version make
+retries idempotent while ensuring importer upgrades rebuild older projections.
+Progress is emitted as JSON for the staging, word, source-record, and content
+phases. Interrupted runs are marked failed when the next run acquires the
+advisory lock.
+
+Remote downloads, checksums, preflight scans, staging, every materialization
+phase, book creation, and transaction commit report `started`, `running`, and
+`completed` events. Row-oriented phases report every 25,000 rows and long SQL
+phases emit a heartbeat at least every 15 seconds.
+The production deployment workflow forwards the latest Railway progress event
+to GitHub Actions on every polling cycle.
+
 The default remote source and SHA-256 are pinned in `src/ecdict.ts`. A custom
 fixture must provide its digest with `--sha256`.
 

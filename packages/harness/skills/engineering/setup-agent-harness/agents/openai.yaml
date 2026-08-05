@@ -1,0 +1,4 @@
+interface:
+  display_name: "Setup Agent Harness"
+  short_description: "Initialize and validate a repository Agent Harness"
+  default_prompt: "Use $setup-agent-harness to inspect this repository and safely initialize its project-local harness."

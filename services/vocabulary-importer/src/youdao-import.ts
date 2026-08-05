@@ -5,8 +5,8 @@ import { readFile } from 'node:fs/promises';
 import {
   lexicalCategoryForPartOfSpeech,
   normalizePartOfSpeech,
-} from './ecdict.js';
-import { parseYoudaoNdjson } from './youdao.js';
+} from './ecdict';
+import { parseYoudaoNdjson } from './youdao';
 
 export async function importYoudaoNdjson(prisma: PrismaClient, input: string, version = process.env.YOUDAO_SOURCE_VERSION || 'private-20dfc76') {
   const entries = parseYoudaoNdjson(input);

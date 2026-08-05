@@ -9,15 +9,15 @@ import { join } from "node:path";
 import { finished } from "node:stream/promises";
 import { pathToFileURL } from "node:url";
 
-import { materializeEcdictBooks } from "./books.js";
-import { EcdictBulkImporter, type StagedWord } from "./bulk-import.js";
+import { materializeEcdictBooks } from "./books";
+import { EcdictBulkImporter, type StagedWord } from "./bulk-import";
 import {
   ECDICT_SHA256,
   ECDICT_URL,
   type EcdictRow,
   type ImportScope,
   selectEcdictRow,
-} from "./ecdict.js";
+} from "./ecdict";
 
 interface ImportOptions {
   source: string;

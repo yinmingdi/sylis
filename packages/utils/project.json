@@ -1,0 +1,12 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/utils",
+  "projectType": "library",
+  "sourceRoot": "packages/utils/src",
+  "tags": ["type:lib", "scope:platform", "runtime:neutral"],
+  "targets": {
+    "build": { "outputs": ["{projectRoot}/dist"] },
+    "build:watch": { "continuous": true, "cache": false },
+    "dev": { "continuous": true }
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Agent Harness"
+  short_description: "Run engineering work through the project harness"
+  default_prompt: "Use $use-agent-harness to complete this task through the repository harness and its verification gates."

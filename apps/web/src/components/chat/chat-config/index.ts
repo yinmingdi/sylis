@@ -1,3 +1,3 @@
-export { ChatConfig } from './ChatConfig.tsx';
-export { default } from './ChatConfig.tsx';
-export type { ChatConfigProps } from './ChatConfig.tsx';
+export { ChatConfig } from './ChatConfig';
+export { default } from './ChatConfig';
+export type { ChatConfigProps } from './ChatConfig';

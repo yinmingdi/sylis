@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+.nx/
+.work/
 
 /papper
 
@@ -27,6 +29,7 @@ dist-ssr
 # Auto-generated documentation
 docs/overview/apis/
 docs/overview/.vitepress/cache
+docs/overview/.vitepress/dist
 
 # Python
 __pycache__/

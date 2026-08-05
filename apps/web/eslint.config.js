@@ -1,14 +1,14 @@
-import { commonConfigs } from '@sylis/shared/configs/eslint.config.js';
+import { commonConfigs } from '../../eslint.config.js';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config([
-  // 继承shared配置（包含全局忽略规则）
+  // Inherit the workspace baseline and project-boundary rules.
   ...commonConfigs,
 
-  // React特定配置
+  // React-specific rules.
   {
     files: ['src/**/*.{ts,tsx}'],
     plugins: {

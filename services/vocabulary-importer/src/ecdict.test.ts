@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseExchange, selectEcdictRow } from "./ecdict.js";
+import { parseExchange, selectEcdictRow } from "./ecdict";
 
 test("selects exam-tagged words and parses meanings", () => {
   const word = selectEcdictRow({

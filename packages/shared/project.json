@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/shared",
+  "projectType": "library",
+  "sourceRoot": "packages/shared",
+  "tags": ["type:lib", "scope:platform", "runtime:neutral", "status:legacy"]
+}

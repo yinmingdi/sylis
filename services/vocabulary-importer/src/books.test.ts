@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { criterionWhere, ECDICT_BOOKS } from "./books.js";
+import { criterionWhere, ECDICT_BOOKS } from "./books";
 
 test("defines exactly 24 stable ECDICT books", () => {
   assert.equal(ECDICT_BOOKS.length, 24);

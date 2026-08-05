@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/api",
+  "projectType": "application",
+  "sourceRoot": "apps/api/src",
+  "tags": ["type:app", "scope:platform", "runtime:server"],
+  "targets": {
+    "build": { "outputs": ["{projectRoot}/dist"] },
+    "dev": { "continuous": true },
+    "dev:debug": { "continuous": true },
+    "dev:prod": { "cache": false },
+    "start:prod": { "cache": false },
+    "prisma:generate": { "cache": false },
+    "prisma:migrate": { "cache": false },
+    "prisma:studio": { "cache": false },
+    "prisma:seed": { "cache": false }
+  }
+}

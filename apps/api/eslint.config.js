@@ -1,4 +1,4 @@
-import commonConfigs from '@sylis/shared/configs/eslint.config.js';
+import commonConfigs from '../../eslint.config.js';
 import globals from 'globals';
 
 export default [

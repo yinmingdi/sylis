@@ -1,13 +1,18 @@
 import { defineConfig } from "vitepress";
+import { withMermaid } from "vitepress-mermaid-viewer";
 
-import { getGuideSidebar, getApiSidebar } from "./sidebar.mts";
+import {
+  getGuideSidebar,
+  getRefactorSidebar,
+  getApiSidebar,
+} from "./sidebar.mts";
 
 // 根据环境确定基础路径和链接
 const isProd = process.env.NODE_ENV === "production";
 const base = isProd ? "/sylis/" : "/";
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: "Sylis",
   description: "现代化的英语学习应用文档",
   base,
@@ -16,6 +21,7 @@ export default defineConfig({
     logo: "/icons/logo.png",
     nav: [
       { text: "指南", link: "guide/what-is-sylis", activeMatch: "/guide/" },
+      { text: "绿地重构", link: "/refactor/", activeMatch: "/refactor/" },
       { text: "Apis", link: "/apis/", activeMatch: "/apis/" },
       {
         text: "组件",
@@ -30,6 +36,7 @@ export default defineConfig({
     ],
     sidebar: {
       "/guide/": getGuideSidebar(),
+      "/refactor/": getRefactorSidebar(),
       "/apis/": getApiSidebar(),
     },
     search: {
@@ -59,4 +66,4 @@ export default defineConfig({
     /^\.\/[^/]+\.md$/,
     /^\.\/docs\/overview\/[^/]+$/,
   ],
-});
+}));

@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/components-docs",
+  "projectType": "library",
+  "sourceRoot": "docs/components/src",
+  "tags": ["type:docs", "scope:ui", "runtime:docs"],
+  "targets": {
+    "build": { "outputs": ["{projectRoot}/dist"] },
+    "docs:dev": { "continuous": true, "cache": false }
+  }
+}

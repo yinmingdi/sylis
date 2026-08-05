@@ -2,16 +2,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -24,15 +19,9 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "../../*"
-      ],
-      "@sylis/shared": [
-        "../../packages/shared"
-      ],
-      "@sylis/utils": [
-        "../../packages/utils/src"
-      ]
+      "@/*": ["../../*"],
+      "@sylis/shared": ["../../packages/shared"],
+      "@sylis/utils": ["../../packages/utils/src"]
     }
   },
   "include": [
@@ -44,9 +33,5 @@
     "../../packages/shared/**/*.ts",
     "../../packages/shared/**/*.tsx"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+  "exclude": ["node_modules", "dist", "build"]
 }

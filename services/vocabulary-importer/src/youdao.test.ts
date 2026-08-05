@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { normalizeYoudaoEntry, parseYoudaoNdjson } from './youdao.js';
+import { normalizeYoudaoEntry, parseYoudaoNdjson } from './youdao';
 
 test('normalizes the complete historical Youdao content shape', () => {
   const entry = normalizeYoudaoEntry({

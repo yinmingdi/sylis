@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "name": "@sylis/harness",
+    "version": "0.1.0"
+  },
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "kind": "scaffold",
+      "template": "AGENTS.md",
+      "hash": "36d59448fbe398b412c7702c35112d3d8bfdf8e52ce8743086e88d6b87629019"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "kind": "scaffold",
+      "template": "ARCHITECTURE.md",
+      "hash": "9ad456ed669b1f8f299d3bd630938363fb3dbb6c802f26a50ab3ea70809eab24"
+    },
+    {
+      "path": "docs/overview/adr/index.md",
+      "kind": "scaffold",
+      "template": "docs/adr/index.md",
+      "hash": "45c1c445443dfcf0a2ff3e88b7d43e2d9cc389f6289ef0ca664f54be93cdf339"
+    },
+    {
+      "path": "docs/overview/agent-harness.md",
+      "kind": "scaffold",
+      "template": "docs/agent-harness.md",
+      "hash": "73e3fff922ce48240ac57a8e7ab7a091ad21bccacc328203d232532a1c81789f"
+    },
+    {
+      "path": "docs/overview/architecture/boundaries.md",
+      "kind": "scaffold",
+      "template": "docs/architecture/boundaries.md",
+      "hash": "6ae07385373191f3644f1e8013d2d51e60edfb92cff4e76f4b448443334e544d"
+    },
+    {
+      "path": "docs/overview/design/design-system.md",
+      "kind": "scaffold",
+      "template": "docs/design/design-system.md",
+      "hash": "7d75ea3aa82e1c236de8c5fcfd578a8a283965341a373ce3753be894881cb184"
+    },
+    {
+      "path": "docs/overview/design/figma.md",
+      "kind": "scaffold",
+      "template": "docs/design/figma.md",
+      "hash": "a6d9762f7b0e9cd21184fe8ea8c24fb0d6acbc0b6cc2421b81e3aa2a80cbfe9a"
+    },
+    {
+      "path": "docs/overview/design/index.md",
+      "kind": "scaffold",
+      "template": "docs/design/index.md",
+      "hash": "f7a6230b5f7bcdbc7219f7aa8ecb52b046122e5a475ba7afc79c480c325d8765"
+    },
+    {
+      "path": "docs/overview/design/interaction.md",
+      "kind": "scaffold",
+      "template": "docs/design/interaction.md",
+      "hash": "0051d0be4cfc11b8211396d6fbeebf8ae74c76fd560fa42131be50e83f534ce6"
+    },
+    {
+      "path": "docs/overview/generated/command-registry.md",
+      "kind": "generated",
+      "template": "docs/generated/command-registry.md",
+      "hash": "65d04933ec339ad431b91b3d0af3228b74ff11a966530794281bcc2dd73b920f"
+    },
+    {
+      "path": "docs/overview/generated/harness-migration-map.md",
+      "kind": "generated",
+      "template": "docs/generated/harness-migration-map.md",
+      "hash": "d34b8be2793bb0ae646a38d6bb46f0d616a23bee162270049c44fce55c23da2b"
+    },
+    {
+      "path": "docs/overview/generated/harnessability-report.md",
+      "kind": "generated",
+      "template": "docs/generated/harnessability-report.md",
+      "hash": "160e3893d3e0870ff75f8c38d14b68e0f0fb9586c1a5c99c47cc65ae18bb37dd"
+    },
+    {
+      "path": "docs/overview/generated/project-profile.md",
+      "kind": "generated",
+      "template": "docs/generated/project-profile.md",
+      "hash": "d0e3e20a4b17db385f420877622f8e651e2164e9606e189f5869d1d431bbf16e"
+    },
+    {
+      "path": "docs/overview/generated/tool-capabilities.md",
+      "kind": "generated",
+      "template": "docs/generated/tool-capabilities.md",
+      "hash": "87a649bc3d7ed9194846e2c2c9e90136cb2621dbef3dc8468de20fe02f6915a7"
+    },
+    {
+      "path": "docs/overview/planning/active/.gitkeep",
+      "kind": "scaffold",
+      "template": "docs/planning/active/.gitkeep",
+      "hash": "8df9356a7e28c866be0262c2176cdc1f2fbc7c2232f69e865e0dbfab5a3d042e"
+    },
+    {
+      "path": "docs/overview/planning/completed/.gitkeep",
+      "kind": "scaffold",
+      "template": "docs/planning/completed/.gitkeep",
+      "hash": "8f6a47719af086fddeff87501a43c644288125d4a2d899d502409af5aa514fd2"
+    },
+    {
+      "path": "docs/overview/planning/tech-debt.md",
+      "kind": "scaffold",
+      "template": "docs/planning/tech-debt.md",
+      "hash": "e25716a24b8f7593ad4baf8e589aab1b4739bf7665e2edfb4755838685245f6c"
+    },
+    {
+      "path": "docs/overview/planning/TEMPLATE.md",
+      "kind": "scaffold",
+      "template": "docs/planning/TEMPLATE.md",
+      "hash": "df8a99acae716ed659d4629d06b572d0c603eb80718d491be343f8b7e11cb3a2"
+    },
+    {
+      "path": "docs/overview/quality/accessibility.md",
+      "kind": "scaffold",
+      "template": "docs/quality/accessibility.md",
+      "hash": "1f2768bac11d46433c308601a58fb4eb58082da0a964175349e805d8817f08a0"
+    },
+    {
+      "path": "docs/overview/quality/index.md",
+      "kind": "scaffold",
+      "template": "docs/quality/index.md",
+      "hash": "738e733912195a845fc4520c730c29c87a89aac3e286bdf95463339a9548c37f"
+    },
+    {
+      "path": "docs/overview/quality/performance.md",
+      "kind": "scaffold",
+      "template": "docs/quality/performance.md",
+      "hash": "bf406e92d1c25f6204bb6dded3226fce92f46f4c286144c022919debff869f0e"
+    },
+    {
+      "path": "docs/overview/quality/reliability.md",
+      "kind": "scaffold",
+      "template": "docs/quality/reliability.md",
+      "hash": "f2c548fe73f47a77bde52cb3622a58d2499dbcb8013679b41998fe9b7c4d2518"
+    },
+    {
+      "path": "docs/overview/quality/sensors.md",
+      "kind": "scaffold",
+      "template": "docs/quality/sensors.md",
+      "hash": "2a11c525c71fd13325e2c634e658049d610bcc678270f6b363c6f703e973f815"
+    },
+    {
+      "path": "docs/overview/quality/verification-gates.md",
+      "kind": "scaffold",
+      "template": "docs/quality/verification-gates.md",
+      "hash": "386bf8d79776b67e0777013ffbd7b17a5ea0da746b1a9b20f6110b88e6f48181"
+    },
+    {
+      "path": "docs/overview/references/index.md",
+      "kind": "scaffold",
+      "template": "docs/references/index.md",
+      "hash": "d26f292283083b3ca7d6cc99b6ff45a3dbac924f2fceaca887a9a302747328d8"
+    }
+  ]
+}

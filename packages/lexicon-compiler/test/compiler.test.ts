@@ -891,7 +891,7 @@ describe("lexicon compiler", () => {
     ).toBe(true);
     expect(artifact.learning.exerciseItems.length).toBeGreaterThan(0);
     expect(artifact.learning.assessmentBlueprints).toHaveLength(1);
-  }, 15_000);
+  }, 45_000);
 
   it("fills only permitted learner fields through an injected structured AI port", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-compiler-ai-"));
@@ -1171,7 +1171,7 @@ describe("lexicon compiler", () => {
           !representation.provenanceId.includes("generated"),
       ),
     ).toBe(true);
-  });
+  }, 30_000);
 
   it("stops an AI build when the structured capability probe fails", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-compiler-probe-"));

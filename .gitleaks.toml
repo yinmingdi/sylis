@@ -1,0 +1,14 @@
+title = "Sylis Gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "The default assessment blueprint key is a public domain identifier."
+condition = "AND"
+regexTarget = "line"
+paths = ['''^packages/lexicon-compiler/src/resolve/learning-content\.ts$''']
+regexes = ['''blueprintKey:\s*"default-practice-v1"''']

@@ -1,0 +1,36 @@
+{
+  "name": "@sylis/lexicon-contracts",
+  "version": "1.0.0",
+  "type": "module",
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": "./schema/sylis-lexicon-artifact-v1.schema.json"
+  },
+  "scripts": {
+    "schema:sync": "node ./scripts/sync-schema.mjs",
+    "types:generate": "node ./scripts/generate-types.mjs",
+    "build": "pnpm schema:sync && pnpm types:generate && tsup",
+    "typecheck": "pnpm schema:sync && pnpm types:generate && tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "artifact:validate": "vitest run test/artifact-contract.test.ts"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "json-schema-to-typescript": "^15.0.4",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

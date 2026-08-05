@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LexicalResource>
+  <Lexicon id="oewn" label="Open English WordNet" language="en">
+    <LexicalEntry id="oewn-bank-n">
+      <Lemma writtenForm="bank" partOfSpeech="noun" />
+      <Sense id="oewn-bank-n-1" synset="oewn-08420278-n" />
+    </LexicalEntry>
+    <LexicalEntry id="oewn-institution-n">
+      <Lemma writtenForm="institution" partOfSpeech="noun" />
+      <Sense id="oewn-institution-n-1" synset="oewn-08053576-n" />
+    </LexicalEntry>
+    <Synset id="oewn-08420278-n" partOfSpeech="noun">
+      <Definition>a financial institution that accepts deposits</Definition>
+      <SynsetRelation relType="hypernym" target="oewn-08053576-n" />
+    </Synset>
+    <Synset id="oewn-08053576-n" partOfSpeech="noun">
+      <Definition>an organization founded for a purpose</Definition>
+    </Synset>
+  </Lexicon>
+</LexicalResource>

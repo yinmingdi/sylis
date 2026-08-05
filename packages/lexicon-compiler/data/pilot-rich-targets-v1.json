@@ -1,0 +1,16 @@
+{
+  "targetSetVersion": "sylis.rich-target-set/1",
+  "version": "pilot-rich-en-v1",
+  "targets": [
+    {
+      "key": "helpful-adjective-primary",
+      "languageTag": "en",
+      "headword": "helpful",
+      "partOfSpeech": "lexinfo:adjective",
+      "senseDefinitionContains": "furnishing help",
+      "materialKinds": ["MNEMONIC", "MICRO_STORY"],
+      "generateStudyHint": true,
+      "generateExercise": true
+    }
+  ]
+}

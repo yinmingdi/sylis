@@ -1,0 +1,17 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/lexicon-compiler",
+  "projectType": "library",
+  "sourceRoot": "packages/lexicon-compiler/src",
+  "tags": ["type:lib", "scope:lexicon", "runtime:node"],
+  "targets": {
+    "lint": { "outputs": [] },
+    "typecheck": { "outputs": [] },
+    "test": { "outputs": ["{projectRoot}/coverage"] },
+    "build": { "outputs": ["{projectRoot}/dist"] },
+    "compile": { "cache": false },
+    "sources:fetch": { "cache": false },
+    "pilot": { "cache": false },
+    "artifact:validate": { "outputs": [] }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/lexicon-contracts",
+  "projectType": "library",
+  "sourceRoot": "packages/lexicon-contracts/src",
+  "tags": ["type:lib", "scope:lexicon", "runtime:neutral"],
+  "targets": {
+    "lint": { "outputs": [] },
+    "typecheck": { "outputs": [] },
+    "test": { "outputs": ["{projectRoot}/coverage"] },
+    "build": { "outputs": ["{projectRoot}/dist", "{projectRoot}/schema"] },
+    "types:generate": {
+      "outputs": ["{projectRoot}/src/types/artifact-v1.ts"]
+    },
+    "schema:sync": {
+      "outputs": ["{projectRoot}/schema/sylis-lexicon-artifact-v1.schema.json"]
+    },
+    "artifact:validate": { "outputs": [] }
+  }
+}

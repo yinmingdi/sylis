@@ -1,0 +1,47 @@
+{
+  "name": "@sylis/lexicon-compiler",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "sylis-lexicon": "./dist/cli/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "compile": "tsx src/cli/main.ts compile",
+    "validate": "tsx src/cli/main.ts validate",
+    "sources:fetch": "tsx src/cli/main.ts sources:fetch",
+    "sources:slice": "tsx src/cli/main.ts sources:slice",
+    "sources:mirror-kaikki": "tsx src/cli/main.ts sources:mirror-kaikki",
+    "sources:publish-object": "tsx src/cli/main.ts sources:publish-object",
+    "pilot": "tsx src/cli/main.ts compile --manifest ${LEXICON_SOURCE_MANIFEST:-test/fixtures/manifest.json} --profile pilot-200 --output ${LEXICON_ARTIFACT_OUTPUT:-.work/pilot-200.json.zst}"
+  },
+  "dependencies": {
+    "@sylis/ai-provider": "workspace:*",
+    "@sylis/lexicon-contracts": "workspace:*",
+    "@streamparser/json": "0.0.22",
+    "@aws-sdk/client-s3": "3.1103.0",
+    "@aws-sdk/lib-storage": "3.1103.0",
+    "@smithy/node-http-handler": "4.9.13",
+    "ajv": "^8.17.1",
+    "ajv-formats": "3.0.1",
+    "csv-parse": "^5.6.0",
+    "fast-xml-parser": "^5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.6",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

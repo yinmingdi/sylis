@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@sylis/ai-provider",
+  "projectType": "library",
+  "sourceRoot": "packages/ai-provider/src",
+  "tags": ["type:lib", "scope:ai", "runtime:node"],
+  "targets": {
+    "lint": { "outputs": [] },
+    "typecheck": { "outputs": [] },
+    "test": { "outputs": ["{projectRoot}/coverage"] },
+    "build": { "outputs": ["{projectRoot}/dist"] }
+  }
+}

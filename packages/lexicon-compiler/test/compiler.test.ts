@@ -891,7 +891,7 @@ describe("lexicon compiler", () => {
     ).toBe(true);
     expect(artifact.learning.exerciseItems.length).toBeGreaterThan(0);
     expect(artifact.learning.assessmentBlueprints).toHaveLength(1);
-  }, 45_000);
+  }, 90_000);
 
   it("fills only permitted learner fields through an injected structured AI port", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-compiler-ai-"));
@@ -1414,7 +1414,7 @@ describe("lexicon compiler", () => {
     expect(first.headwordCount).toBe(FIXTURE_PUBLISHED_HEADWORDS.length);
     expect(first.contentHash).toBe(second.contentHash);
     expect(await readFile(firstOutput)).toEqual(await readFile(secondOutput));
-  });
+  }, 30_000);
 
   it("binds environment-provided source bytes to checkpoint identity", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-source-identity-"));

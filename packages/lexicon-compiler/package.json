@@ -16,7 +16,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vitest run",
+    "test": "vitest run --maxWorkers=2",
     "compile": "tsx src/cli/main.ts compile",
     "validate": "tsx src/cli/main.ts validate",
     "sources:fetch": "tsx src/cli/main.ts sources:fetch",

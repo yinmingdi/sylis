@@ -10,7 +10,6 @@
 
 ```text
 apps/api/
-  project.json
   package.json
   nest-cli.json
   tsconfig.json
@@ -102,7 +101,6 @@ Nest provider 默认为 module-private。跨 module 使用必须同时满足：�
 
 ```text
 packages/database/
-  project.json
   package.json
   prisma.config.ts
   src/
@@ -149,7 +147,6 @@ API/Worker/Runner/Importer 可以依赖数据库 package 的 client 和 generate
 
 ```text
 packages/background-jobs/
-  project.json
   package.json
   src/
     kinds/
@@ -184,7 +181,6 @@ API `jobs` module 实现 enqueue/query/cancel/SSE adapter；Worker、Compiler Ru
 
 ```text
 apps/worker/
-  project.json
   package.json
   nest-cli.json
   tsconfig.json
@@ -253,7 +249,6 @@ Railway runner：
 
 ```text
 services/lexicon-compiler-runner/
-  project.json
   package.json
   Dockerfile
   tsconfig.json
@@ -289,7 +284,6 @@ GitHub protected workflow 负责审核 manifest、预算与已验证 artifact �
 
 ```text
 services/lexicon-importer/
-  project.json
   package.json
   Dockerfile
   tsconfig.json
@@ -363,7 +357,7 @@ lexicon-importer ----------> lexicon-contracts/background-jobs/database/utils
 - `AppModule` 注册 batch compiler/importer handler 或执行长任务。
 - `@sylis/shared` 作为 DTO/Prisma/provider 聚合层；目标 workspace 删除它。
 
-Nx project tags 和 `@nx/enforce-module-boundaries` 执行跨项目限制；API/Worker 内部的 module public surface 由 ESLint restricted imports 和 architecture tests 执行。
+集中 package allowlist、exports 和 import architecture tests 执行跨 package 限制；API/Worker 内部的 module public surface 由 ESLint restricted imports 和 architecture tests 执行。
 
 ## 10. 当前路径迁移映射
 
@@ -441,4 +435,4 @@ Nx project tags 和 `@nx/enforce-module-boundaries` 执行跨项目限制；API/
 3. `BackgroundJob` contract 只有 `@sylis/background-jobs` 一份实现无关定义。
 4. Worker、Compiler Runner 与 Importer 是独立可部署 executor，且都不导入 API 源码。
 5. Compiler 仍能作为纯 library/CLI 在无 NestJS、Prisma、Railway 环境运行。
-6. Nx/ESLint/architecture tests 自动拒绝全部禁止依赖。
+6. pnpm/Turbo package graph、ESLint 与 architecture tests 自动拒绝全部禁止依赖。

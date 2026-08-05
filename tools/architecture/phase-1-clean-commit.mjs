@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 const phase1OwnedPaths = [
   "package.json",
   "pnpm-lock.yaml",
-  "nx.json",
+  "turbo.json",
   "eslint.config.js",
   "packages/ai-provider",
   "packages/lexicon-contracts",

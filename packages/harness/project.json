@@ -1,7 +1,0 @@
-{
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "@sylis/harness",
-  "projectType": "library",
-  "sourceRoot": "packages/harness",
-  "tags": ["type:tool", "scope:platform", "runtime:node"]
-}

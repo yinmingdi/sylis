@@ -19,7 +19,7 @@ for (const [command, args] of commands) {
   console.log(`\n$ ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, {
     cwd: workspaceRoot,
-    env: { ...process.env, NX_DAEMON: "false" },
+    env: process.env,
     stdio: "inherit",
   });
   if (result.status !== 0) {

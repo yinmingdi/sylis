@@ -6,7 +6,7 @@ const path = require('path');
 async function generateSwaggerSpec() {
   try {
     // 动态导入 AppModule
-    const { AppModule } = await import('../dist/src/app.module.js');
+    const { AppModule } = await import('../dist/app.module.js');
 
     const app = await NestFactory.create(AppModule, {
       logger: false, // 关闭日志以避免输出干扰

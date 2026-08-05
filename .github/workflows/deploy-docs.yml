@@ -58,17 +58,17 @@ jobs:
           echo "🔨 Building @sylis/utils package..."
           pnpm --filter "@sylis/utils" run build
 
-          # Verify utils build output - tsup generates index.js (CJS) and index.mjs (ESM)
+          # Verify tsdown emitted both public module formats.
           echo "🔍 Verifying build output..."
           ls -la packages/utils/dist/
 
           if [ ! -f "packages/utils/dist/index.js" ]; then
-            echo "❌ Error: index.js (CommonJS) not found"
+            echo "❌ Error: index.js (ESM) not found"
             exit 1
           fi
 
-          if [ ! -f "packages/utils/dist/index.mjs" ]; then
-            echo "❌ Error: index.mjs (ESM) not found"
+          if [ ! -f "packages/utils/dist/index.cjs" ]; then
+            echo "❌ Error: index.cjs (CommonJS) not found"
             exit 1
           fi
 

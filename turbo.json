@@ -1,0 +1,103 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalDependencies": [
+    "pnpm-lock.yaml",
+    "tsconfig.base.json",
+    "eslint.config.js"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "schema/**"]
+    },
+    "docs:build": {
+      "dependsOn": ["^build"],
+      "outputs": [".vitepress/dist/**"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "env": [
+        "NODE_ENV",
+        "DATABASE_URL",
+        "REDIS_URL",
+        "JWT_SECRET",
+        "JWT_EXPIRES_IN",
+        "AI_API_KEY",
+        "AI_BASE_URL",
+        "AI_MODEL",
+        "AI_ENRICHMENT_ENABLED",
+        "MAILER_HOST",
+        "MAILER_PORT",
+        "MAILER_SECURE",
+        "MAILER_USER",
+        "MAILER_PASS",
+        "MAILER_FROM"
+      ],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "docs:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "preview": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:e2e": {
+      "cache": false
+    },
+    "test:integration": {
+      "cache": false
+    },
+    "prisma:generate": {
+      "cache": false
+    },
+    "prisma:migrate": {
+      "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "compile": {
+      "cache": false
+    },
+    "sources:fetch": {
+      "cache": false
+    },
+    "pilot": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
+    },
+    "publish": {
+      "cache": false
+    }
+  }
+}

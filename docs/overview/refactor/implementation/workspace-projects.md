@@ -1,16 +1,16 @@
-# Workspace 项目图与 Nx 治理
+# Workspace 项目图与 Turbo 治理
 
 ## 1. 工具职责
 
-Sylis 保留 pnpm workspace，并在其上增加 Nx：
+Sylis 使用一套任务图，不叠加多个 monorepo orchestrator：
 
-- pnpm 负责 package 安装、lockfile、workspace protocol 与脚本执行。
-- Nx 负责项目图、任务依赖、远程/本地 cache、`affected`、生成器和跨项目依赖约束。
-- Vite/Nest/tsc/Prisma/Vitest/Playwright 仍负责各自 build/test/codegen；Nx 只编排，不替换这些工具。
+- pnpm 负责依赖安装、lockfile、workspace protocol、包发现和 script 执行。
+- Turborepo 从 `package.json` 的 workspace 依赖和 scripts 建立任务图，负责拓扑排序、并行、cache 与 `--affected`。
+- Vite、Nest/SWC、tsdown、tsc、Prisma、Vitest、Jest 和 Playwright 负责实际编译、生成与测试；Turbo 不替代这些工具。
+- `tools/architecture/check-workspace.mjs` 负责精确 package allowlist、直接依赖声明、package exports、源码导入和副作用任务缓存规则。
+- ESLint 负责单个 package 内部的代码规则与 app module restricted imports。
 
-Nx 与 Turborepo 是同类 monorepo task orchestration 工具，不属于同一产品生态。本项目选择 Nx 是因为除 task cache 外，还需要 project graph、tag 约束、`affected` 和生成器统一执行目标架构。不能同时引入 Turbo 形成两套 task graph。
-
-Nx project 的粒度是可独立构建、发布、测试或具有明确边界的 app/service/package。`apps/web/src/modules/lexicon` 之类的应用内部 module 不是 Nx project；其边界由 ESLint 和 architecture tests 管理。
+Turbo 不承担通用代码生成或领域边界判断。项目边界只在 package 具有独立 build、test、publish、deploy 或 public API 时成立；`apps/web/src/modules/lexicon` 等 app 内 module 不是 workspace package。
 
 ## 2. 完整目标 workspace
 
@@ -42,99 +42,55 @@ Nx project 的粒度是可独立构建、发布、测试或具有明确边界的
 │   ├── generators/
 │   ├── architecture/
 │   └── scripts/
-├── nx.json
+├── turbo.json
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
 └── eslint.config.js
 ```
 
-`packages/shared` 不在目标 workspace。Transport type 由两套 OpenAPI client 生成；artifact contract 归 `lexicon-contracts`；Job contract 归 `background-jobs`；数据库类型归 server-only `database`；UI 归 `components`；真正通用纯函数归 `utils`。保留一个 `shared` 聚合包只会重新混合这些边界。
+`packages/shared` 不在目标 workspace。Transport type 归生成的 API clients；artifact contract 归 `lexicon-contracts`；Job contract 归 `background-jobs`；数据库类型归 server-only `database`；UI 归 `components`；跨 runtime 纯函数归 `utils`。
 
-## 3. 项目目录合同
+## 3. Package 合同
 
-所有 Nx project 至少包含：
+每个 workspace package 至少包含 `package.json` 和所属工具的配置。TypeScript package 通常包含 `tsconfig.json` 与 `src/`；测试可放在 `test/` 或与源码共置。
 
-```text
-<project>/
-  project.json
-  package.json
-  tsconfig.json
-  src/                # 文档/纯 schema project 可按自身结构调整
-  test/               # 或与源码共置的 *.spec.ts
-```
+`package.json` 是项目图唯一来源：
 
-`project.json` 只声明该 project 的 targets、inputs/outputs、tags 和少量 project-specific 配置。可复用 target defaults 放 `nx.json`；脚本实现留原工具配置或 `tools/scripts`，不把大段 shell 复制到每个 project。
+- `name` 是稳定 package identity。
+- workspace 依赖必须使用 `workspace:*` 或仓库规定的 workspace range。
+- 可消费 package 必须用 `exports` 声明 public entry points。
+- 每项可调度能力必须是 package script；`turbo.json` 只描述任务关系、inputs、outputs 与 cache policy。
+- 禁止用 TypeScript path alias、相对路径或 `src/**` deep import 绕过 package exports。
 
-所有可消费 package 必须在 `package.json.exports` 声明 public entry point。禁止使用 TypeScript path alias 绕过 package exports 或直接 import `src/**`。
+不为 Turbo 增加逐包元数据文件。Scope/runtime/owner 是架构文档和集中 allowlist 的属性，不复制到每个目录。
 
-## 4. 项目所有权与公开表面
+## 4. 所有权与公开表面
 
-| Project                   | Owner/职责                                              | Public surface / 输出                             |
-| ------------------------- | ------------------------------------------------------- | ------------------------------------------------- |
-| `api`                     | User/Admin HTTP、同步 command/query、Job client         | User/Admin OpenAPI 3.1 snapshots、container image |
-| `web`                     | User responsive app                                     | static bundle/container                           |
-| `admin`                   | 独立运营应用                                            | static bundle/container                           |
-| `worker`                  | runtime AI、导出、同步 Job executor                     | container；私网 `/live`、`/ready`                 |
-| `lexicon-compiler-runner` | `LEXICON_BUILD` Railway executor                        | container；Job result artifact reference          |
-| `lexicon-importer`        | artifact preflight、COPY、release build/validation      | container/CLI；validated release reference/report |
-| `lexicon-contracts`       | artifact schema/type/vocabulary/纯 validator            | root exports + JSON Schema                        |
-| `lexicon-compiler`        | 来源解析、归一/归并、AI candidate、验证、单 JSON export | library API + CLI                                 |
-| `api-client`              | User OpenAPI generated transport                        | browser-safe generated client                     |
-| `admin-api-client`        | Admin OpenAPI generated transport                       | browser-safe generated client                     |
-| `ai-provider`             | provider-neutral generation ports + DeepSeek adapter    | 分路径 exports；port 与 server adapter 分离       |
-| `components`              | tokens/icons/styles/无领域 React primitives             | browser-safe React exports                        |
-| `utils`                   | 无框架、无 I/O、跨 runtime 纯函数                       | root exports                                      |
-| `database`                | Prisma schema/migration/client/connection factory       | server-only client/config/testing exports         |
-| `background-jobs`         | JobKind/state/progress/checkpoint/handler contract      | implementation-neutral root exports               |
-| `harness`                 | agent harness 文档、skill 与确定性检查器                | CLI/skill assets；不进入产品 runtime              |
-| `docs`                    | VitePress 架构/产品/运维文档                            | static documentation site                         |
-| `components-docs`         | Storybook、UI visual/a11y contract                      | static Storybook                                  |
+| Package                   | Owner/职责                                         | Public surface / 输出                  |
+| ------------------------- | -------------------------------------------------- | -------------------------------------- |
+| `api`                     | User/Admin HTTP、同步 command/query、Job client    | OpenAPI 3.1 snapshots、container image |
+| `web`                     | User responsive app                                | static bundle/container                |
+| `admin`                   | 独立运营应用                                       | static bundle/container                |
+| `worker`                  | runtime AI、导出、同步 Job executor                | container；私网 `/live`、`/ready`      |
+| `lexicon-compiler-runner` | `LEXICON_BUILD` executor                           | container；artifact reference          |
+| `lexicon-importer`        | artifact preflight、COPY、release validation       | container/CLI；release report          |
+| `lexicon-contracts`       | artifact schema/type/vocabulary/纯 validator       | ESM exports + JSON Schema              |
+| `lexicon-compiler`        | 来源解析、归一、AI candidate、验证、单 JSON export | library API + executable CLI           |
+| `api-client`              | User OpenAPI generated transport                   | browser-safe generated client          |
+| `admin-api-client`        | Admin OpenAPI generated transport                  | browser-safe generated client          |
+| `ai-provider`             | provider-neutral ports + DeepSeek adapter          | 分路径 ESM exports                     |
+| `components`              | tokens/icons/styles/无领域 React primitives        | browser-safe React exports             |
+| `utils`                   | 无框架、无 I/O、跨 runtime 纯函数                  | ESM + CJS conditional export           |
+| `database`                | Prisma schema/migration/client/connection          | server-only exports                    |
+| `background-jobs`         | JobKind/state/progress/checkpoint/handler contract | neutral exports                        |
+| `harness`                 | agent harness 与确定性检查器                       | CLI/skill assets，不进入 runtime       |
+| `docs`                    | VitePress 架构/产品/运维文档                       | static documentation site              |
+| `components-docs`         | Storybook visual/a11y contract                     | static Storybook                       |
 
-### 4.1 `ai-provider` exports
+`ai-provider` 的 `.` 与 `./contracts` 可被 compiler library 消费；`./deepseek` 只允许 composition root、runner 或 worker 消费；浏览器 package 禁止依赖任何 provider adapter。
 
-```json
-{
-  "exports": {
-    ".": "./dist/ports/index.js",
-    "./contracts": "./dist/contracts/index.js",
-    "./deepseek": "./dist/deepseek/index.js",
-    "./testing": "./dist/testing/index.js"
-  }
-}
-```
-
-Compiler library 只能导入 `@sylis/ai-provider` 的 `.` 与 `./contracts` exports，Compiler Runner 与 Worker composition 才能导入 `./deepseek`。浏览器项目不能依赖任一路径。
-
-### 4.2 generated clients
-
-`api-client` 和 `admin-api-client` 的源码由 committed OpenAPI snapshot 确定性生成。手写内容只限 transport composition、auth/CSRF/idempotency/SSE helper；不手写重复 DTO。生成物变化必须与 API contract diff 在同一 PR 中审查。
-
-## 5. Project tags
-
-每个 project 具有一组 `type:*`、`scope:*`、`runtime:*` tag：
-
-```text
-type:app | type:service | type:lib | type:tool | type:docs
-scope:platform | scope:lexicon | scope:learning | scope:reading | scope:ai | scope:operations | scope:ui
-runtime:browser | runtime:server | runtime:node | runtime:neutral | runtime:docs
-```
-
-示例：
-
-| Project                   | Tags                                              |
-| ------------------------- | ------------------------------------------------- |
-| `web`                     | `type:app`, `scope:platform`, `runtime:browser`   |
-| `api`                     | `type:app`, `scope:platform`, `runtime:server`    |
-| `lexicon-compiler`        | `type:lib`, `scope:lexicon`, `runtime:node`       |
-| `lexicon-compiler-runner` | `type:service`, `scope:lexicon`, `runtime:server` |
-| `components`              | `type:lib`, `scope:ui`, `runtime:browser`         |
-| `background-jobs`         | `type:lib`, `scope:platform`, `runtime:neutral`   |
-| `database`                | `type:lib`, `scope:platform`, `runtime:server`    |
-
-Scope tag 表示主要 owner，不授予跨层绕行权限。精确 package allowlist 比仅按 scope 更权威。
-
-## 6. 允许依赖矩阵
+## 5. 精确依赖边界
 
 | Consumer                  | 允许直接依赖                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
@@ -144,150 +100,114 @@ Scope tag 表示主要 owner，不授予跨层绕行权限。精确 package allo
 | `worker`                  | `database`, `background-jobs`, `ai-provider`, `utils`                     |
 | `lexicon-compiler-runner` | `lexicon-compiler`, `background-jobs`, `database`, `ai-provider`, `utils` |
 | `lexicon-importer`        | `lexicon-contracts`, `background-jobs`, `database`, `utils`               |
-| `lexicon-compiler`        | `lexicon-contracts`, `ai-provider` root ports/contracts、`utils`          |
-| `api-client`              | browser-safe transport dependencies、`utils`                              |
-| `admin-api-client`        | browser-safe transport dependencies、`utils`                              |
-| `components`              | React/accessible primitive dependencies、`utils`                          |
-| `database`                | Prisma/PostgreSQL/config dependencies；不依赖业务 project                 |
-| `background-jobs`         | schema/validation 与 `utils`；不依赖实现 project                          |
-| `docs`, `components-docs` | 文档构建依赖；Storybook 可消费 `components`                               |
+| `lexicon-compiler`        | `lexicon-contracts`, `ai-provider` ports/contracts、`utils`               |
+| `components`              | browser dependencies、`utils`                                             |
+| `database`                | Prisma/PostgreSQL/config dependencies                                     |
+| `background-jobs`         | schema/validation、`utils`                                                |
 
-全局禁止：
+全局禁止 browser 依赖 server-only package、library 依赖 app/service、app 之间 deep import、compiler/importer 互相依赖、contract 依赖 producer/consumer implementation，以及新增 `shared/common/core` 聚合包。
 
-- browser runtime 依赖 server/node-only project。
-- library 依赖 app/service。
-- app/service deep import 另一个 app/service 的源码。
-- API/Worker 依赖 compiler/importer。
-- Compiler 与 Importer 互相依赖。
-- `lexicon-contracts` 依赖任何 producer/consumer implementation。
-- `database` 拥有或导出业务 repository。
-- `background-jobs` 依赖 NestJS、Prisma、Redis、provider 或 Railway。
-- 新增 `shared/common/core` 聚合包规避依赖规则。
+`check-workspace.mjs` 必须同时验证：
 
-## 7. Nx 配置基线
+1. pnpm 实际发现的 workspace package 与集中清单完全一致。
+2. 所有源码导入的第三方包都在所属 `package.json` 直接声明。
+3. `@sylis/*` import 同时满足 allowlist、workspace dependency 和 package export。
+4. 相对导入不跨 package，workspace/local TypeScript 导入省略源码扩展名。
+5. Compiler 不能依赖 NestJS、Prisma、Redis、PostgreSQL 或 Railway SDK。
+
+## 6. Turbo 任务基线
 
 ```json
 {
-  "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "production": [
-      "default",
-      "!{projectRoot}/**/*.spec.*",
-      "!{projectRoot}/test/**/*"
-    ],
-    "sharedGlobals": [
-      "{workspaceRoot}/pnpm-lock.yaml",
-      "{workspaceRoot}/tsconfig.base.json",
-      "{workspaceRoot}/eslint.config.js"
-    ]
-  },
-  "targetDefaults": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["production", "^production"],
-      "cache": true
+      "outputs": ["dist/**", "schema/**"]
     },
-    "typecheck": { "dependsOn": ["^build"], "cache": true },
-    "lint": { "cache": true },
-    "test": { "dependsOn": ["^build"], "cache": true }
+    "typecheck": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "outputs": ["coverage/**"]
+    },
+    "lint": { "outputs": [] },
+    "dev": { "cache": false, "persistent": true },
+    "db:migrate": { "cache": false },
+    "compile": { "cache": false },
+    "deploy": { "cache": false }
   }
 }
 ```
 
-实际配置需补齐每个 target 的 outputs。含真实网络、数据库写入、AI、部署、artifact publish、migration deploy 的 target 默认 `cache: false`；不能让 Nx cache 伪造外部副作用已经完成。Secret 不得作为普通命令参数或 cache output。
+`typecheck` 与 `test` 依赖本 package 的 `build`，避免 generated contract、declaration 或上游 package 尚未完成时并发消费半成品。Turbo 会去重同一次运行中的 build task。
 
-`@nx/enforce-module-boundaries` 配置 runtime/type/scope 约束。`tools/architecture` 再检查无法只靠 tag 表达的精确 allowlist、package exports、app source import 与 frontend module deep import。
+任何真实网络、数据库写入、AI 调用、artifact publish、migration、deploy、watch 或常驻服务任务必须 `cache: false`。Secret 只能通过 CI secret/environment 注入，不能成为命令参数、artifact 或日志。
 
-## 8. 标准 targets
+## 7. 构建工具决策
 
-| Target              | 适用项目                              | 说明                              |
-| ------------------- | ------------------------------------- | --------------------------------- |
-| `lint`              | 全部代码项目                          | ESLint + dependency boundary      |
-| `typecheck`         | TypeScript 项目                       | 无 emit                           |
-| `test`              | library/app/service                   | unit                              |
-| `test:integration`  | API/Worker/Runner/Importer/database   | 真实依赖容器；默认不 cache        |
-| `build`             | 可构建 project                        | 声明准确 outputs                  |
-| `contract`          | API/clients/contracts/background-jobs | schema/snapshot/consumer contract |
-| `e2e`               | Web/Admin/API                         | 依赖已构建应用和隔离环境          |
-| `artifact:validate` | contracts/compiler/importer           | 无网络、无数据库的纯 validation   |
-| `db:generate`       | database                              | Prisma generate                   |
-| `db:migrate:test`   | database/API/importer                 | fresh DB migration                |
-| `docs:build`        | docs/components-docs                  | VitePress/Storybook               |
+| 项目类型                             | 构建器                                    |
+| ------------------------------------ | ----------------------------------------- |
+| Nest application                     | Nest CLI + SWC；独立 TypeScript typecheck |
+| Vite application                     | Vite production build                     |
+| Node ESM library/CLI、双格式 library | tsdown + 独立 `tsc --noEmit`              |
+| 简单 server service                  | `tsc`/`tsc -b`                            |
+| Schema/code generation               | 所属 package 的显式 script                |
 
-## 9. CI 使用方式
+源码保留 extensionless local imports，而 Node ESM runtime 要求文件扩展名，因此可执行的 ESM library/CLI 继续需要 bundling。Turbo 只编排，不能替代 tsdown。
 
-PR 快速反馈：
+## 8. CI 使用方式
+
+PR 必须 checkout 完整比较范围并设置 `TURBO_SCM_BASE` 与 `TURBO_SCM_HEAD`：
 
 ```bash
-pnpm nx affected -t lint typecheck test build
+pnpm ci:affected
 ```
 
-它只用于缩短反馈，不是发布完整性证明。`main` 与受保护 `release/*` 必须运行：
+`develop`、`main` 与 `release/**` push 执行：
 
 ```bash
-pnpm nx run-many -t lint typecheck test build --all
-pnpm nx run-many -t contract artifact:validate --all
-pnpm nx run api:test:integration
-pnpm nx run worker:test:integration
-pnpm nx run lexicon-compiler-runner:test:integration
-pnpm nx run lexicon-importer:test:integration
-pnpm nx run web:e2e
-pnpm nx run admin:e2e
-pnpm nx run docs:build
+pnpm ci:full
 ```
 
-部署 workflow 只消费同一 commit 已通过的不可变 image digest/static artifact，不在 deploy job 重新 build。Nx Cloud 如启用，token 只存 GitHub environment secret；fork PR 不获得写 cache 或 production secret。
+required workflow 不使用 workflow-level path filters。Secret scan、policy/harness 与 quality 并行，最后由 `if: always()` 的稳定汇总 job 判断全部结果。Phase 0/1 是手动里程碑 gate，不进入普通 PR 串行路径。
 
-## 10. Generator 与边界模板
+本地 cache 默认启用；未配置受保护的 remote cache 前不共享可写 cache。部署只消费同 commit 已验证的 image digest/static artifact，不在 deploy job 重新解释源码状态。
 
-`tools/generators` 提供少量受控 generator：
+## 9. Generator 与边界模板
 
-- `frontend-module`：创建 `model/api/components/index.ts`，不创建空 `store`。
-- `nest-module`：创建 `<name>.module.ts`、controller/service/index 与 architecture test fixture。
-- `workspace-lib`：创建 exports、tags、targets、README ownership。
+`tools/generators` 只提供少量模板：
+
+- `frontend-module`：创建 `model/api/components/index.ts`，不创建空 store。
+- `nest-module`：创建 module/controller/service/index 与边界 fixture。
+- `workspace-package`：创建 package scripts、exports、tsconfig 和 allowlist 变更。
 - `job-handler`：生成 handler contract test，不复制状态机。
 
-Generator 输出必须满足边界检查；它不替代设计决策。没有独立 build/deploy/public API 的 frontend module 不允许 generator 把它升级为 Nx project。
+Generator 输出必须通过架构检查；没有独立 build/deploy/public API 的 app module 不得升级为 workspace package。
 
-## 11. 当前 workspace 迁移映射
+## 10. 当前迁移映射
 
-| 当前路径/机制                  | 目标                                                     |
-| ------------------------------ | -------------------------------------------------------- |
-| pnpm workspace                 | 保留；补齐 Nx project/target                             |
-| root scripts 手写串行执行      | 逐步改为 `nx affected/run-many`，底层工具脚本保留        |
-| `apps/api`                     | 保留项目；内部按 Nest module-first 重构                  |
-| `apps/web`                     | 保留项目；内部按 pages/modules/components 规则重构       |
-| 无 `apps/admin`                | 新建独立 app                                             |
-| 无 `apps/worker`               | 新建独立 Nest app                                        |
-| `services/vocabulary-importer` | 由 `services/lexicon-importer` 替换                      |
-| 无 compiler runner             | 新建 `services/lexicon-compiler-runner`                  |
-| `packages/shared`              | 删除；DTO/配置按 owner 迁移                              |
-| `packages/utils`               | 保留并收窄为纯函数                                       |
-| 无 components package          | 新建 `packages/components`；应用现有无领域组件经审核迁入 |
-| 无 database package            | 新建 `packages/database`；迁移 `apps/api/prisma`         |
-| 无 background-jobs package     | 新建 `packages/background-jobs`                          |
-| 无 lexicon packages            | 新建 contracts/compiler                                  |
-| 无 API client packages         | 新建 User/Admin generated clients                        |
-| 无统一 project graph/boundary  | 引入 Nx tags、module-boundaries、architecture tests      |
-| `packages/harness`             | 保留独立 tooling project，不进入产品 runtime graph       |
+| 当前路径/机制                       | 目标                                                    |
+| ----------------------------------- | ------------------------------------------------------- |
+| pnpm workspace                      | 保留，作为 package graph 来源                           |
+| root 手写串行脚本                   | 改为 Turbo task graph，底层工具脚本保留                 |
+| `apps/api`                          | 保留；内部按 Nest module-first 重构                     |
+| `apps/web`                          | 保留；内部按 pages/modules/components 重构              |
+| `services/vocabulary-importer`      | 由 `services/lexicon-importer` 替换                     |
+| `packages/shared`                   | 删除；DTO/配置迁到明确 owner                            |
+| `packages/utils`                    | 保留并收窄为纯函数                                      |
+| 无 admin/worker/runner              | 按部署边界新增独立 app/service                          |
+| 无 components/database/jobs package | 按 owner 新建，不建立聚合 common package                |
+| 无统一边界检查                      | 使用集中 allowlist、exports 与 import architecture test |
 
-详细 app 内路径迁移分别见 [前端目录与模块边界](./frontend-structure.md) 与 [后端目录与 NestJS 模块边界](./backend-structure.md)。
+## 11. 测试与完成条件
 
-## 12. 测试与验收
-
-- `nx graph` 中无循环 project dependency。
-- 每个 package 的 `exports` 与声明的 public API 一致，deep import architecture test 通过。
-- `nx affected` 在已知变更 fixture 上覆盖所有受影响 consumer，不能漏掉 codegen/schema 依赖。
-- 连续两次无变更 build 证明纯 target cache 命中；integration/deploy/publish target 证明不被错误 cache。
-- Web/Admin bundle graph 不包含 database/background-jobs executor/compiler/provider adapter。
-- API/Worker/Runner/Importer image 只包含各自运行依赖，不通过 root context 把 `.work`、source dump、`img.zip` 或本地未跟踪文件打入镜像。
-- CI 在无业务 secret 的 PR 环境可完成 lint/typecheck/unit/build/contract/docs；需要真实 secret 的操作只在 protected environment 执行。
-- 删除 `@sylis/shared` 后全仓无 import、path alias、lockfile workspace dependency 或文档残留。
-
-## 13. 完成条件
-
-1. 所有 app/service/package 都在 Nx project graph 中，tags、targets 与 outputs 准确。
-2. pnpm 是唯一 package manager，Nx 是唯一 monorepo task/project graph 工具。
-3. 跨 project 边界由机器检查，app 内 module 边界由 ESLint/architecture test 检查。
-4. `@sylis/shared` 已删除且没有等价的 `common/core` 聚合包回流。
-5. PR 使用 `affected` 提速，主线/发布仍完成全量 contract、integration、e2e 与 docs 门禁。
+- Turbo task graph 无循环，已知变更能覆盖所有下游 consumer。
+- 连续两次无变更 build 命中纯任务 cache；副作用任务永不报告 cache hit。
+- 所有 package exports 的 JS、declaration、CJS/ESM 条件和 CLI 入口可真实加载。
+- Web/Admin bundle 不包含 database、job executor、compiler 或 provider adapter。
+- Runtime image 不包含 `.work`、source dump、`img.zip` 或本地未跟踪文件。
+- PR 在没有业务 secret 时完成 lint/typecheck/unit/build/contract/docs；真实 AI 与生产写入只在 protected environment 执行。
+- package 边界由机器检查，app 内 module 边界由 ESLint 与 architecture tests 检查。
+- pnpm 是唯一 package manager，Turborepo 是唯一 monorepo task orchestrator。

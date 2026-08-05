@@ -10,7 +10,6 @@
 
 ```text
 apps/web/
-  project.json
   package.json
   index.html
   vite.config.ts
@@ -119,7 +118,6 @@ pages/study/objective/
 
 ```text
 apps/admin/
-  project.json
   package.json
   index.html
   vite.config.ts
@@ -187,7 +185,6 @@ Admin module 使用与 User Web 相同的 `model/api/store?/components/index.ts`
 
 ```text
 packages/components/
-  project.json
   package.json
   src/
     tokens/
@@ -258,7 +255,7 @@ pages ---------> components/utils
 - 浏览器依赖 `@sylis/database`、`@sylis/background-jobs` executor、compiler、importer、Prisma 或 AI provider adapter。
 - 通过 `@sylis/shared` 聚合 DTO；该 package 在迁移中删除。
 
-Nx 对 project 级边界执行 tag 规则；ESLint restricted imports 和 architecture tests 对 app 内 `app/pages/modules` 层级与 module public API 执行规则。每个 frontend module 不单独建 Nx project。
+集中 package allowlist 对 workspace 边界执行规则；ESLint restricted imports 和 architecture tests 对 app 内 `app/pages/modules` 层级与 module public API 执行规则。每个 frontend module 不单独建 workspace package。
 
 ## 7. 状态与数据访问规则
 
@@ -343,7 +340,7 @@ Nx 对 project 级边界执行 tag 规则；ESLint restricted imports 和 archit
 - Storybook/视觉回归覆盖 `@sylis/components` 的状态、键盘、长文本、窄 viewport 和 reduced motion。
 - axe 或等价自动检查与人工键盘流程共同作为 accessibility gate。
 - architecture test 失败条件：跨 app import、module deep import、反向层依赖、浏览器引入 server-only package、全局 server-state store。
-- Nx `affected` 在 PR 执行受影响项目的 lint/typecheck/unit/build；主线/发布仍执行全量 contract、e2e 和文档门禁。
+- Turbo `--affected` 在 PR 执行受影响 package 的 lint/typecheck/unit/build；主线/发布仍执行全量 contract、e2e 和文档门禁。
 
 ## 10. 完成条件
 
@@ -351,4 +348,4 @@ Nx 对 project 级边界执行 tag 规则；ESLint restricted imports 和 archit
 2. 所有页面只通过 module `index.ts` 与生成 client 的公开接口消费业务能力。
 3. `@sylis/components` 不包含业务规则，`@sylis/utils` 不包含框架、I/O 或领域逻辑。
 4. TanStack Query 是唯一 server-state cache，Zustand 使用点都有明确临时状态理由。
-5. Nx、ESLint 与 architecture tests 能自动阻止本文列出的禁止依赖。
+5. pnpm/Turbo package graph、ESLint 与 architecture tests 能自动阻止本文列出的禁止依赖。

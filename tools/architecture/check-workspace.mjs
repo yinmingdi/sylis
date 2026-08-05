@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { builtinModules } from "node:module";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -85,6 +86,10 @@ const projects = [
 const projectByName = new Map(
   projects.map((project) => [project.name, project]),
 );
+const nodeBuiltins = new Set([
+  ...builtinModules,
+  ...builtinModules.map((specifier) => `node:${specifier}`),
+]);
 const errors = [];
 
 function readJson(path) {
@@ -101,6 +106,22 @@ function sameSet(actual, expected) {
 function internalDependencyName(specifier) {
   const match = specifier.match(/^(@sylis\/[^/]+)/);
   return match?.[1] ?? null;
+}
+
+function externalDependencyName(specifier) {
+  if (
+    specifier.startsWith(".") ||
+    specifier.startsWith("@/") ||
+    specifier.startsWith("src/") ||
+    specifier.startsWith("#") ||
+    nodeBuiltins.has(specifier)
+  ) {
+    return null;
+  }
+  if (specifier.startsWith("@")) {
+    return specifier.split("/").slice(0, 2).join("/");
+  }
+  return specifier.split("/")[0];
 }
 
 function packageSubpath(internalName, specifier) {
@@ -141,7 +162,7 @@ function listSourceFiles(root) {
   const result = [];
   const ignored = new Set([
     ".git",
-    ".nx",
+    ".turbo",
     ".vitepress",
     "coverage",
     "dist",
@@ -195,22 +216,50 @@ function collectExportTargets(value, targets = []) {
   return targets;
 }
 
+const turboPath = resolve(workspaceRoot, "turbo.json");
+if (!existsSync(turboPath)) {
+  errors.push("workspace: missing turbo.json");
+} else {
+  const turboJson = readJson(turboPath);
+  const tasks = turboJson.tasks ?? {};
+  for (const task of ["build", "docs:build", "lint", "typecheck", "test"]) {
+    if (!tasks[task]) errors.push(`turbo.json: missing ${task} task`);
+  }
+  for (const task of [
+    "dev",
+    "build:watch",
+    "docs:dev",
+    "preview",
+    "start",
+    "test:e2e",
+    "test:integration",
+    "prisma:generate",
+    "prisma:migrate",
+    "db:generate",
+    "db:migrate",
+    "db:seed",
+    "compile",
+    "sources:fetch",
+    "pilot",
+    "deploy",
+    "publish",
+  ]) {
+    if (tasks[task]?.cache !== false) {
+      errors.push(`turbo.json: side-effect task ${task} must disable cache`);
+    }
+  }
+}
+
 for (const project of projects) {
   const projectRoot = resolve(workspaceRoot, project.root);
   const packagePath = join(projectRoot, "package.json");
-  const projectPath = join(projectRoot, "project.json");
 
   if (!existsSync(packagePath)) {
     errors.push(`${project.root}: missing package.json`);
     continue;
   }
-  if (!existsSync(projectPath)) {
-    errors.push(`${project.root}: missing project.json`);
-    continue;
-  }
 
   const packageJson = readJson(packagePath);
-  const projectJson = readJson(projectPath);
   const dependencies = packageDependencies(packageJson);
 
   for (const dependency of Object.keys(dependencies)) {
@@ -229,17 +278,6 @@ for (const project of projects) {
       `${project.root}: package name ${packageJson.name} must be ${project.name}`,
     );
   }
-  if (projectJson.name !== project.name) {
-    errors.push(
-      `${project.root}: Nx name ${projectJson.name} must be ${project.name}`,
-    );
-  }
-  if (!sameSet(projectJson.tags ?? [], project.tags)) {
-    errors.push(
-      `${project.root}: tags must be exactly ${project.tags.join(", ")}`,
-    );
-  }
-
   for (const dependency of Object.keys(dependencies).filter((name) =>
     name.startsWith("@sylis/"),
   )) {
@@ -277,8 +315,12 @@ for (const project of projects) {
       const sourcePath = relative(workspaceRoot, file);
       const isTypeScriptSource = /\.[cm]?tsx?$/.test(extname(file));
       const internalName = internalDependencyName(specifier);
+      const externalName = externalDependencyName(specifier);
       const isSourceImport =
-        specifier.startsWith(".") || specifier.startsWith("@/") || internalName;
+        specifier.startsWith(".") ||
+        specifier.startsWith("@/") ||
+        specifier.startsWith("src/") ||
+        internalName;
       if (
         isTypeScriptSource &&
         isSourceImport &&
@@ -330,35 +372,43 @@ for (const project of projects) {
             `${relative(workspaceRoot, file)}: relative import crosses into ${targetProject.name}`,
           );
         }
+      } else if (externalName && !dependencies[externalName]) {
+        errors.push(
+          `${sourcePath}: ${externalName} is imported but absent from package.json`,
+        );
       }
     }
   }
 }
 
-const nxResult = spawnSync(
+const pnpmResult = spawnSync(
   "pnpm",
-  ["exec", "nx", "show", "projects", "--json"],
+  ["--recursive", "list", "--depth", "-1", "--json"],
   {
     cwd: workspaceRoot,
     encoding: "utf8",
-    env: { ...process.env, NX_DAEMON: "false" },
+    env: process.env,
   },
 );
 
-if (nxResult.status !== 0) {
-  errors.push(`Nx project graph failed: ${nxResult.stderr.trim()}`);
+if (pnpmResult.status !== 0) {
+  errors.push(`pnpm workspace graph failed: ${pnpmResult.stderr.trim()}`);
 } else {
   try {
-    const nxProjects = JSON.parse(nxResult.stdout);
+    const workspacePackages = JSON.parse(pnpmResult.stdout)
+      .filter(
+        (workspacePackage) => resolve(workspacePackage.path) !== workspaceRoot,
+      )
+      .map((workspacePackage) => workspacePackage.name);
     const expected = projects.map((project) => project.name).sort();
-    const actual = [...nxProjects].sort();
+    const actual = [...workspacePackages].sort();
     if (!sameSet(actual, expected)) {
       errors.push(
-        `Nx projects mismatch. Expected ${expected.join(", ")}; received ${actual.join(", ")}`,
+        `pnpm workspace packages mismatch. Expected ${expected.join(", ")}; received ${actual.join(", ")}`,
       );
     }
   } catch (error) {
-    errors.push(`Nx returned invalid project JSON: ${error.message}`);
+    errors.push(`pnpm returned invalid workspace JSON: ${error.message}`);
   }
 }
 
@@ -369,5 +419,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Workspace architecture check passed (${projects.length} projects).`,
+  `Workspace architecture check passed (${projects.length} packages).`,
 );

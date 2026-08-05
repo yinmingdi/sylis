@@ -18,7 +18,7 @@
 
 | Phase | 一次性执行的完整门禁                                                                                                                                                                         |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | VitePress build、内部链接/表格、artifact Draft 2020-12 Schema 编译、示例验证、secret scan、Nx graph/tags/exports/allowlist、format/diff check                                                |
+| 0     | VitePress build、内部链接/表格、artifact Draft 2020-12 Schema 编译、示例验证、secret scan、pnpm/Turbo graph、exports/allowlist、format/diff check                                            |
 | 1     | `lexicon-contracts`/compiler lint、typecheck、unit、source fixtures、语言学 golden、artifact references/profiles、determinism、200 词无 AI + 真实 AI pilot、forbidden dependency             |
 | 2     | Prisma validate/generate、fresh migration、Job state property tests、Runner/Importer contract + PostgreSQL integration、COPY/dry-run/import/validate/rollback、crash/lease/checkpoint resume |
 | 3     | API/Worker/Admin/Web architecture、Identity/session/CSRF/MFA/RBAC integration、双 OpenAPI client、User/Admin shell Playwright、BackgroundJob/SSE/Redis-loss                                  |
@@ -249,7 +249,7 @@ Playwright 至少覆盖 desktop/mobile：
 
 - secret scan、dependency/license policy；
 - format、lint、typecheck；
-- Nx project graph/tag/exports/module-boundary architecture tests；PR `affected` 与 release 全量 graph 均通过；
+- pnpm package graph、Turbo task graph、exports/module-boundary architecture tests；PR `--affected` 与 release 全量 graph 均通过；
 - Prisma validate/generate 和 fresh DB migrate；
 - compiler/importer unit、fixture、artifact、idempotency tests；
 - API unit/integration/contract/build/health；

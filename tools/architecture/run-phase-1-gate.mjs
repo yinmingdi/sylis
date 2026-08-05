@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const outputRoot = resolve(workspaceRoot, ".work/phase-1-gate");
 const artifactPath = resolve(outputRoot, "fixture.json.zst");
+const fixtureManifestPath = resolve(
+  workspaceRoot,
+  "packages/lexicon-compiler/test/fixtures/manifest.json",
+);
 rmSync(outputRoot, { recursive: true, force: true });
 mkdirSync(outputRoot, { recursive: true });
 
@@ -27,13 +31,12 @@ const commands = [
   ["pnpm", ["--filter", "@sylis/lexicon-compiler", "test"]],
   ["pnpm", ["--filter", "@sylis/lexicon-compiler", "build"]],
   [
-    "pnpm",
+    "node",
     [
-      "--filter",
-      "@sylis/lexicon-compiler",
+      "packages/lexicon-compiler/dist/cli/main.js",
       "compile",
       "--manifest",
-      "test/fixtures/manifest.json",
+      fixtureManifestPath,
       "--profile",
       "fixture",
       "--output",
@@ -43,10 +46,9 @@ const commands = [
     ],
   ],
   [
-    "pnpm",
+    "node",
     [
-      "--filter",
-      "@sylis/lexicon-compiler",
+      "packages/lexicon-compiler/dist/cli/main.js",
       "validate",
       "--input",
       artifactPath,
@@ -59,7 +61,7 @@ for (const [command, args] of commands) {
   console.log(`\n$ ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, {
     cwd: workspaceRoot,
-    env: { ...process.env, NX_DAEMON: "false" },
+    env: process.env,
     stdio: "inherit",
   });
   if (result.status !== 0) {

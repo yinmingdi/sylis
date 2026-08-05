@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
     "start": "tsx src/index.ts",
     "youdao:import": "tsx src/youdao-import.ts",
     "verify:fixture": "tsx src/verify-fixture.ts",

@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run",
@@ -26,12 +26,12 @@
     "pilot": "tsx src/cli/main.ts compile --manifest ${LEXICON_SOURCE_MANIFEST:-test/fixtures/manifest.json} --profile pilot-200 --output ${LEXICON_ARTIFACT_OUTPUT:-.work/pilot-200.json.zst}"
   },
   "dependencies": {
-    "@sylis/ai-provider": "workspace:*",
-    "@sylis/lexicon-contracts": "workspace:*",
-    "@streamparser/json": "0.0.22",
     "@aws-sdk/client-s3": "3.1103.0",
     "@aws-sdk/lib-storage": "3.1103.0",
     "@smithy/node-http-handler": "4.9.13",
+    "@streamparser/json": "0.0.22",
+    "@sylis/ai-provider": "workspace:*",
+    "@sylis/lexicon-contracts": "workspace:*",
     "ajv": "^8.17.1",
     "ajv-formats": "3.0.1",
     "csv-parse": "^5.6.0",
@@ -39,8 +39,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "tsdown": "0.22.14",
     "tsx": "^4.20.6",
-    "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

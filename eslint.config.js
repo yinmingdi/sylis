@@ -1,6 +1,5 @@
 // @ts-check
 import eslint from "@eslint/js";
-import nxPlugin from "@nx/eslint-plugin";
 import importPlugin from "eslint-plugin-import";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import tseslint from "typescript-eslint";
@@ -16,7 +15,6 @@ export const globalIgnores = {
     "**/build/",
     ".next/",
     "out/",
-    ".nx/",
     ".turbo/",
     ".cache/",
     "**/.cache/",
@@ -78,72 +76,15 @@ export const globalIgnores = {
   ],
 };
 
-const dependencyConstraints = [
-  {
-    sourceTag: "type:app",
-    onlyDependOnLibsWithTags: ["type:lib"],
-  },
-  {
-    sourceTag: "type:service",
-    onlyDependOnLibsWithTags: ["type:lib"],
-  },
-  {
-    sourceTag: "type:lib",
-    onlyDependOnLibsWithTags: ["type:lib"],
-  },
-  {
-    sourceTag: "type:docs",
-    onlyDependOnLibsWithTags: ["type:docs", "type:lib"],
-  },
-  {
-    sourceTag: "runtime:browser",
-    onlyDependOnLibsWithTags: ["runtime:browser", "runtime:neutral"],
-  },
-  {
-    sourceTag: "runtime:server",
-    onlyDependOnLibsWithTags: [
-      "runtime:server",
-      "runtime:node",
-      "runtime:neutral",
-    ],
-  },
-  {
-    sourceTag: "runtime:node",
-    onlyDependOnLibsWithTags: ["runtime:node", "runtime:neutral"],
-  },
-  {
-    sourceTag: "runtime:neutral",
-    onlyDependOnLibsWithTags: ["runtime:neutral"],
-  },
-  {
-    sourceTag: "runtime:docs",
-    onlyDependOnLibsWithTags: [
-      "runtime:docs",
-      "runtime:browser",
-      "runtime:neutral",
-    ],
-  },
-];
-
 export const baseConfig = [
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
   {
     plugins: {
-      "@nx": nxPlugin,
       import: importPlugin,
     },
     rules: {
-      "@nx/enforce-module-boundaries": [
-        "error",
-        {
-          allow: [],
-          enforceBuildableLibDependency: false,
-          banTransitiveDependencies: true,
-          depConstraints: dependencyConstraints,
-        },
-      ],
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-floating-promises": "off",
       "@typescript-eslint/no-unsafe-argument": "off",

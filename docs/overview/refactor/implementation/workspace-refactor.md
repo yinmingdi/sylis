@@ -97,7 +97,7 @@ services/
     src/activate/
 ```
 
-pnpm 继续负责 workspace/package 管理；Nx 负责 project graph、task cache、`affected`、生成器和跨项目约束。Frontend module 不是 Nx project，其边界由 ESLint/architecture test 执行。完整 project/target/tag/依赖矩阵见 [Workspace 项目图与 Nx 治理](./workspace-projects.md)，前后端精确树分别见 [前端目录与模块边界](./frontend-structure.md) 和 [后端目录与 NestJS 模块边界](./backend-structure.md)。
+pnpm 继续负责 workspace/package 管理；Turbo 负责 package task graph、cache 和 `--affected`；集中 architecture test 执行跨 package allowlist。Frontend module 不是 workspace package，其边界由 ESLint/architecture test 执行。完整 package/task/依赖矩阵见 [Workspace 项目图与 Turbo 治理](./workspace-projects.md)，前后端精确树分别见 [前端目录与模块边界](./frontend-structure.md) 和 [后端目录与 NestJS 模块边界](./backend-structure.md)。
 
 依赖方向固定为：
 
@@ -280,18 +280,18 @@ flowchart LR
 
 ## 10. 配置、Docker 与 workflow 映射
 
-| 当前项                                                                       | 目标动作                                                                                                                             |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| root `package.json` 为 `0.2.0`、API Swagger 为 `0.1`、Web package 为 `0.0.0` | 产品首发统一为 `0.0.1`；以 `release/0.0.1`、`v0.0.1` 和注入的 `APP_VERSION/GIT_SHA` 为事实，private package version 不再冒充部署版本 |
-| `apps/api/src/config/env.validation.ts`                                      | runtime AI、DB、Redis、session/CSRF、mailer 分组校验；编译器 AI 变量不进入 API；非 AI 功能不因可选 provider 缺失无法启动             |
-| `apps/web/Dockerfile`                                                        | 保留 multi-stage；CI build + `/health` smoke；确认非 root、静态缓存和运行时 API origin contract                                      |
-| 缺失的 `apps/api/Dockerfile`                                                 | 新建 multi-stage image；CI 必须真实 build/run/health                                                                                 |
-| 缺失的 Admin/Worker/Compiler Runner Dockerfile                               | 新建三个独立 image；Admin health、Worker/Runner 私网 readiness 与 claim smoke                                                        |
-| 缺失的 Railway service config                                                | 新建 API/Web/Admin/Worker/Compiler Runner/Importer 各自 config，固定 root/Dockerfile/watch path/health/predeploy                     |
-| `.github/workflows/ci.yml`                                                   | 增加 Nx boundaries、contracts/compiler/artifact/importer、API/Admin client diff、六镜像、Playwright、docs；actions 固定完整 SHA      |
-| `deploy-vocabulary-importer.yml`                                             | 删除，拆为 artifact build、dry-run、import+validate、activate/rollback 四个 workflow                                                 |
-| `deploy-docs.yml`                                                            | 保留文档发布；固定 action SHA，文档失败不得 `continue` 掩盖关键输出                                                                  |
-| `gitflow-check.yml`                                                          | 保留并强制 `release/*`/`hotfix/* -> main`；配合 branch protection                                                                    |
+| 当前项                                                                       | 目标动作                                                                                                                                     |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| root `package.json` 为 `0.2.0`、API Swagger 为 `0.1`、Web package 为 `0.0.0` | 产品首发统一为 `0.0.1`；以 `release/0.0.1`、`v0.0.1` 和注入的 `APP_VERSION/GIT_SHA` 为事实，private package version 不再冒充部署版本         |
+| `apps/api/src/config/env.validation.ts`                                      | runtime AI、DB、Redis、session/CSRF、mailer 分组校验；编译器 AI 变量不进入 API；非 AI 功能不因可选 provider 缺失无法启动                     |
+| `apps/web/Dockerfile`                                                        | 保留 multi-stage；CI build + `/health` smoke；确认非 root、静态缓存和运行时 API origin contract                                              |
+| 缺失的 `apps/api/Dockerfile`                                                 | 新建 multi-stage image；CI 必须真实 build/run/health                                                                                         |
+| 缺失的 Admin/Worker/Compiler Runner Dockerfile                               | 新建三个独立 image；Admin health、Worker/Runner 私网 readiness 与 claim smoke                                                                |
+| 缺失的 Railway service config                                                | 新建 API/Web/Admin/Worker/Compiler Runner/Importer 各自 config，固定 root/Dockerfile/watch path/health/predeploy                             |
+| `.github/workflows/ci.yml`                                                   | 增加 Turbo affected、boundaries、contracts/compiler/artifact/importer、API/Admin client diff、六镜像、Playwright、docs；actions 固定完整 SHA |
+| `deploy-vocabulary-importer.yml`                                             | 删除，拆为 artifact build、dry-run、import+validate、activate/rollback 四个 workflow                                                         |
+| `deploy-docs.yml`                                                            | 保留文档发布；固定 action SHA，文档失败不得 `continue` 掩盖关键输出                                                                          |
+| `gitflow-check.yml`                                                          | 保留并强制 `release/*`/`hotfix/* -> main`；配合 branch protection                                                                            |
 
 普通 API/Web/Admin/Worker/Compiler Runner CD 使用 Railway GitHub source + 仓库 Dockerfile + Wait for CI。只有 importer job 使用 project/environment-scoped Railway token；PostgreSQL/Redis 始终是独立 Railway service。
 
@@ -299,14 +299,14 @@ CI/CD 只以目标 ref 已提交的文件作为构建输入；本地未提交或
 
 ## 11. 实施批次与删除门禁
 
-| 批次 | 产物                                                 | 删除门禁                                                               |
-| ---- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
-| A    | Nx graph、contracts、compiler、Compiler Runner pilot | boundaries、schema、双 hash、引用、题库质量、resume/progress 通过      |
-| B    | Identity/User、User/Admin shell、Job contract/Worker | session/CSRF/consent/RBAC/审批/幂等/SSE 通过                           |
-| C    | `@sylis/database`、importer、fresh DB release        | fresh migration、dry-run 零写入、COPY、validation/rollback 通过        |
-| D    | lexicon/books/study/exercises API/Web                | FSRS/评分/daily plan 通过后删除 words/learning/quiz                    |
-| E    | assessments/notebooks API/Web                        | session/result/typed target 通过后删除 test/notebook 旧模型            |
-| F    | Reading Core/Reddit/Tutor/Grammar/AI Reading         | import graph 无旧 Word/Article/Chat DTO；Job/budget/retention 测试通过 |
-| G    | 全产品 staging/release/production                    | 六镜像、CI、Wait for CI、内容流、secret scan、双 rollback 演练通过     |
+| 批次 | 产物                                                         | 删除门禁                                                               |
+| ---- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| A    | pnpm/Turbo graph、contracts、compiler、Compiler Runner pilot | boundaries、schema、双 hash、引用、题库质量、resume/progress 通过      |
+| B    | Identity/User、User/Admin shell、Job contract/Worker         | session/CSRF/consent/RBAC/审批/幂等/SSE 通过                           |
+| C    | `@sylis/database`、importer、fresh DB release                | fresh migration、dry-run 零写入、COPY、validation/rollback 通过        |
+| D    | lexicon/books/study/exercises API/Web                        | FSRS/评分/daily plan 通过后删除 words/learning/quiz                    |
+| E    | assessments/notebooks API/Web                                | session/result/typed target 通过后删除 test/notebook 旧模型            |
+| F    | Reading Core/Reddit/Tutor/Grammar/AI Reading                 | import graph 无旧 Word/Article/Chat DTO；Job/budget/retention 测试通过 |
+| G    | 全产品 staging/release/production                            | 六镜像、CI、Wait for CI、内容流、secret scan、双 rollback 演练通过     |
 
 每个删除动作都要求 `rg`/TypeScript import graph、Prisma validate、API contract 和 Web build 同时证明无消费者。不能先删模型再依赖线上报错找遗漏。

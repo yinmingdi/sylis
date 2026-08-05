@@ -1,4 +1,4 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -7,5 +7,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   outDir: "dist",
-  watch: process.env.WATCH === "true",
+  target: "es2023",
+  fixedExtension: false,
 });

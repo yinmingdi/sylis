@@ -90,7 +90,7 @@ feature/* -> develop -> release/0.0.1 -> main -> tag v0.0.1
 
 1. 确认本目录为唯一设计源，冻结 artifact schema major `sylis.lexicon-artifact/1`。
 2. 固定受控词表、文本 profile、稳定 ID 和 release 规则。
-3. 固定 pnpm + Nx project graph、tags、targets、package exports 和跨项目 allowlist。
+3. 固定 pnpm + Turbo package/task graph、package exports 和集中跨 package allowlist。
 4. 将旧长文改为入口指针，后续决策只改本目录。
 
 ### Phase 1：独立 compiler

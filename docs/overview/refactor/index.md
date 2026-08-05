@@ -29,35 +29,35 @@ flowchart LR
 
 ## 2. 文档地图
 
-| 目录             | 文档                                                                 | 回答的问题                                             |
-| ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
-| `architecture`   | [目标系统架构](./architecture/system.md)                             | package、service、API、数据库怎样分工                  |
-| `architecture`   | [Bounded Contexts](./architecture/bounded-contexts.md)               | 六个上下文的所有权、port、事务和事件边界               |
-| `architecture`   | [算法注册表](./architecture/algorithms.md)                           | identity、搜索、FSRS、组题、阅读、AI 和进度算法        |
-| `architecture`   | [BackgroundJob 与 Worker](./architecture/background-jobs.md)         | 唯一 Job 状态机、lease、checkpoint 和执行协议          |
-| `architecture`   | [标准与设计依据](./architecture/standards.md)                        | 五套词典模型及其他规范分别解决什么                     |
-| `data`           | [关系表结构](./data/relational-schema.md)                            | 最终 Prisma/PostgreSQL 表、约束和索引                  |
-| `data`           | [标准 JSON](./data/standard-json.md)                                 | 单一 JSON 的完整结构、ID 和版本契约                    |
-| `data`           | [Artifact/数据库映射](./data/artifact-database-mapping.md)           | JSON 每个数组怎样写入目标表，哪些表不应公开            |
-| `data`           | [来源、证据与权利](./data/provenance.md)                             | 多来源怎样合并、追踪、撤回和复用                       |
-| `pipeline`       | [Lexicon Compiler](./pipeline/lexicon-compiler.md)                   | 独立 package 怎样生成 JSON                             |
-| `pipeline`       | [AI enrichment](./pipeline/ai-enrichment.md)                         | AI 生成什么、怎样校验、怎样限费重试                    |
-| `pipeline`       | [导入与 release](./pipeline/import-release.md)                       | JSON 怎样高效导入和原子发布                            |
-| `product`        | [学习、题库与测试](./product/learning-assessment.md)                 | FSRS、题目、选项、组卷及旧题复用                       |
-| `product`        | [身份与独立用户](./product/identity-user.md)                         | User、session、consent 与 RBAC                         |
-| `product`        | [Reading Core 与内容体验](./product/reading-experiences.md)          | AI 阅读、Reddit 如何共享能力但保留各自体验             |
-| `product`        | [在线 AI 导师](./product/ai-tutor.md)                                | Tutor、Grammar、Generation、provider、Job 和预算       |
-| `product`        | [独立 Admin](./product/admin.md)                                     | 后台 IA、固定权限、高风险审批和运维进度                |
-| `product`        | [API 重构](./product/api.md)                                         | REST 资源、DTO、错误和一致性                           |
-| `product`        | [Web 重构](./product/web.md)                                         | 页面、状态、查询和学习交互怎样调整                     |
-| `delivery`       | [迁移与删除](./delivery/migration.md)                                | 旧模型怎样一次性替换                                   |
-| `delivery`       | [测试与验收](./delivery/testing.md)                                  | 如何证明结构、数据和流程正确                           |
-| `delivery`       | [CI/CD、Railway 与密钥](./delivery/cicd-security.md)                 | 如何从 release 分支安全自动发布                        |
-| `implementation` | [当前代码重构映射](./implementation/workspace-refactor.md)           | 当前 module、路由、页面、schema、workflow 分别怎样处理 |
-| `implementation` | [前端目录与模块边界](./implementation/frontend-structure.md)         | User/Admin 的 pages/modules/components/state 怎样组织  |
-| `implementation` | [后端目录与 NestJS 模块边界](./implementation/backend-structure.md)  | API/Worker/Runner/Importer 怎样分工和依赖              |
-| `implementation` | [Workspace 项目图与 Nx 治理](./implementation/workspace-projects.md) | pnpm/Nx、project、tag、target 和 package exports       |
-| `implementation` | [要求覆盖矩阵](./implementation/coverage-matrix.md)                  | 怎样证明所有要求都有权威章节和验收方式                 |
+| 目录             | 文档                                                                    | 回答的问题                                             |
+| ---------------- | ----------------------------------------------------------------------- | ------------------------------------------------------ |
+| `architecture`   | [目标系统架构](./architecture/system.md)                                | package、service、API、数据库怎样分工                  |
+| `architecture`   | [Bounded Contexts](./architecture/bounded-contexts.md)                  | 六个上下文的所有权、port、事务和事件边界               |
+| `architecture`   | [算法注册表](./architecture/algorithms.md)                              | identity、搜索、FSRS、组题、阅读、AI 和进度算法        |
+| `architecture`   | [BackgroundJob 与 Worker](./architecture/background-jobs.md)            | 唯一 Job 状态机、lease、checkpoint 和执行协议          |
+| `architecture`   | [标准与设计依据](./architecture/standards.md)                           | 五套词典模型及其他规范分别解决什么                     |
+| `data`           | [关系表结构](./data/relational-schema.md)                               | 最终 Prisma/PostgreSQL 表、约束和索引                  |
+| `data`           | [标准 JSON](./data/standard-json.md)                                    | 单一 JSON 的完整结构、ID 和版本契约                    |
+| `data`           | [Artifact/数据库映射](./data/artifact-database-mapping.md)              | JSON 每个数组怎样写入目标表，哪些表不应公开            |
+| `data`           | [来源、证据与权利](./data/provenance.md)                                | 多来源怎样合并、追踪、撤回和复用                       |
+| `pipeline`       | [Lexicon Compiler](./pipeline/lexicon-compiler.md)                      | 独立 package 怎样生成 JSON                             |
+| `pipeline`       | [AI enrichment](./pipeline/ai-enrichment.md)                            | AI 生成什么、怎样校验、怎样限费重试                    |
+| `pipeline`       | [导入与 release](./pipeline/import-release.md)                          | JSON 怎样高效导入和原子发布                            |
+| `product`        | [学习、题库与测试](./product/learning-assessment.md)                    | FSRS、题目、选项、组卷及旧题复用                       |
+| `product`        | [身份与独立用户](./product/identity-user.md)                            | User、session、consent 与 RBAC                         |
+| `product`        | [Reading Core 与内容体验](./product/reading-experiences.md)             | AI 阅读、Reddit 如何共享能力但保留各自体验             |
+| `product`        | [在线 AI 导师](./product/ai-tutor.md)                                   | Tutor、Grammar、Generation、provider、Job 和预算       |
+| `product`        | [独立 Admin](./product/admin.md)                                        | 后台 IA、固定权限、高风险审批和运维进度                |
+| `product`        | [API 重构](./product/api.md)                                            | REST 资源、DTO、错误和一致性                           |
+| `product`        | [Web 重构](./product/web.md)                                            | 页面、状态、查询和学习交互怎样调整                     |
+| `delivery`       | [迁移与删除](./delivery/migration.md)                                   | 旧模型怎样一次性替换                                   |
+| `delivery`       | [测试与验收](./delivery/testing.md)                                     | 如何证明结构、数据和流程正确                           |
+| `delivery`       | [CI/CD、Railway 与密钥](./delivery/cicd-security.md)                    | 如何从 release 分支安全自动发布                        |
+| `implementation` | [当前代码重构映射](./implementation/workspace-refactor.md)              | 当前 module、路由、页面、schema、workflow 分别怎样处理 |
+| `implementation` | [前端目录与模块边界](./implementation/frontend-structure.md)            | User/Admin 的 pages/modules/components/state 怎样组织  |
+| `implementation` | [后端目录与 NestJS 模块边界](./implementation/backend-structure.md)     | API/Worker/Runner/Importer 怎样分工和依赖              |
+| `implementation` | [Workspace 项目图与 Turbo 治理](./implementation/workspace-projects.md) | pnpm/Turbo、package graph、task、cache 和 exports      |
+| `implementation` | [要求覆盖矩阵](./implementation/coverage-matrix.md)                     | 怎样证明所有要求都有权威章节和验收方式                 |
 
 ## 3. 不可变决策
 
@@ -78,7 +78,7 @@ flowchart LR
 15. 0.0.1 使用 Objective-level FSRS 和确定性规则，不发布 IRT/CAT、CEFR 或词汇量估算结论。
 16. 公开纳入有道和永久保留可识别原文是明确记录但尚未满足外部条件的 production blockers，不能由代码或运营 override 绕过。
 17. `BackgroundJob` 是唯一执行状态机；PostgreSQL 保存真相，Redis 只负责唤醒 executor。
-18. pnpm 是唯一 package manager；Nx 负责 project graph、cache、`affected`、generator 和跨项目边界，但 app 内 module 不拆成 Nx project。
+18. pnpm 是唯一 package manager；Turbo 负责任务图、cache 与 `--affected`，精确跨 package 边界由 architecture tests 执行，app 内 module 不拆成 workspace package。
 19. User/Admin 前端使用 `app/pages/modules/assets`；跨应用 UI 归 `@sylis/components`，跨 runtime 纯函数归 `@sylis/utils`。
 20. API 使用 NestJS module-first 结构；Prisma 归 `@sylis/database`，Job contract 归 `@sylis/background-jobs`，删除 `@sylis/shared`。
 21. 长时间全量构建由 `services/lexicon-compiler-runner` 在 Railway 执行；纯 compiler library 不接生产数据库或 Railway。

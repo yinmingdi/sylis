@@ -73,7 +73,7 @@ CI 在 PR 与 `develop/main/release/**` push 运行，默认 `permissions: conte
 - third-party actions 固定到完整 commit SHA，并由 Dependabot/Renovate 管理更新；
 - `pull_request_target` 不 checkout/执行不可信 PR 代码；
 - CI 只用占位 AI key 和临时 Postgres/Redis；
-- PR 用 Nx `affected` 缩短反馈，`develop/main/release/**` 使用 `nx run-many --all` 完成全量 project/contract 门禁；
+- PR 用 Turbo `--affected` 缩短反馈，`develop/main/release/**` 使用 `pnpm ci:full` 完成全量 package/contract 门禁；
 - migration 总是在 fresh DB 执行；
 - API/Web/Admin/Worker/Compiler Runner/Importer Docker image 在 CI 真正 build；长期服务跑 health/readiness smoke，Importer 跑离线 validate smoke；
 - `lexicon-contracts` schema/generated types 保持 clean，compiler fixture 和 importer mapping registry 对同一 artifact contract 通过；
@@ -112,7 +112,7 @@ CI 在 PR 与 `develop/main/release/**` push 运行，默认 `permissions: conte
 
 Admin 先创建带 immutable manifest/profile/commit/model policy/budget 的 `BuildRun` 与 `LEXICON_BUILD` Job。受保护流程输入 `buildRunId + approvalDigest`；长计算在 Railway Compiler Runner，GitHub Actions 不长期占用 runner。流程：
 
-1. GitHub checkout 精确 ref、安装 locked dependencies，并用 Nx 完成 compiler/contract fixture、pilot 证明和预算/manifest approval 校验；
+1. GitHub checkout 精确 ref、安装 locked dependencies，并用 Turbo task graph 完成 compiler/contract fixture、pilot 证明和预算/manifest approval 校验；
 2. 审批后允许对应 `LEXICON_BUILD` 进入可 claim 状态；Compiler Runner 下载并校验 source checksum，有道只读取受控 artifact location；
 3. Runner 调用纯 `@sylis/lexicon-compiler`，使用对象存储 checkpoint/cache，持续写 BackgroundJob progress/cost/heartbeat；
 4. Runner validate schema、references、rights、quality 和 deterministic rebuild sample；预算耗尽或门禁失败不产生成功 result；

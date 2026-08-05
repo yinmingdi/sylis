@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
@@ -46,14 +47,17 @@ jobs:
         run: pnpm harness:test
       - name: Validate repository Harness
         run: pnpm harness:check
-      - name: Run complete Phase 0 gate
-        run: pnpm phase0:check
-      - name: Validate Phase 1 compiler boundary
-        run: pnpm phase1:check
+      - name: Validate workspace architecture
+        run: pnpm architecture:check
+      - name: Validate workflow policy
+        run: pnpm workflows:check
+      - name: Validate documentation contracts
+        run: pnpm docs:check
+      - name: Validate patch whitespace
+        run: git diff --check
 
   quality:
     name: Build and test
-    needs: harness
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -109,24 +113,25 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Lint
-        run: pnpm lint
-      - name: Build shared utilities
-        run: pnpm --filter @sylis/utils build
       - name: Generate Prisma client
         run: pnpm --filter @sylis/api prisma:generate
+      - name: Configure affected Git range
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+          echo "TURBO_SCM_HEAD=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+      - name: Lint, typecheck, test, and build affected packages
+        if: github.event_name == 'pull_request'
+        run: pnpm ci:affected
+      - name: Lint, typecheck, test, and build all packages
+        if: github.event_name == 'push'
+        run: pnpm ci:full
+      - name: Build integration applications
+        run: pnpm exec turbo run build --filter=@sylis/api --filter=@sylis/web --filter=@sylis/vocabulary-importer
       - name: Apply migrations to a fresh database
         run: pnpm --filter @sylis/api exec prisma migrate deploy
-      - name: API tests and build
-        run: |
-          pnpm --filter @sylis/api test --runInBand
-          pnpm --filter @sylis/api build
-      - name: Vocabulary importer tests and build
-        run: |
-          pnpm --filter @sylis/vocabulary-importer test
-          pnpm --filter @sylis/vocabulary-importer typecheck
-          pnpm --filter @sylis/vocabulary-importer build
-          node --test scripts/deploy-vocabulary-importer.test.mjs
+      - name: Test vocabulary importer deployment script
+        run: node --test scripts/deploy-vocabulary-importer.test.mjs
       - name: Vocabulary importer dry-run and idempotency
         run: |
           fixture=services/vocabulary-importer/test/fixtures/ecdict.csv
@@ -135,10 +140,6 @@ jobs:
           pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
           pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
           pnpm --filter @sylis/vocabulary-importer verify:fixture
-      - name: Web typecheck and build
-        run: |
-          pnpm --filter @sylis/web typecheck
-          pnpm --filter @sylis/web build
       - name: API health smoke test
         run: |
           pnpm --filter @sylis/api start:prod > /tmp/sylis-api.log 2>&1 &
@@ -148,3 +149,19 @@ jobs:
           docker build -f apps/web/Dockerfile -t sylis-web:ci .
           docker run --detach --name sylis-web-ci -p 8080:8080 -e PORT=8080 sylis-web:ci
           curl --fail --retry 10 --retry-all-errors --retry-delay 2 http://localhost:8080/health
+
+  required:
+    name: CI required
+    if: always()
+    needs: [secret-scan, harness, quality]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all CI jobs
+        env:
+          SECRET_SCAN_RESULT: ${{ needs.secret-scan.result }}
+          HARNESS_RESULT: ${{ needs.harness.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          test "$SECRET_SCAN_RESULT" = success
+          test "$HARNESS_RESULT" = success
+          test "$QUALITY_RESULT" = success

@@ -317,36 +317,7 @@ jobs:
           persist-credentials: false
 
       - name: Check for sensitive files
-        run: |
-          echo "🔒 Checking for sensitive files..."
-
-          sensitive_files=(
-            "*.env"
-            "*.key"
-            "*.pem"
-            "*.p12"
-            "*.pfx"
-            "*password*"
-            "*secret*"
-            ".aws/credentials"
-            ".docker/config.json"
-          )
-
-          found_sensitive=false
-
-          for pattern in "${sensitive_files[@]}"; do
-            if find . -name "$pattern" -type f | grep -v node_modules | grep -v .git; then
-              echo "⚠️  Found potentially sensitive file: $pattern"
-              found_sensitive=true
-            fi
-          done
-
-          if [ "$found_sensitive" = true ]; then
-            echo "❌ Sensitive files detected. Please review and remove them."
-            exit 1
-          else
-            echo "✅ No sensitive files found."
-          fi
+        run: node tools/architecture/check-secrets.mjs
 
       - name: Check file permissions
         run: |

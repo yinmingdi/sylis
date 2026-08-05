@@ -12,7 +12,21 @@ for (const entry of readdirSync(workflowsRoot, { withFileTypes: true })) {
     continue;
   }
   const path = resolve(workflowsRoot, entry.name);
-  const lines = readFileSync(path, "utf8").split(/\r?\n/);
+  const source = readFileSync(path, "utf8");
+  const lines = source.split(/\r?\n/);
+  if (source.includes('"*secret*"')) {
+    errors.push(
+      `${entry.name}: broad *secret* filename matching rejects legitimate security tooling`,
+    );
+  }
+  if (
+    entry.name === "gitflow-check.yml" &&
+    !source.includes("node tools/architecture/check-secrets.mjs")
+  ) {
+    errors.push(
+      `${entry.name}: security job must use the repository secret scanner`,
+    );
+  }
   for (const [index, line] of lines.entries()) {
     const match = line.match(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/);
     if (!match) continue;
@@ -40,9 +54,9 @@ for (const entry of readdirSync(workflowsRoot, { withFileTypes: true })) {
 }
 
 if (errors.length > 0) {
-  console.error("Workflow action pin check failed:");
+  console.error("Workflow check failed:");
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log(`Workflow action pin check passed (${actionCount} actions).`);
+console.log(`Workflow checks passed (${actionCount} pinned actions).`);

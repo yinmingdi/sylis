@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+*.tsbuildinfo
 *.local
 .nx/
 .work/
@@ -42,6 +43,10 @@ dist/
 *.egg-info/
 *.egg
 
+# Product source directories named `build` are not generated output.
+!services/lexicon-importer/src/build/
+!services/lexicon-importer/src/build/**
+
 
 
 
@@ -49,6 +54,8 @@ dist/
 .pytest_cache/
 .coverage
 htmlcov/
+playwright-report/
+test-results/
 
 # Development tools
 .mypy_cache/

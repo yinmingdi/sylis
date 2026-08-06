@@ -24,9 +24,7 @@
     "docs/overview/guide/harness-engineering.md"
   ],
   "documentMappings": {
-    "product/index.md": [
-      "docs/overview/guide/what-is-sylis.md"
-    ],
+    "product/index.md": ["docs/overview/guide/what-is-sylis.md"],
     "product/domain.md": [
       "docs/overview/guide/what-is-sylis.md",
       "docs/overview/guide/lexicon-architecture.md"
@@ -35,32 +33,16 @@
       "docs/overview/guide/architecture.md",
       "docs/overview/refactor/architecture/system.md"
     ],
-    "quality/testing.md": [
-      "docs/overview/refactor/delivery/testing.md"
-    ],
-    "quality/security.md": [
-      "docs/overview/refactor/delivery/cicd-security.md"
-    ]
+    "quality/testing.md": ["docs/overview/refactor/delivery/testing.md"],
+    "quality/security.md": ["docs/overview/refactor/delivery/cicd-security.md"]
   },
   "workspace": {
     "groups": {
-      "root": [
-        "."
-      ],
-      "shared": [
-        "packages/*"
-      ],
-      "consumer": [
-        "apps/*",
-        "services/*",
-        "docs/*"
-      ]
+      "root": ["."],
+      "shared": ["packages/*"],
+      "consumer": ["apps/*", "services/*", "docs/*"]
     },
-    "allowedEdges": [
-      "root->shared",
-      "shared->shared",
-      "consumer->shared"
-    ],
+    "allowedEdges": ["root->shared", "shared->shared", "consumer->shared"],
     "requireWorkspaceProtocol": true
   },
   "sources": [

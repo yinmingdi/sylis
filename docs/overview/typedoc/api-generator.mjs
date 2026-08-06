@@ -1,5 +1,3 @@
-/* eslint-env node */
-/* global console */
 import {
   existsSync,
   mkdirSync,

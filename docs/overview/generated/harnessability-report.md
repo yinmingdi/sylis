@@ -6,7 +6,7 @@ Generated structural assessment for Sylis.
 | --- | --- |
 | Required paths | 15 |
 | Mapped document concepts | 5 |
-| Workspace packages | 9 |
+| Workspace packages | 19 |
 | Recorded capabilities | 1 |
 
 ## Current Gaps

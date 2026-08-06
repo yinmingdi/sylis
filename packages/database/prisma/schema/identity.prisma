@@ -1,0 +1,149 @@
+model User {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  status                String                     @default("ACTIVE")
+  locale                String                     @default("zh-CN")
+  timezone              String                     @default("Asia/Shanghai")
+  credentialGeneration  Int                        @default(0)
+  roleGeneration        Int                        @default(0)
+  createdAt             DateTime                   @default(now()) @db.Timestamptz(3)
+  deletedAt             DateTime?                  @db.Timestamptz(3)
+  emails                UserEmail[]
+  passwordCredentials   PasswordCredential[]
+  mfaCredentials        MfaCredential[]
+  consents              ConsentRecord[]
+  sessions              AuthSession[]
+  roles                 OperatorRoleAssignment[]
+  enrollments           UserBookEnrollment[]
+  studyPlans            DailyStudyPlan[]
+  memoryStates          UserObjectiveMemoryState[]
+  reviewEvents          ReviewEvent[]
+  exerciseAttempts      ExerciseAttempt[]
+  assessmentSessions    AssessmentSession[]
+  notebooks             Notebook[]
+  readingActivities     ReadingActivity[]
+  savedReadings         SavedReading[]
+  readingActivityEvents ReadingActivityEvent[]
+  tutorSessions         TutorSession[]
+  grammarDiagnoses      GrammarDiagnosis[]
+  readingGenerations    ReadingGeneration[]
+  usageLedger           AIUsageLedger[]
+  requestedJobs         BackgroundJob[]            @relation("RequestedJobs")
+  subjectJobs           BackgroundJob[]            @relation("SubjectJobs")
+  lexiconActivations    LexiconReleaseActivation[]
+  securityAuditEvents   SecurityAuditEvent[]       @relation("SecurityAuditActor")
+  requestedApprovals    ApprovalRequest[]          @relation("ApprovalRequester")
+  approvalDecisions     ApprovalDecision[]         @relation("ApprovalActor")
+}
+
+model UserEmail {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  normalizedEmail String    @unique
+  displayEmail    String
+  verifiedAt      DateTime? @db.Timestamptz(3)
+  isPrimary       Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordCredential {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  passwordHash String
+  algorithm    String           @default("argon2id")
+  status       CredentialStatus @default(VERIFIED)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
+  rotatedAt    DateTime?        @db.Timestamptz(3)
+  revokedAt    DateTime?        @db.Timestamptz(3)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model MfaCredential {
+  id               String           @id @default(uuid()) @db.Uuid
+  userId           String           @db.Uuid
+  type             String
+  status           CredentialStatus @default(PENDING)
+  label            String
+  secretCiphertext Bytes?
+  keyVersion       String?
+  credentialId     Bytes?           @unique
+  publicKey        Bytes?
+  signCount        BigInt?
+  webAuthnUserId   Bytes?
+  transports       String[]
+  aaguid           String?
+  deviceType       String?
+  backedUp         Boolean?
+  verifiedAt       DateTime?        @db.Timestamptz(3)
+  revokedAt        DateTime?        @db.Timestamptz(3)
+  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model AuthChallenge {
+  id            String          @id @default(uuid()) @db.Uuid
+  userId        String?         @db.Uuid
+  audience      SessionAudience
+  purpose       String
+  challengeHash String          @unique
+  expiresAt     DateTime        @db.Timestamptz(3)
+  consumedAt    DateTime?       @db.Timestamptz(3)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+}
+
+model ConsentRecord {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  purpose       String
+  policyVersion String
+  decision      String
+  locale        String
+  ipHash        String?
+  userAgentHash String?
+  decidedAt     DateTime @default(now()) @db.Timestamptz(3)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, decidedAt])
+}
+
+model AuthSession {
+  id                   String          @id @default(uuid()) @db.Uuid
+  userId               String          @db.Uuid
+  audience             SessionAudience
+  tokenHash            String          @unique
+  csrfSecretHash       String
+  authStrength         String
+  reauthenticatedAt    DateTime        @default(now()) @db.Timestamptz(3)
+  credentialGeneration Int
+  roleGeneration       Int
+  ipHash               String?
+  userAgentHash        String?
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  lastSeenAt           DateTime        @default(now()) @db.Timestamptz(3)
+  expiresAt            DateTime        @db.Timestamptz(3)
+  revokedAt            DateTime?       @db.Timestamptz(3)
+  revokeReason         String?
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, audience, expiresAt])
+}
+
+model OperatorRoleAssignment {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @db.Uuid
+  role         OperatorRole
+  grantedById  String       @db.Uuid
+  grantedAt    DateTime     @default(now()) @db.Timestamptz(3)
+  expiresAt    DateTime?    @db.Timestamptz(3)
+  revokedAt    DateTime?    @db.Timestamptz(3)
+  revokeReason String?
+  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, role, revokedAt])
+}

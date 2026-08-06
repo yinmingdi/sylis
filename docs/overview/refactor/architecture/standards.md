@@ -57,15 +57,15 @@ Sylis 只采用 QTI 的信息分离思想，不在首期实现 QTI XML 导入导
 
 ## 6. API、发布与安全
 
-| 依据                                                                                                                             | 设计决定                                                                                               |
-| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html)                                                                         | API contract 与 JSON Schema 语义对齐，CI 检查生成文档和 breaking changes                               |
-| [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457)                                                               | 所有非 2xx 错误返回统一 `application/problem+json`                                                     |
-| [Railway services](https://docs.railway.com/services)                                                                            | API/Web/Admin/Worker/Compiler Runner 从 GitHub source 与各自 Dockerfile 构建；数据库是独立 service     |
-| [Railway environments](https://docs.railway.com/environments)                                                                    | staging/production 完全隔离，分别绑定分支、变量、数据库和 AI key                                       |
-| [Railway variables](https://docs.railway.com/variables)                                                                          | 业务密钥使用 service-scoped sealed variables；不通过源码、Vite 或 artifact 传递                        |
-| [GitHub protected environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | production deploy 和 lexicon activation 使用 environment protection、branch restriction 和 concurrency |
-| [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)                   | 最小权限、集中管理、轮换、撤销、审计；每个进程只得到它需要的密钥                                       |
+| 依据                                                                                                                             | 设计决定                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html)                                                                         | API contract 与 JSON Schema 语义对齐，CI 检查生成文档和 breaking changes                                        |
+| [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457)                                                               | 所有非 2xx 错误返回统一 `application/problem+json`                                                              |
+| [Railway services](https://docs.railway.com/services)                                                                            | Railway 运行 CI 已构建并固定 digest 的 API/Web/Admin/Worker/Compiler Runner/Importer 镜像；数据库是独立 service |
+| [Railway environments](https://docs.railway.com/environments)                                                                    | staging/production 完全隔离，分别绑定分支、变量、数据库和 AI key                                                |
+| [Railway variables](https://docs.railway.com/variables)                                                                          | 业务密钥使用 service-scoped sealed variables；不通过源码、Vite 或 artifact 传递                                 |
+| [GitHub protected environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | production deploy 和 lexicon activation 使用 environment protection、branch restriction 和 concurrency          |
+| [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)                   | 最小权限、集中管理、轮换、撤销、审计；每个进程只得到它需要的密钥                                                |
 
 ## 7. 规范冲突时的优先级
 

@@ -9,16 +9,19 @@ flowchart LR
   R --> PR[PR to main]
   PR --> CI[required CI]
   CI --> M[main merge SHA]
-  M --> RA[Railway API build from Dockerfile]
-  M --> RW[Railway Web build from Dockerfile]
-  M --> RAD[Railway Admin build from Dockerfile]
-  M --> RWK[Railway Worker build from Dockerfile]
-  M --> RCR[Railway Compiler Runner build from Dockerfile]
+  M --> IMG[CI build six Docker images]
+  IMG --> RA[Railway API pulls digest]
+  IMG --> RW[Railway Web pulls digest]
+  IMG --> RAD[Railway Admin pulls digest]
+  IMG --> RWK[Railway Worker pulls digest]
+  IMG --> RCR[Railway Compiler Runner pulls digest]
+  IMG --> RI[Railway Importer pulls digest]
   RA --> H[health checks]
   RW --> H
   RAD --> H
   RWK --> H
   RCR --> H
+  RI --> H
   H --> T[tag v0.0.1]
 
   LB[approved BuildRun] --> CR[Railway Compiler Runner]
@@ -29,7 +32,7 @@ flowchart LR
   VAL --> ACT[approved activation]
 ```
 
-“GitHub 源码部署”和“Docker”不是二选一：Railway service 的 source 连接 GitHub 分支，检测到 commit 后读取仓库内 Dockerfile 构建镜像。PostgreSQL、Redis 是独立 Railway services，不打包进应用 Docker image，也不由代码仓库上传。
+“GitHub 自动化”和“Docker”不是二选一：GitHub Actions 从触发 workflow 的精确 commit checkout，使用仓库内 Dockerfile 构建六个镜像，推送到 GHCR，再让 Railway 按不可变 digest 拉取。PostgreSQL、Redis 是独立 Railway services，不打包进应用 Docker image，也不由代码仓库上传。
 
 目标文件：
 
@@ -48,7 +51,7 @@ railway.compiler-runner.json
 railway.importer.json
 ```
 
-API/Web/Admin/Worker/Compiler Runner/Importer 使用 immutable build context 和 multi-stage image；运行镜像不包含 devDependencies、本地 `.work`、source dump、`img/`、`img.zip` 或未被项目输入声明的文件。User Web 与 Admin 是不同 service/domain；Worker 与 Compiler Runner 没有 public business route，只暴露 Railway 私网 health；Importer 只按受保护 Job 启动。
+API/Web/Admin/Worker/Compiler Runner/Importer 使用同一个 clean checkout 的 immutable build context 和 multi-stage image；`.dockerignore` 排除本地 `.work`、source dump、`img/`、`img.zip` 等非构建输入。User Web 与 Admin 是不同 service/domain；Worker、Compiler Runner 和 Importer 没有 public business route，只暴露 Railway health endpoint。
 
 ## 2. 分支和环境
 
@@ -75,27 +78,27 @@ CI 在 PR 与 `develop/main/release/**` push 运行，默认 `permissions: conte
 - CI 只用占位 AI key 和临时 Postgres/Redis；
 - PR 用 Turbo `--affected` 缩短反馈，`develop/main/release/**` 使用 `pnpm ci:full` 完成全量 package/contract 门禁；
 - migration 总是在 fresh DB 执行；
-- API/Web/Admin/Worker/Compiler Runner/Importer Docker image 在 CI 真正 build；长期服务跑 health/readiness smoke，Importer 跑离线 validate smoke；
+- API/Web/Admin/Worker/Compiler Runner/Importer Docker image 在 CI 真正 build；六个镜像都启动并跑 health/readiness smoke，Node 镜像先用自身携带的 schema 迁移临时 PostgreSQL；Importer 的 artifact contract fixture 由独立 `artifact:validate` 门禁验证；
 - `lexicon-contracts` schema/generated types 保持 clean，compiler fixture 和 importer mapping registry 对同一 artifact contract 通过；
 - concurrency 按 workflow + ref 取消过时 CI，但 production deploy 不取消进行中的 migration；
 - build 输出 SBOM/image digest，secret scan 覆盖完整 Git 历史和 artifact。
 
 ## 4. Railway 自动 CD
 
-### 4.1 API/Web/Admin/Worker/Compiler Runner
+### 4.1 六个应用服务
 
-推荐使用 Railway GitHub integration，不在 GitHub Actions 执行 `railway up` 上传应用目录：
+本仓库使用 CI build once、Railway deploy by digest：
 
-1. API/Web/Admin/Worker/Compiler Runner service source 连接同一 GitHub repo。
-2. staging trigger branch 为 `develop`，production 为 `main`。
-3. 每个 service 指定自己的 Dockerfile path 和 watch paths。
-4. 启用 Railway **Wait for CI**；required GitHub checks 成功后才创建 deployment。
-5. 只有 API pre-deploy command 执行一次 `prisma migrate deploy`；其他 service 不竞争执行 migration。migration 必须适用于同一次 rolling deployment。
-6. API `/health/ready`、Web/Admin `/health`、Worker 与 Compiler Runner 的私网 `/ready` 通过后 deployment 才成功。
-7. 各 service 独立部署；同一 `APP_VERSION/GIT_SHA` 通过 deployment manifest 关联。跨服务 contract 先在 release candidate 证明新旧相邻 deployment 可共同运行。
+1. PR 只构建六个 Docker image 进行验证，不推送、不部署。
+2. `develop` 和 `main` push 在 required CI 成功后，把六个镜像推到 `ghcr.io/<owner>/sylis-<service>:<git-sha>`；CI 随后解析 `RepoDigest`，禁止用浮动 tag 部署。
+3. `develop` 使用 GitHub environment `sylis / staging`，`main` 使用 `sylis / production`；两个 environment 分别保存同名的 project/environment/service ID 和 environment-scoped Railway project token。
+4. deploy job 用固定版本 Railway CLI 将 service source 指向 digest，再用 `redeploy --from-source` 启动部署并轮询对应 deployment ID；任一 service 失败都会阻断环境 smoke。
+5. Railway Pro 的私有 registry 支持必须先配置：每个 service 打开 **Settings -> Source -> Registry Credentials**，填写仅含 `read:packages` 的 GitHub token。该 token 只存 Railway，不进入 GitHub workflow 或应用变量。
+6. 六个 service 的 Docker source、health path、pre-deploy 和 restart policy 先按 `railway.<service>.json` 建立；切换为 image source 后在 Railway Settings 中核对这些 service-level 设置仍存在。只有 API 使用 `prisma migrate deploy --schema prisma/schema` pre-deploy，其他 service 不执行 migration。
+7. API `/health/ready`、Web/Admin `/health`、Worker/Compiler Runner/Importer `/ready` 是 Railway deployment health check。部署后 GitHub runner 只访问配置在 `SYLIS_HEALTH_URLS` 的公开 API/Web/Admin URL；私网 worker health 由 Railway 自身判定。
 8. Web 使用自己的同源 `/api` gateway；Admin 在独立域名使用自己的同源 `/api/admin` gateway 和 ADMIN cookie audience。浏览器 bundle 不持有内部 API URL、Railway token 或 provider key。
 
-这样生产部署的 source commit 就是合入 `main` 的精确 SHA，Railway Deployments 页面可查看 build/deploy logs、状态和 rollback。GitHub Actions 不需要 account-wide Railway token 完成普通应用 CD。
+Actions 不调用 `railway up`，不会重新上传或重新解释工作区。Railway Deployments 页面记录每个 digest 的部署日志和状态；同一 Git SHA 的六个 digest 通过 workflow run 与 deployment evidence 关联。
 
 ### 4.2 数据库
 
@@ -103,6 +106,19 @@ CI 在 PR 与 `develop/main/release/**` push 运行，默认 `permissions: conte
 - `DATABASE_URL` 使用 Railway reference variable 注入 API/importer；不复制到 GitHub secret。
 - migration 与数据内容导入分离。API pre-deploy 不运行 compiler/importer，也不激活词典。
 - destructive migration 只在 staging 演练后的 release window 执行；本次绿地切换仍要有 snapshot/restore 验证。
+
+### 4.3 Compiler/Importer Volume
+
+staging 与 production 都创建两块彼此独立的 Railway Volume，不能让两个 service 共享文件系统：
+
+| Service            | Mount   | Runtime path                                                      | 内容与恢复语义                                                          |
+| ------------------ | ------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `compiler-runner`  | `/data` | `/data/lexicon-compiler/work`、`/data/lexicon-compiler/artifacts` | source mirror、临时数据库、candidate cache、待发布 artifact；可清理重建 |
+| `lexicon-importer` | `/data` | `/data/lexicon-importer/work`                                     | 下载中的 artifact 与流式 staging 临时文件；可从对象存储和 DB 重建       |
+
+对应变量固定为 `LEXICON_RUNNER_WORK_ROOT`、`LEXICON_ARTIFACT_ROOT` 和 `LEXICON_IMPORTER_WORK_ROOT`。`RAILWAY_VOLUME_MOUNT_PATH` 由 Railway 自动提供，只用于启动时核对 mount；build 与 pre-deploy 阶段没有 Volume。BackgroundJob、lease、progress 和加密 checkpoint 的权威状态始终在 PostgreSQL，Volume 丢失只导致重新物化，不得导致正式 Release 丢失。
+
+Railway Volume 当前不支持 replicas，并且挂载 Volume 的 service 在 redeploy 时会有短暂切换窗口。因此 Compiler Runner 和 Importer 固定单副本，吞吐扩展先通过 chunk/concurrency；未来要横向扩展时，将全部 work/cache 迁到对象存储后才能移除 Volume。Pro 默认 50 GB，应按 artifact 峰值和至少 30% 余量设置告警，接近上限前 live resize，不能等写满后处理。
 
 ## 5. 词典内容流水线
 
@@ -145,10 +161,11 @@ activation 是单独 environment-protected job，输入 `releaseId + artifactHas
 
 | Environment                   | Protection                                              | 保存内容                                                                             |
 | ----------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `sylis / staging`             | develop/release branch restriction                      | staging-only deploy/config secrets                                                   |
+| `sylis / staging`             | develop/release branch restriction                      | staging Railway token/IDs、公开 health URL                                           |
 | `sylis / lexicon-build`       | manual dispatch、budget approval                        | build authorization/publish credential；AI/source secret 留 Railway sealed variables |
 | `sylis / production-import`   | main/tag restriction、required reviewer、no self-review | project-scoped Railway token                                                         |
 | `sylis / production-activate` | required reviewer、no self-review、concurrency 1        | activation-scoped Railway token/endpoint                                             |
+| `sylis / production`          | main restriction、required reviewer                     | production Railway token/IDs、公开 health URL                                        |
 
 如果当前 GitHub plan/repository visibility 不支持 required reviewers，流程不能假装已受保护：保留显式 typed confirmation、branch restriction、concurrency、artifact hash 校验，并在启用可用 plan 后打开 required reviewers。
 
@@ -166,7 +183,7 @@ activation 是单独 environment-protected job，输入 `releaseId + artifactHas
 | `CSRF_SIGNING_KEY`     | local placeholder         | CI placeholder   | 不提供                         | environment-specific | 不提供                    | 不提供    | 不提供                      |
 | mail credentials       | local/test                | fake SMTP        | 不提供                         | environment-specific | 通常不提供                | 不提供    | 不提供                      |
 | field-encryption KEK   | local test key            | ephemeral key    | 不提供                         | KMS/reference only   | KMS/reference only        | 不提供    | 不提供                      |
-| `RAILWAY_TOKEN`        | operator only when needed | 不提供           | 不提供                         | 不提供               | 不提供                    | 不提供    | project/environment scoped  |
+| `RAILWAY_TOKEN`        | operator only when needed | environment CD   | 不提供                         | 不提供               | 不提供                    | 不提供    | production-import workflow  |
 
 Compiler Runner 与 runtime Worker 即使都使用 DeepSeek，也必须使用不同 key、预算和审计。API 不持有运行时 AI key；纯 compiler library 不读取生产 DB，Runner 的数据库权限只限 Job/BuildRun/progress，不允许直接写正式词典 release；Importer 不调用 AI。
 
@@ -221,7 +238,9 @@ Compiler Runner 和 Worker 分别校验自己的变量，API 不接收任何 AI 
 ## 11. 上线验收
 
 - main merge SHA、API/Web/Admin/Worker/Compiler Runner image digest、Railway deployment ID 可互相追踪。
-- Railway Wait for CI 实际阻止失败 commit 部署，并在 Deployments 中保留日志。
+- deploy job 只在 required CI 成功后运行，Railway deployment 使用该 workflow 构建出的精确 image digest。
+- 六个 image source 都能拉取私有 GHCR，API pre-deploy migration 和所有 Railway health check 实际生效。
+- Compiler Runner/Importer 各自的 `/data` Volume 已挂载、容量告警已设置、service 保持单副本。
 - production migration、所有长期服务 health/readiness 和逐服务 rollback 在 staging 演练成功。
 - artifact GitHub Release hash 与 DRAFT/active release hash 一致。
 - Importer 没有 AI key；纯 compiler 没有 production DB；Compiler Runner 不能写 release；Web/Admin bundle 没有 secrets。
@@ -230,8 +249,10 @@ Compiler Runner 和 Worker 分别校验自己的变量，API 不接收任何 AI 
 
 ## 12. 采用依据
 
-- [Railway GitHub autodeploy 与 Wait for CI](https://docs.railway.com/deployments/github-autodeploys)
+- [Railway GitHub autodeploy 与 Wait for CI](https://docs.railway.com/deployments/github-autodeploys)（对比方案，本项目不采用）
 - [Railway service source 与 Dockerfile](https://docs.railway.com/services)
+- [Railway private registries](https://docs.railway.com/builds/private-registries)
+- [Railway volumes](https://docs.railway.com/volumes/reference)
 - [Railway CLI project token](https://docs.railway.com/cli/deploying)
 - [Railway deployment states 和 logs](https://docs.railway.com/deployments/reference)
 - [GitHub deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)

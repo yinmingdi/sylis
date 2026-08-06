@@ -79,7 +79,7 @@ packages/
   utils/
   database/
     prisma/schema/
-    prisma/migrations/
+      migrations/
     src/client/
   background-jobs/
   harness/
@@ -293,20 +293,20 @@ flowchart LR
 | `deploy-docs.yml`                                                            | 保留文档发布；固定 action SHA，文档失败不得 `continue` 掩盖关键输出                                                                          |
 | `gitflow-check.yml`                                                          | 保留并强制 `release/*`/`hotfix/* -> main`；配合 branch protection                                                                            |
 
-普通 API/Web/Admin/Worker/Compiler Runner CD 使用 Railway GitHub source + 仓库 Dockerfile + Wait for CI。只有 importer job 使用 project/environment-scoped Railway token；PostgreSQL/Redis 始终是独立 Railway service。
+GitHub Actions 从精确 commit 使用仓库 Dockerfile 构建六镜像并推送 GHCR；required CI 通过后，environment-scoped Railway token 将 API/Web/Admin/Worker/Compiler Runner/Importer 更新到不可变 digest。PostgreSQL/Redis 始终是独立 Railway service。
 
 CI/CD 只以目标 ref 已提交的文件作为构建输入；本地未提交或未跟踪内容没有发布语义。Docker build context 通过 `.dockerignore` 排除 work/cache/raw source、环境文件和与该 service 无关的 workspace，CI 对同一 commit 构建与 Railway 等价的镜像。
 
 ## 11. 实施批次与删除门禁
 
-| 批次 | 产物                                                         | 删除门禁                                                               |
-| ---- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| A    | pnpm/Turbo graph、contracts、compiler、Compiler Runner pilot | boundaries、schema、双 hash、引用、题库质量、resume/progress 通过      |
-| B    | Identity/User、User/Admin shell、Job contract/Worker         | session/CSRF/consent/RBAC/审批/幂等/SSE 通过                           |
-| C    | `@sylis/database`、importer、fresh DB release                | fresh migration、dry-run 零写入、COPY、validation/rollback 通过        |
-| D    | lexicon/books/study/exercises API/Web                        | FSRS/评分/daily plan 通过后删除 words/learning/quiz                    |
-| E    | assessments/notebooks API/Web                                | session/result/typed target 通过后删除 test/notebook 旧模型            |
-| F    | Reading Core/Reddit/Tutor/Grammar/AI Reading                 | import graph 无旧 Word/Article/Chat DTO；Job/budget/retention 测试通过 |
-| G    | 全产品 staging/release/production                            | 六镜像、CI、Wait for CI、内容流、secret scan、双 rollback 演练通过     |
+| 批次 | 产物                                                         | 删除门禁                                                                  |
+| ---- | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| A    | pnpm/Turbo graph、contracts、compiler、Compiler Runner pilot | boundaries、schema、双 hash、引用、题库质量、resume/progress 通过         |
+| B    | Identity/User、User/Admin shell、Job contract/Worker         | session/CSRF/consent/RBAC/审批/幂等/SSE 通过                              |
+| C    | `@sylis/database`、importer、fresh DB release                | fresh migration、dry-run 零写入、COPY、validation/rollback 通过           |
+| D    | lexicon/books/study/exercises API/Web                        | FSRS/评分/daily plan 通过后删除 words/learning/quiz                       |
+| E    | assessments/notebooks API/Web                                | session/result/typed target 通过后删除 test/notebook 旧模型               |
+| F    | Reading Core/Reddit/Tutor/Grammar/AI Reading                 | import graph 无旧 Word/Article/Chat DTO；Job/budget/retention 测试通过    |
+| G    | 全产品 staging/release/production                            | 六镜像、required CI、digest CD、内容流、secret scan、双 rollback 演练通过 |
 
 每个删除动作都要求 `rg`/TypeScript import graph、Prisma validate、API contract 和 Web build 同时证明无消费者。不能先删模型再依赖线上报错找遗漏。

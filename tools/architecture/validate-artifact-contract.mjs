@@ -1,9 +1,8 @@
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import Ajv2020 from "ajv/dist/2020.js";
-import addFormats from "ajv-formats";
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const schemaPath = join(

@@ -1,5 +1,6 @@
-import commonConfigs from '../../eslint.config.js';
-import globals from 'globals';
+import globals from "globals";
+
+import commonConfigs from "../../eslint.config.js";
 
 export default [
   ...commonConfigs,

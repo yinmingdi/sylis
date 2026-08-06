@@ -4,17 +4,17 @@ This file is the architecture entry map for humans and agents. Detailed rules li
 
 ## Workspace Map
 
-| Path | Package | Harness group |
-| --- | --- | --- |
-| `.` | `sylis` | root |
-| `apps/api` | `@sylis/api` | consumer |
-| `apps/web` | `@sylis/web` | consumer |
-| `docs/components` | `components` | consumer |
-| `docs/overview` | `@sylis/doc-overview` | consumer |
-| `packages/harness` | `@sylis/harness` | shared |
-| `packages/shared` | `@sylis/shared` | shared |
-| `packages/utils` | `@sylis/utils` | shared |
-| `services/vocabulary-importer` | `@sylis/vocabulary-importer` | consumer |
+| Path                           | Package                      | Harness group |
+| ------------------------------ | ---------------------------- | ------------- |
+| `.`                            | `sylis`                      | root          |
+| `apps/api`                     | `@sylis/api`                 | consumer      |
+| `apps/web`                     | `@sylis/web`                 | consumer      |
+| `docs/components`              | `components`                 | consumer      |
+| `docs/overview`                | `@sylis/doc-overview`        | consumer      |
+| `packages/harness`             | `@sylis/harness`             | shared        |
+| `packages/shared`              | `@sylis/shared`              | shared        |
+| `packages/utils`               | `@sylis/utils`               | shared        |
+| `services/vocabulary-importer` | `@sylis/vocabulary-importer` | consumer      |
 
 ## Allowed Dependency Directions
 

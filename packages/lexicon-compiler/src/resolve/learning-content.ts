@@ -1157,20 +1157,8 @@ export function buildLearningContent(
       sectionKey: "all",
       title: "Practice",
       displayOrder: 1,
-      questionCount: exerciseCount,
+      questionCount: Math.min(20, exerciseCount),
     });
-    for (const [
-      index,
-      exercise,
-    ] of artifact.learning.exerciseRevisions.entries()) {
-      artifact.learning.assessmentSelectionRules.push({
-        id: stableId("selectionRule", sectionId, exercise.id),
-        sectionId,
-        ruleKind: "PINNED_ITEM",
-        position: index + 1,
-        exerciseRevisionId: exercise.id,
-      });
-    }
   }
   artifact.quality.exerciseStatistics = [
     { key: "objectives", count: artifact.learning.learningObjectives.length },

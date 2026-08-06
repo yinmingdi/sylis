@@ -1,0 +1,168 @@
+model SourceRightsPolicy {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  key                 String
+  version             String
+  mayBuild            Boolean
+  mayServe            Boolean
+  mayExport           Boolean
+  requiresAttribution Boolean
+  attribution         String?
+  effectiveFrom       DateTime               @db.Timestamptz(3)
+  effectiveTo         DateTime?              @db.Timestamptz(3)
+  datasetVersions     SourceDatasetVersion[]
+  restrictions        SourceRestriction[]
+  mediaAssets         MediaAsset[]
+
+  @@unique([key, version])
+}
+
+model SourceDataset {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  key                   String                 @unique
+  name                  String
+  homepageUri           String
+  versions              SourceDatasetVersion[]
+  proficiencyFrameworks ProficiencyFramework[]
+}
+
+model SourceDatasetVersion {
+  id                           String                        @id @default(uuid()) @db.Uuid
+  datasetId                    String                        @db.Uuid
+  version                      String
+  sourceUri                    String
+  checksum                     String                        @unique
+  retrievedAt                  DateTime                      @db.Timestamptz(3)
+  rightsPolicyId               String                        @db.Uuid
+  dataset                      SourceDataset                 @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  rightsPolicy                 SourceRightsPolicy            @relation(fields: [rightsPolicyId], references: [id], onDelete: Restrict)
+  records                      SourceRecord[]
+  releaseInputs                LexiconReleaseSourceInput[]
+  restrictions                 SourceRestriction[]
+  bookEditions                 VocabularyBookEdition[]
+  proficiencyFrameworkVersions ProficiencyFrameworkVersion[]
+
+  @@unique([datasetId, version])
+}
+
+model SourceRecord {
+  id               String               @id @default(uuid()) @db.Uuid
+  datasetVersionId String               @db.Uuid
+  sourceKey        String
+  languageTag      String
+  rawPayloadHash   String
+  rawPayloadUri    String?
+  rawPayload       Json
+  datasetVersion   SourceDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  evidence         ContentEvidence[]
+  citations        ExampleCitation[]
+  attestations     Attestation[]
+
+  @@unique([datasetVersionId, sourceKey])
+  @@index([rawPayloadHash])
+}
+
+model SourceRestriction {
+  id               String                @id @default(uuid()) @db.Uuid
+  rightsPolicyId   String                @db.Uuid
+  datasetVersionId String?               @db.Uuid
+  restrictionKind  String
+  reason           String
+  effectiveAt      DateTime              @db.Timestamptz(3)
+  rightsPolicy     SourceRightsPolicy    @relation(fields: [rightsPolicyId], references: [id], onDelete: Restrict)
+  datasetVersion   SourceDatasetVersion? @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+}
+
+model LexiconReleaseSourceInput {
+  id                     String               @id @default(uuid()) @db.Uuid
+  releaseId              String               @db.Uuid
+  sourceDatasetVersionId String               @db.Uuid
+  sourceKey              String
+  adapter                String
+  checksum               String
+  release                LexiconRelease       @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  sourceDatasetVersion   SourceDatasetVersion @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceKey])
+}
+
+model Provenance {
+  id                      String                        @id @default(uuid()) @db.Uuid
+  kind                    ProvenanceKind
+  contentHash             String
+  resolverVersion         String
+  decisionReason          String
+  evidence                ContentEvidence[]             @relation("ProvenanceEvidence")
+  downstreamEvidence      ContentEvidence[]             @relation("UpstreamEvidence")
+  formRepresentations     FormRepresentation[]
+  entryRevisions          LexicalEntryRevision[]
+  forms                   LexicalForm[]
+  senseRevisions          LexicalSenseRevision[]
+  conceptRevisions        LexicalConceptRevision[]
+  senseDefinitions        SenseDefinition[]
+  senseTranslations       SenseTranslationText[]
+  senseUsages             SenseUsage[]
+  senseMemberships        SenseConceptMembership[]
+  conceptDefinitions      ConceptDefinition[]
+  mediaAssets             MediaAsset[]
+  entryRelations          EntryRelation[]
+  senseRelations          SenseRelation[]
+  conceptRelations        ConceptRelation[]
+  examples                ExampleSentence[]
+  exampleTranslations     ExampleTranslation[]
+  senseExamples           SenseExample[]
+  collocations            Collocation[]
+  senseCollocations       SenseCollocation[]
+  frames                  SyntacticFrame[]
+  predicates              SemanticPredicate[]
+  senseFrames             SenseFrame[]
+  morphologicalAnalyses   MorphologicalAnalysis[]
+  inflectionGenerations   InflectionGeneration[]
+  wordFormations          WordFormation[]
+  pedagogicalMaterials    PedagogicalMaterialRevision[]
+  objectiveHints          LearningObjectiveHint[]
+  objectiveRevisions      LearningObjectiveRevision[]
+  stimuli                 AssessmentStimulusRevision[]
+  exerciseRevisions       ExerciseRevision[]
+  translationRelations    TranslationRelation[]
+  lexicalLineages         LexicalLineage[]
+  externalIdentifiers     LexicalExternalIdentifier[]
+  etymonRevisions         EtymonRevision[]
+  etymologyHypotheses     EtymologyHypothesis[]
+  etymologyLinks          EtymologyLink[]
+  corpusAttestations      Attestation[]
+  collocationObservations CollocationObservation[]
+  corpusDatasetVersions   CorpusDatasetVersion[]
+  frequencyObservations   FrequencyObservation[]
+  proficiencyClaims       ProficiencyClaim[]
+  inflectionRules         InflectionRule[]              @relation("InflectionRuleProvenance")
+  wordFormationRules      WordFormationRule[]           @relation("WordFormationRuleProvenance")
+  assessmentBlueprints    AssessmentBlueprintRevision[]
+
+  @@unique([contentHash, resolverVersion, decisionReason])
+}
+
+model ContentEvidence {
+  id                   String                        @id @default(uuid()) @db.Uuid
+  provenanceId         String                        @db.Uuid
+  evidenceKind         String
+  sourceRecordId       String?                       @db.Uuid
+  upstreamProvenanceId String?                       @db.Uuid
+  note                 String?
+  provenance           Provenance                    @relation("ProvenanceEvidence", fields: [provenanceId], references: [id], onDelete: Restrict)
+  sourceRecord         SourceRecord?                 @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  upstreamProvenance   Provenance?                   @relation("UpstreamEvidence", fields: [upstreamProvenanceId], references: [id], onDelete: Restrict)
+  materialCitations    PedagogicalMaterialCitation[]
+}
+
+model ArtifactProjectionRecord {
+  releaseId      String         @db.Uuid
+  collectionPath String
+  position       Int
+  entityId       String?
+  payloadHash    String
+  payload        Json
+  release        LexiconRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, collectionPath, position])
+  @@index([releaseId, collectionPath, entityId])
+}

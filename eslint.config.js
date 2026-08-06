@@ -2,6 +2,7 @@
 import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export const globalIgnores = {
@@ -80,6 +81,12 @@ export const baseConfig = [
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
+  {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   {
     plugins: {
       import: importPlugin,

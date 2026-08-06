@@ -27,6 +27,14 @@ for (const entry of readdirSync(workflowsRoot, { withFileTypes: true })) {
       `${entry.name}: security job must use the repository secret scanner`,
     );
   }
+  if (
+    entry.name === "lexicon-release.yml" &&
+    !source.includes("cli.mjs lexicon-rollback")
+  ) {
+    errors.push(
+      `${entry.name}: rollback must use the dedicated audited operations command`,
+    );
+  }
   for (const [index, line] of lines.entries()) {
     const match = line.match(/^\s*(?:-\s*)?uses:\s*([^\s#]+)/);
     if (!match) continue;

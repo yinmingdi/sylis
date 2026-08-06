@@ -1,0 +1,42 @@
+{
+  "name": "@sylis/database",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "prisma"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/test-database.d.ts",
+      "import": "./dist/testing/test-database.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm prisma:generate && tsdown",
+    "typecheck": "pnpm prisma:generate && tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests",
+    "prisma:format": "prisma format --schema prisma/schema",
+    "prisma:validate": "prisma validate --schema prisma/schema",
+    "prisma:generate": "prisma generate --schema prisma/schema",
+    "prisma:migrate": "prisma migrate deploy --schema prisma/schema",
+    "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema",
+    "prisma:studio": "prisma studio --schema prisma/schema"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "prisma": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsdown": "0.22.14",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

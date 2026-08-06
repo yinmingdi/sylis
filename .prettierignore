@@ -1,0 +1,6 @@
+# Byte-stable files owned by the agent harness generator.
+docs/overview/generated/command-registry.md
+docs/overview/generated/harness-migration-map.md
+docs/overview/generated/harnessability-report.md
+docs/overview/generated/project-profile.md
+docs/overview/generated/tool-capabilities.md

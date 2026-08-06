@@ -1,26 +1,20 @@
-name: Deploy Multi-Services to GitHub Pages
+name: Deploy documentation
 
 on:
-  # 在推送到 main 分支时触发
   push:
     branches: [main]
     paths:
       - "docs/**"
-      - "packages/**"
-      - "apps/**/README.md"
-      - "apps/**/src/**/*.stories.*"
+      - "packages/components/**"
       - "README.md"
-
-  # 允许手动触发
+      - "pnpm-lock.yaml"
   workflow_dispatch:
 
-# 设置 GITHUB_TOKEN 权限以允许部署到 GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# 只允许一个并发部署，跳过正在运行的部署和最新的排队部署
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -52,90 +46,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build workspace packages
-        run: |
-          # Build utils package first (required for API)
-          echo "🔨 Building @sylis/utils package..."
-          pnpm --filter "@sylis/utils" run build
+      - name: Build shared components
+        run: pnpm --filter @sylis/components build
 
-          # Verify tsdown emitted both public module formats.
-          echo "🔍 Verifying build output..."
-          ls -la packages/utils/dist/
+      - name: Build architecture documentation
+        run: pnpm --filter @sylis/docs docs:build
 
-          if [ ! -f "packages/utils/dist/index.js" ]; then
-            echo "❌ Error: index.js (ESM) not found"
-            exit 1
-          fi
-
-          if [ ! -f "packages/utils/dist/index.cjs" ]; then
-            echo "❌ Error: index.cjs (CommonJS) not found"
-            exit 1
-          fi
-
-          echo "✅ @sylis/utils build successful - all required files generated"
-
-          # Build shared package if needed (no build script, but check if exports exist)
-          echo "📦 Checking @sylis/shared package..."
-          ls -la packages/shared/dto/ || echo "Shared package structure check"
-
-      - name: Generate Prisma client
-        run: pnpm --filter "./apps/api" run prisma:generate
-
-      - name: Build API and generate Swagger docs
+      - name: Build component documentation
         env:
           NODE_ENV: production
-          DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
-          REDIS_URL: "redis://localhost:6379"
-          JWT_SECRET: "docs-only-jwt-secret-not-for-production-000000"
-          AI_API_KEY: "docs-placeholder-key"
-          AI_BASE_URL: "https://api.example.com/v1"
-          AI_MODEL: "docs-placeholder-model"
-          MAILER_HOST: "localhost"
-          MAILER_PORT: "1025"
-          MAILER_SECURE: "false"
-          MAILER_USER: "docs-user"
-          MAILER_PASS: "docs-password"
-          MAILER_FROM: "Sylis Docs <docs@example.com>"
+        run: pnpm --filter @sylis/components-docs docs:build
+
+      - name: Assemble Pages artifact
         run: |
-          # Verify workspace dependencies are available
-          echo "Checking workspace dependencies..."
-          ls -la packages/utils/dist/ || echo "Utils dist not found"
-
-          # Build API
-          cd apps/api
-          pnpm run build
-          pnpm run swagger:generate || echo "Swagger generation failed, continuing without it"
-
-      - name: Build Documentation (Overview)
-        run: |
-          cd docs/overview
-          NODE_ENV=production pnpm run docs:build
-
-      - name: Build Storybook
-        run: |
-          cd docs/components
-          NODE_ENV=production pnpm run build
-
-      - name: Combine services
-        run: |
-          # 创建最终部署目录
-          mkdir -p final-dist
-
-          # 复制 Overview 文档到根目录 (作为主入口)
-          cp -r docs/overview/.vitepress/dist/* final-dist/
-
-          # 复制组件库到 components 子目录
           mkdir -p final-dist/components
-          cp -r docs/components/dist/* final-dist/components/
-
-          # 复制 Swagger 文档到 swagger 子目录 (如果存在)
-          if [ -d "apps/api/dist/swagger" ]; then
-            mkdir -p final-dist/swagger
-            cp -r apps/api/dist/swagger/* final-dist/swagger/
-            echo "Swagger documentation included"
-          else
-            echo "Swagger documentation not found, skipping"
-          fi
+          cp -R docs/overview/.vitepress/dist/. final-dist/
+          cp -R docs/components/dist/. final-dist/components/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
@@ -143,12 +69,12 @@ jobs:
           path: final-dist
 
   deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    name: Deploy
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

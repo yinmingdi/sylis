@@ -25,7 +25,7 @@
 | 4     | Lexicon/Books/Study/Exercises/Assessments/Notebooks 全部 unit + DB integration + API contract + Web Playwright、FSRS replay、13 task matrix、GET zero-write/N+1 budget                       |
 | 5     | Reading/Reddit/Tutor/Grammar/AI Reading unit + integration + provider fake、SSE resume、budget、encryption/retention、User Web Playwright                                                    |
 | 6     | 全 workspace lint/typecheck/unit/contract/integration/build/e2e、fresh DB + full artifact import、production-like staging、六镜像、security/performance、应用/数据/Job rollback 演练         |
-| 7     | 受保护 release required checks、Railway Wait for CI、migration、所有服务 health/smoke、Lexicon activation、deployment/release/hash 审计和 `v0.0.1` 证据                                      |
+| 7     | 受保护 release required checks、GHCR immutable digest CD、migration、所有服务 health/smoke、Lexicon activation、deployment/release/hash 审计和 `v0.0.1` 证据                                 |
 
 Phase 0-5 的通过只证明对应边界；Phase 6 必须从头运行全产品矩阵，不能复用早期局部绿灯代替。Phase 7 不重新构建不同产物，只部署 Phase 6/受保护 CI 已证明的同一 commit 和不可变 digest。
 

@@ -1,157 +1,29 @@
 # Railway deployment
 
-## 1. Create the production environment and services
+Sylis deploys six application images built by GitHub Actions from the exact
+workflow commit:
 
-Create a `sylis` project in the Pro workspace and keep its default `production`
-environment. Create these services in the Singapore region
-(`asia-southeast1-eqsg3a`):
+- `api`
+- `web`
+- `admin`
+- `worker`
+- `compiler-runner`
+- `importer`
 
-| Service               | Source                                     | Config file              | Public domain |
-| --------------------- | ------------------------------------------ | ------------------------ | ------------- |
-| `web`                 | This GitHub repository, root directory `/` | `/railway.web.json`      | Yes           |
-| `api`                 | This GitHub repository, root directory `/` | `/railway.api.json`      | No            |
-| `vocabulary-importer` | This GitHub repository, root directory `/` | `/railway.importer.json` | No            |
-| `vocabulary-enricher` | This GitHub repository, root directory `/` | `/railway.enricher.json` | No            |
-| `Postgres`            | Railway PostgreSQL 18 service              | Managed                  | No            |
-| `Redis`               | Railway Redis 7 service                    | Managed                  | No            |
+PostgreSQL and Redis remain Railway managed services. Application services use
+private GHCR image sources pinned by digest; Railway does not rebuild the Git
+repository. `develop` deploys the protected staging environment and `main`
+deploys the protected production environment only after every required CI job
+passes.
 
-The API service must be named `api`; Caddy resolves it through
-`api.railway.internal`. Keep importer and enricher autodeploy disabled and their
-restart policies set to `Never`.
+The authoritative setup, variable ownership, Volume layout, release flow,
+rollback procedure, and secret policy are maintained in:
 
-## 2. Configure variables
+- [CI/CD, Railway and secrets](docs/overview/refactor/delivery/cicd-security.md)
+- [Runtime configuration](docs/overview/guide/configuration.md)
+- [Operations CLI](tools/operations/README.md)
 
-Set this reference variable on `web`. Do not add any other application variable
-to that service:
-
-```text
-API_UPSTREAM=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:${{api.PORT}}
-```
-
-Set these variables on `api`:
-
-```text
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-REDIS_URL=${{Redis.REDIS_URL}}
-JWT_SECRET=<unique random value of at least 32 characters>
-JWT_EXPIRES_IN=30d
-AI_API_KEY=<fresh DeepSeek runtime key>
-AI_BASE_URL=https://api.deepseek.com
-AI_MODEL=deepseek-v4-flash
-AI_ENRICHMENT_ENABLED=true
-MAILER_HOST=<SMTP host>
-MAILER_PORT=<SMTP port>
-MAILER_SECURE=<true for implicit TLS, otherwise false>
-MAILER_USER=<SMTP user>
-MAILER_PASS=<SMTP app password>
-MAILER_FROM=<verified sender>
-REDDIT_CLIENT_ID=<optional Reddit client ID>
-REDDIT_CLIENT_SECRET=<optional Reddit client secret>
-```
-
-Seal JWT, AI, SMTP and optional Reddit credentials in Railway. Pass secret values
-to the Railway CLI over standard input so they do not appear in shell history or
-process arguments. Never place these values in GitHub Actions or `VITE_*`
-variables. SMTP requires the Pro plan and a deployment created after the upgrade.
-
-Set only the following on `vocabulary-importer`:
-
-```text
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-ECDICT_DRY_RUN=true
-ECDICT_SCOPE=all
-ECDICT_EXPECTED_SELECTED=770611
-```
-
-The source URL, pinned commit and checksum have safe defaults in the importer.
-It must not receive Redis, AI, SMTP, JWT or Reddit credentials.
-
-Set only the following on `vocabulary-enricher`:
-
-```text
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-AI_ENRICHMENT_API_KEY=<fresh key used only by this job>
-AI_BASE_URL=https://api.deepseek.com
-AI_MODEL=deepseek-v4-flash
-ENRICHMENT_MODE=pilot
-ENRICHMENT_PILOT_SIZE=1000
-```
-
-Do not copy `AI_API_KEY` to the enricher or `AI_ENRICHMENT_API_KEY` to the API.
-Any key pasted into chat, committed, logged, or passed as a CLI argument must be
-revoked and replaced before deployment.
-
-## 3. Connect the production branch and CI
-
-- Connect `web` and `api` to `main`.
-- Enable GitHub autodeploy and `Wait for CI` for both services.
-- Leave importer and enricher autodeploy disabled.
-- Deploy the importer only through the manual `Deploy vocabulary importer`
-  GitHub Actions workflow. The workflow checks out the dispatched `main` commit;
-  do not run `railway up` from a developer workstation.
-- Protect `develop` and `main`; require `CI / Build and test`, `CI / Secret scan`
-  and `GitFlow Compliance Check`. Keep required approvals at zero for a
-  single-maintainer repository.
-
-Create or reuse the `sylis / production` GitHub deployment environment. Store a
-Railway project token scoped only to the `production` environment as the
-`RAILWAY_TOKEN` environment secret. Add these non-secret environment variables:
-
-```text
-RAILWAY_PROJECT_ID=<sylis project ID>
-RAILWAY_ENVIRONMENT_ID=<production environment ID>
-RAILWAY_IMPORTER_SERVICE_ID=<vocabulary-importer service ID>
-```
-
-In the GitHub environment settings, set `Deployment branches and tags` to
-`Selected branches and tags` and allow only the `main` branch. This prevents a
-workflow modified on another branch from reading the production Railway token.
-
-Do not put `DATABASE_URL`, AI, SMTP, JWT or Reddit credentials in GitHub. The
-workflow receives those values only indirectly through the Railway service at
-runtime.
-
-Feature and bugfix branches merge into `develop`. Create `release/*` from
-`develop` and merge it into `main`. Create `hotfix/*` from `main`, then merge it
-back into both `main` and `develop`.
-
-## 4. First rollout
-
-1. Push the implementation to a feature branch and merge it into `develop`.
-2. Create `release/v0.1.0` from `develop` and validate its CI result.
-3. Merge `release/v0.1.0` into `main`; CI completion releases production.
-4. Confirm `/health`, login, email, AI chat, Redis-backed operations and
-   same-origin `/api` requests.
-5. From the `main` branch, manually run `Deploy vocabulary importer` in
-   `dry-run` mode and inspect its JSON count.
-6. Run the same workflow in `import` mode with confirmation value `IMPORT`. It
-   starts one deployment that validates the pinned checksum and all 770,611 rows
-   against the same downloaded file before writing, validates 24 books after the
-   import, and restores `ECDICT_DRY_RUN=true`.
-7. Run the enricher with `ENRICHMENT_MODE=pilot`. Review the recorded token cost,
-   projected cost and its automatic 125% cap in `VocabularyEnrichmentRun`.
-8. Only after accepting that estimate, set `ENRICHMENT_MODE=full` and run the
-   enricher again. It selects the unique union of the 24 books and stops at the
-   stored cap. Long-tail words remain eligible for authenticated on-demand
-   enrichment.
-
-Do not run `prisma seed` or the removed Youdao book seed in Railway. API pre-deploy executes only
-`prisma migrate deploy`.
-
-## 5. Secret rotation and rollback
-
-For AI and SMTP, create a replacement credential, update Railway, verify a new
-deployment, then revoke the old credential. Rotating `JWT_SECRET` deliberately
-invalidates existing sessions. Rotate immediately after suspected exposure or
-access changes, and configure provider quota and billing alerts.
-
-Use Railway's previous deployment rollback for application failures. Database
-migrations must remain forward-compatible; do not automatically reverse schema
-changes during rollback. Removing a secret from Git history does not revoke it:
-always rotate at the provider first.
-
-Enable daily, weekly and monthly backups on the PostgreSQL volume. Configure a
-$20 compute-usage email alert on the workspace and leave the compute hard limit
-unset so a billing threshold cannot stop production.
+Do not restore the removed ECDICT importer/enricher services, legacy JWT
+variables, GitHub source autodeploy, or `Wait for CI`. Lexicon JSON generation,
+import, validation, and activation are a separate protected content-release
+workflow; application deployment never starts an AI build automatically.

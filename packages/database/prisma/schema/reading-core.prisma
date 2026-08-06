@@ -1,0 +1,102 @@
+model ReadingDocument {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  ownerUserId        String?                   @db.Uuid
+  sourceKind         String
+  externalKey        String?
+  currentRevisionId  String?                   @unique @db.Uuid
+  status             ReadingDocumentStatus     @default(DRAFT)
+  createdAt          DateTime                  @default(now()) @db.Timestamptz(3)
+  revisions          ReadingDocumentRevision[] @relation("DocumentRevisions")
+  currentRevision    ReadingDocumentRevision?  @relation("CurrentDocumentRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+  activities         ReadingActivity[]
+  activityEvents     ReadingActivityEvent[]
+  savedBy            SavedReading[]
+  redditMetadata     RedditDocumentMetadata?
+  redditObservations RedditSourceObservation[]
+  generations        ReadingGeneration[]
+
+  @@unique([sourceKind, externalKey])
+}
+
+model ReadingDocumentRevision {
+  id                String              @id @default(uuid()) @db.Uuid
+  documentId        String              @db.Uuid
+  revisionNo        Int
+  languageTag       String
+  title             String
+  contentCiphertext Bytes
+  keyVersion        String
+  contentHash       String
+  wordCount         Int
+  publishedAt       DateTime?           @db.Timestamptz(3)
+  withdrawnAt       DateTime?           @db.Timestamptz(3)
+  document          ReadingDocument     @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Restrict)
+  currentFor        ReadingDocument?    @relation("CurrentDocumentRevision")
+  annotations       LexicalAnnotation[]
+
+  @@unique([documentId, revisionNo])
+  @@unique([documentId, contentHash])
+}
+
+model LexicalAnnotation {
+  id               String                  @id @default(uuid()) @db.Uuid
+  revisionId       String                  @db.Uuid
+  startOffset      Int
+  endOffset        Int
+  selectedTextHash String
+  releaseId        String                  @db.Uuid
+  targetKind       String
+  targetId         String                  @db.Uuid
+  confidence       Float
+  revision         ReadingDocumentRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+
+  @@unique([revisionId, startOffset, endOffset, targetKind, targetId])
+}
+
+model ReadingActivity {
+  id          String          @id @default(uuid()) @db.Uuid
+  userId      String          @db.Uuid
+  documentId  String          @db.Uuid
+  progress    Float
+  lastOffset  Int
+  startedAt   DateTime        @default(now()) @db.Timestamptz(3)
+  lastReadAt  DateTime        @default(now()) @db.Timestamptz(3)
+  completedAt DateTime?       @db.Timestamptz(3)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    ReadingDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, documentId])
+}
+
+model ReadingActivityEvent {
+  id         String          @id @default(uuid()) @db.Uuid
+  userId     String          @db.Uuid
+  documentId String          @db.Uuid
+  revisionId String?         @db.Uuid
+  eventKind  String
+  offset     Int?
+  progress   Float?
+  targetKind String?
+  targetId   String?         @db.Uuid
+  occurredAt DateTime        @default(now()) @db.Timestamptz(3)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   ReadingDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([userId, occurredAt])
+  @@index([documentId, occurredAt])
+}
+
+model SavedReading {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  documentId String?          @db.Uuid
+  releaseId  String?          @db.Uuid
+  targetKind String?
+  targetId   String?          @db.Uuid
+  savedAt    DateTime         @default(now()) @db.Timestamptz(3)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   ReadingDocument? @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, documentId])
+  @@unique([userId, releaseId, targetKind, targetId])
+}

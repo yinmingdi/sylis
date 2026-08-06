@@ -1,0 +1,39 @@
+{
+  "name": "@sylis/components",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "src/styles"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./src/styles/index.css"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "dependencies": {
+    "lucide-react": "0.468.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tsdown": "0.22.14",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

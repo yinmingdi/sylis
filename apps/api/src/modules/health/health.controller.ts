@@ -1,15 +1,22 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from "@nestjs/common";
+import type { SylisDatabase } from "@sylis/database";
 
-import { Public } from '../../decorators';
-import { HealthService } from './health.service';
+import { Public } from "../../platform/auth/public.decorator";
+import { DATABASE } from "../../platform/database/database.module";
 
-@Controller('health')
+@Public()
+@Controller("health")
 export class HealthController {
-  constructor(private readonly healthService: HealthService) {}
+  constructor(@Inject(DATABASE) private readonly database: SylisDatabase) {}
 
-  @Public()
-  @Get()
-  check() {
-    return this.healthService.check();
+  @Get("live")
+  live() {
+    return { status: "ok" };
+  }
+
+  @Get("ready")
+  async ready() {
+    await this.database.$queryRaw`SELECT 1`;
+    return { status: "ready" };
   }
 }

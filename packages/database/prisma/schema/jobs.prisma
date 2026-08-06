@@ -1,0 +1,152 @@
+model BackgroundJob {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  kind                  JobKind
+  executor              JobExecutor
+  requestedByUserId     String?                   @db.Uuid
+  subjectUserId         String?                   @db.Uuid
+  audience              SessionAudience
+  status                JobStatus                 @default(QUEUED)
+  requestRefId          String                    @db.Uuid
+  inputHash             String
+  idempotencyKey        String
+  priority              Int                       @default(0)
+  attempt               Int                       @default(0)
+  maxAttempts           Int
+  nextAttemptAt         DateTime                  @default(now()) @db.Timestamptz(3)
+  leaseOwner            String?
+  leaseToken            String?                   @unique
+  leaseExpiresAt        DateTime?                 @db.Timestamptz(3)
+  heartbeatAt           DateTime?                 @db.Timestamptz(3)
+  cancelRequestedAt     DateTime?                 @db.Timestamptz(3)
+  pauseReasonCode       String?
+  errorCode             String?
+  supersedesJobId       String?                   @db.Uuid
+  createdAt             DateTime                  @default(now()) @db.Timestamptz(3)
+  startedAt             DateTime?                 @db.Timestamptz(3)
+  completedAt           DateTime?                 @db.Timestamptz(3)
+  requestedBy           User?                     @relation("RequestedJobs", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  subjectUser           User?                     @relation("SubjectJobs", fields: [subjectUserId], references: [id], onDelete: Restrict)
+  supersedes            BackgroundJob?            @relation("SupersededJob", fields: [supersedesJobId], references: [id], onDelete: Restrict)
+  supersededBy          BackgroundJob[]           @relation("SupersededJob")
+  progress              JobProgressEvent[]
+  checkpoints           JobCheckpoint[]
+  buildRun              BuildRun?
+  importJob             ImportJob?
+  validationRequest     LexiconValidationRequest?
+  readingGeneration     ReadingGeneration?
+  grammarDiagnosis      GrammarDiagnosis?
+  tutorMessage          TutorMessage?
+  dataExport            DataExportRequest?
+  sourceSynchronization SourceSynchronization?
+  modelInvocations      ModelInvocation[]
+
+  @@unique([requestedByUserId, kind, idempotencyKey])
+  @@index([executor, kind, status, nextAttemptAt, priority])
+  @@index([leaseExpiresAt])
+}
+
+model JobProgressEvent {
+  id            String        @id @default(uuid()) @db.Uuid
+  jobId         String        @db.Uuid
+  sequence      Int
+  eventType     String
+  stage         String
+  processed     BigInt
+  total         BigInt?
+  ratePerSecond Float?
+  etaSeconds    Int?
+  warningCode   String?
+  message       String?
+  occurredAt    DateTime      @default(now()) @db.Timestamptz(3)
+  job           BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, sequence])
+  @@index([jobId, occurredAt])
+}
+
+model JobCheckpoint {
+  id                      String        @id @default(uuid()) @db.Uuid
+  jobId                   String        @db.Uuid
+  sequence                Int
+  handlerVersion          String
+  checkpointSchemaVersion String
+  inputHash               String
+  stateCiphertext         Bytes
+  stateHash               String
+  createdAt               DateTime      @default(now()) @db.Timestamptz(3)
+  job                     BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, sequence])
+}
+
+model BuildRun {
+  id             String        @id @default(uuid()) @db.Uuid
+  jobId          String        @unique @db.Uuid
+  manifestUri    String
+  manifestHash   String
+  compileProfile String
+  modelPolicy    Json
+  budgetMicros   BigInt
+  artifactUri    String?
+  artifactHash   String?
+  compilerRunId  String?
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  job            BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}
+
+model ImportJob {
+  id             String        @id @default(uuid()) @db.Uuid
+  jobId          String        @unique @db.Uuid
+  artifactUri    String
+  artifactHash   String
+  expectedSchema String
+  releaseId      String?       @db.Uuid
+  importedCounts Json?
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  job            BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  @@unique([artifactHash])
+}
+
+model ArtifactStagingRecord {
+  id             BigInt   @id @default(autoincrement())
+  jobId          String   @db.Uuid
+  collectionPath String
+  position       Int
+  payloadHash    String
+  payload        Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([jobId, collectionPath, position])
+  @@index([jobId, collectionPath, id])
+}
+
+model LexiconValidationRequest {
+  id                String        @id @default(uuid()) @db.Uuid
+  jobId             String        @unique @db.Uuid
+  releaseId         String        @db.Uuid
+  validationProfile String
+  summary           Json?
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  job               BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}
+
+model DataExportRequest {
+  id          String        @id @default(uuid()) @db.Uuid
+  jobId       String        @unique @db.Uuid
+  userId      String        @db.Uuid
+  scope       Json
+  artifactUri String?
+  expiresAt   DateTime?     @db.Timestamptz(3)
+  job         BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}
+
+model SourceSynchronization {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  jobId              String                    @unique @db.Uuid
+  sourceKind         String
+  cursor             String?
+  summary            Json?
+  job                BackgroundJob             @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  redditObservations RedditSourceObservation[]
+}

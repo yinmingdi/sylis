@@ -1,0 +1,91 @@
+model SyntacticFrame {
+  id              String               @id @default(uuid()) @db.Uuid
+  releaseId       String               @db.Uuid
+  entryId         String               @db.Uuid
+  frameKey        String
+  frameTypeCode   String
+  languageTag     String
+  displayTemplate String
+  provenanceId    String               @db.Uuid
+  entry           LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance      Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  arguments       SyntacticArgument[]
+  senseLinks      SenseFrame[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, entryId, frameKey])
+}
+
+model SyntacticArgument {
+  id             String            @id @default(uuid()) @db.Uuid
+  releaseId      String            @db.Uuid
+  frameId        String            @db.Uuid
+  position       Int
+  functionCode   String
+  phraseTypeCode String
+  marker         String?
+  optional       Boolean           @default(false)
+  frame          SyntacticFrame    @relation(fields: [releaseId, frameId], references: [releaseId, id], onDelete: Restrict)
+  mappings       ArgumentMapping[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, frameId, position])
+}
+
+model SemanticPredicate {
+  id                String               @id @default(uuid()) @db.Uuid
+  releaseId         String               @db.Uuid
+  senseId           String               @db.Uuid
+  predicateKey      String
+  predicateTypeCode String
+  label             String?
+  provenanceId      String               @db.Uuid
+  sense             LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance        Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  arguments         SemanticArgument[]
+  senseLinks        SenseFrame[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, senseId, predicateKey])
+}
+
+model SemanticArgument {
+  id          String            @id @default(uuid()) @db.Uuid
+  releaseId   String            @db.Uuid
+  predicateId String            @db.Uuid
+  position    Int
+  roleCode    String
+  predicate   SemanticPredicate @relation(fields: [releaseId, predicateId], references: [releaseId, id], onDelete: Restrict)
+  mappings    ArgumentMapping[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, predicateId, position])
+}
+
+model SenseFrame {
+  id           String               @id @default(uuid()) @db.Uuid
+  releaseId    String               @db.Uuid
+  senseId      String               @db.Uuid
+  frameId      String               @db.Uuid
+  predicateId  String?              @db.Uuid
+  provenanceId String               @db.Uuid
+  sense        LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  frame        SyntacticFrame       @relation(fields: [releaseId, frameId], references: [releaseId, id], onDelete: Restrict)
+  predicate    SemanticPredicate?   @relation(fields: [releaseId, predicateId], references: [releaseId, id], onDelete: Restrict)
+  provenance   Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  mappings     ArgumentMapping[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, senseId, frameId, predicateId])
+}
+
+model ArgumentMapping {
+  senseFrameId        String            @db.Uuid
+  syntacticArgumentId String            @db.Uuid
+  semanticArgumentId  String            @db.Uuid
+  senseFrame          SenseFrame        @relation(fields: [senseFrameId], references: [id], onDelete: Restrict)
+  syntacticArgument   SyntacticArgument @relation(fields: [syntacticArgumentId], references: [id], onDelete: Restrict)
+  semanticArgument    SemanticArgument  @relation(fields: [semanticArgumentId], references: [id], onDelete: Restrict)
+
+  @@id([senseFrameId, syntacticArgumentId, semanticArgumentId])
+}

@@ -1,11 +1,23 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "pnpm --filter @sylis/api prisma:generate && pnpm --filter @sylis/vocabulary-importer build"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "services/lexicon-importer/Dockerfile",
+    "watchPatterns": [
+      "/services/lexicon-importer/**",
+      "/packages/background-jobs/**",
+      "/packages/database/**",
+      "/packages/lexicon-contracts/**",
+      "/package.json",
+      "/pnpm-lock.yaml",
+      "/pnpm-workspace.yaml",
+      "/turbo.json"
+    ]
   },
   "deploy": {
-    "startCommand": "pnpm --filter @sylis/vocabulary-importer start --scope all",
-    "restartPolicyType": "NEVER"
+    "healthcheckPath": "/ready",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
   }
 }

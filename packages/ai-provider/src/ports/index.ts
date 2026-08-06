@@ -2,6 +2,8 @@ import type {
   StructuredGenerationIdentity,
   StructuredGenerationRequest,
   StructuredGenerationResult,
+  StreamingGenerationChunk,
+  StreamingGenerationRequest,
 } from "../contracts/index";
 
 export type {
@@ -10,6 +12,8 @@ export type {
   StructuredGenerationIdentity,
   StructuredGenerationRequest,
   StructuredGenerationResult,
+  StreamingGenerationChunk,
+  StreamingGenerationRequest,
 } from "../contracts/index";
 
 export interface StructuredGenerationPort {
@@ -18,6 +22,14 @@ export interface StructuredGenerationPort {
     request: StructuredGenerationRequest,
     signal?: AbortSignal,
   ): Promise<StructuredGenerationResult<T>>;
+}
+
+export interface StreamingGenerationPort {
+  probe(signal?: AbortSignal): Promise<StructuredGenerationIdentity>;
+  stream(
+    request: StreamingGenerationRequest,
+    signal?: AbortSignal,
+  ): AsyncIterable<StreamingGenerationChunk>;
 }
 
 export interface StructuredGenerationRetryOptions {

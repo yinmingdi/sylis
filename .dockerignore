@@ -1,5 +1,8 @@
 .git
 .github
+.work
+.turbo
+.codebase-memory
 .env
 **/.env
 **/.env.*
@@ -12,4 +15,13 @@
 apps/api/prisma/seed-data/dicts
 img
 img.zip
+**/*.zip
+**/*.tar
+**/*.tar.gz
+**/*.csv.gz
+**/coverage
+packages/lexicon-compiler/.work
+packages/lexicon-compiler/data/sources
+services/lexicon-compiler-runner/.work
+services/lexicon-importer/.work
 services/speech-service

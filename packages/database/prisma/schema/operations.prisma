@@ -1,0 +1,83 @@
+model ApprovalRequest {
+  id           String                     @id @default(uuid()) @db.Uuid
+  actionType   String
+  actionDigest String                     @unique
+  requiredRole OperatorRole
+  requesterId  String                     @db.Uuid
+  status       String                     @default("PENDING")
+  expiresAt    DateTime                   @db.Timestamptz(3)
+  createdAt    DateTime                   @default(now()) @db.Timestamptz(3)
+  requester    User                       @relation("ApprovalRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  decisions    ApprovalDecision[]
+  activations  LexiconReleaseActivation[]
+}
+
+model ApprovalDecision {
+  id                String          @id @default(uuid()) @db.Uuid
+  requestId         String          @db.Uuid
+  actorUserId       String          @db.Uuid
+  decision          String
+  reason            String
+  reauthenticatedAt DateTime        @db.Timestamptz(3)
+  decidedAt         DateTime        @default(now()) @db.Timestamptz(3)
+  request           ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actor             User            @relation("ApprovalActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@unique([requestId, actorUserId])
+}
+
+model LexiconReleaseActivation {
+  id            String           @id @default(uuid()) @db.Uuid
+  lexiconId     String           @db.Uuid
+  fromReleaseId String?          @db.Uuid
+  toReleaseId   String           @db.Uuid
+  approvalId    String?          @db.Uuid
+  actorUserId   String           @db.Uuid
+  reason        String
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  lexicon       Lexicon          @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  fromRelease   LexiconRelease?  @relation("ActivationFromRelease", fields: [fromReleaseId], references: [id], onDelete: Restrict)
+  toRelease     LexiconRelease   @relation("ActivationToRelease", fields: [toReleaseId], references: [id], onDelete: Restrict)
+  approval      ApprovalRequest? @relation(fields: [approvalId], references: [id], onDelete: Restrict)
+  actor         User             @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([lexiconId, createdAt])
+}
+
+model DeploymentRelease {
+  id           String    @id @default(uuid()) @db.Uuid
+  version      String
+  gitSha       String
+  environment  String
+  imageDigests Json
+  buildProof   Json
+  status       String
+  deployedAt   DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@unique([environment, version])
+  @@unique([environment, gitSha])
+}
+
+model ReviewBatch {
+  id               String           @id @default(uuid()) @db.Uuid
+  riskPolicy       String
+  candidateSetHash String
+  samplePlan       Json
+  status           String
+  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
+  decisions        ReviewDecision[]
+}
+
+model ReviewDecision {
+  id          String      @id @default(uuid()) @db.Uuid
+  batchId     String      @db.Uuid
+  actorUserId String      @db.Uuid
+  decision    String
+  failureRate Decimal?    @db.Decimal(8, 5)
+  notes       String?
+  decidedAt   DateTime    @default(now()) @db.Timestamptz(3)
+  batch       ReviewBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@unique([batchId, actorUserId])
+}

@@ -10,29 +10,32 @@ corepack prepare pnpm@10.23.0 --activate
 pnpm install --frozen-lockfile
 ```
 
-## 本地依赖
+## 本地配置
 
-```bash
-docker compose -f apps/api/docker-compose.yml up -d
-cp apps/api/.env.example apps/api/.env
+从各运行时的 `.env.example` 创建 ignored 本地环境文件。API、Worker、Compiler Runner 和 Importer 具有不同变量边界，完整清单见 [运行配置](./configuration.md)。本地不测试 AI 时保持：
+
+```text
+RUNTIME_AI_ENABLED=false
+LEXICON_AI_ENABLED=false
 ```
 
-填写后端 `.env` 中的 PostgreSQL、Redis、JWT、AI 和 SMTP 配置。JWT 至少 32 个字符；AI 与 SMTP 使用开发环境专用凭据。
+不要向 `VITE_*`、文档、命令参数或仓库文件写入任何密钥。Compiler AI 和 Runtime AI 使用不同的 key；API 与浏览器不接收二者。
+
+准备本地 PostgreSQL 和 Redis 后生成 client 并应用 fresh migration：
 
 ```bash
-pnpm --filter @sylis/api prisma:generate
-pnpm --filter @sylis/api exec prisma migrate deploy
+pnpm --filter @sylis/database prisma:generate
+pnpm --filter @sylis/database prisma:migrate
 pnpm dev
 ```
 
-前端始终请求 `/api`，无需创建 Web `.env`。不要向任何 `VITE_*` 变量写入密钥。
+Web 默认运行在 `http://localhost:5178` 并将 `/api` 代理到本地 API。Admin、Worker、Runner 和 Importer 可通过各 package 的 `dev` 或 `start` script 单独启动。
 
-## 生产构建
+## 构建与数据
 
 ```bash
-pnpm --filter @sylis/utils build
-pnpm --filter @sylis/api build
-pnpm --filter @sylis/web build
+pnpm build
+pnpm test
 ```
 
-生产环境不运行 `prisma seed`。词库使用独立的 `@sylis/vocabulary-importer` 服务按需导入。
+生产环境不运行 seed。词典内容由维护者显式执行 Compiler build，再使用 `@sylis/lexicon-importer` 完成 dry-run、import、validate 和受保护 activation；安装或部署应用不会调用 DeepSeek，也不会自动生成 JSON。

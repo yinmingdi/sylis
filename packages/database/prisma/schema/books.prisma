@@ -1,0 +1,52 @@
+model VocabularyBook {
+  id           String                  @id @default(uuid()) @db.Uuid
+  key          String                  @unique
+  title        String
+  description  String?
+  languageTag  String
+  publisherKey String
+  editions     VocabularyBookEdition[]
+  enrollments  UserBookEnrollment[]
+}
+
+model VocabularyBookEdition {
+  id                     String                      @id @default(uuid()) @db.Uuid
+  bookId                 String                      @db.Uuid
+  editionKey             String
+  version                String
+  sourceDatasetVersionId String                      @db.Uuid
+  contentHash            String
+  publishedAt            DateTime                    @db.Timestamptz(3)
+  book                   VocabularyBook              @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  items                  VocabularyBookItem[]
+  enrollments            UserBookEnrollment[]
+  releases               LexiconReleaseBookEdition[]
+  sourceDatasetVersion   SourceDatasetVersion        @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([bookId, editionKey])
+  @@unique([bookId, version])
+  @@unique([bookId, contentHash])
+}
+
+model LexiconReleaseBookEdition {
+  releaseId String                @db.Uuid
+  editionId String                @db.Uuid
+  release   LexiconRelease        @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  edition   VocabularyBookEdition @relation(fields: [editionId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, editionId])
+}
+
+model VocabularyBookItem {
+  id         String                @id @default(uuid()) @db.Uuid
+  editionId  String                @db.Uuid
+  releaseId  String                @db.Uuid
+  position   Int
+  targetKind String
+  targetId   String                @db.Uuid
+  evidenceId String?               @db.Uuid
+  edition    VocabularyBookEdition @relation(fields: [editionId], references: [id], onDelete: Restrict)
+
+  @@unique([editionId, position])
+  @@unique([editionId, targetKind, targetId])
+}

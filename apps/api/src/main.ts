@@ -1,36 +1,44 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import helmet from "helmet";
 
-import { AppModule } from './app.module';
+import { AppModule } from "./app.module";
+import { ApiConfig } from "./config/api.config";
+import {
+  createOpenApiDocument,
+  loadOpenApiMetadata,
+  setupSwaggerUi,
+} from "./openapi/openapi-document";
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableShutdownHooks();
-  // 启用全局验证管道
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule, { abortOnError: false });
+  const config = app.get(ApiConfig);
+  app.use(helmet());
+  app.enableCors({
+    origin: [config.publicOrigin, config.adminOrigin],
+    credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Idempotency-Key",
+      "X-CSRF-Token",
+      "Last-Event-ID",
+    ],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // 自动过滤未定义的属性
-      forbidNonWhitelisted: false, // 允许未定义的属性（对于 multipart/form-data 必需）
-      transform: true, // 自动转换类型
-      transformOptions: {
-        enableImplicitConversion: true, // 启用隐式类型转换
-      },
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     }),
   );
+  app.enableShutdownHooks();
 
-  if (process.env.NODE_ENV !== 'production') {
-    const config = new DocumentBuilder()
-      .setTitle('Sylis')
-      .setDescription('Sylis API')
-      .setVersion('0.1')
-      .build();
-
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('swagger', app, document);
+  if (config.nodeEnv !== "production") {
+    await loadOpenApiMetadata();
+    setupSwaggerUi(app, createOpenApiDocument(app));
   }
-
-  await app.listen(Number(process.env.PORT ?? 3000), '::');
+  await app.listen(config.port, "0.0.0.0");
 }
 
-bootstrap();
+void bootstrap();

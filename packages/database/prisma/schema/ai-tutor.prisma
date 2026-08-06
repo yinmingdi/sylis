@@ -1,0 +1,63 @@
+model TutorSession {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  title     String?
+  createdAt DateTime       @default(now()) @db.Timestamptz(3)
+  closedAt  DateTime?      @db.Timestamptz(3)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  TutorMessage[]
+}
+
+model TutorMessage {
+  id                String                 @id @default(uuid()) @db.Uuid
+  sessionId         String                 @db.Uuid
+  role              String
+  currentRevisionId String?                @unique @db.Uuid
+  jobId             String?                @unique @db.Uuid
+  createdAt         DateTime               @default(now()) @db.Timestamptz(3)
+  session           TutorSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  revisions         TutorMessageRevision[] @relation("MessageRevisions")
+  currentRevision   TutorMessageRevision?  @relation("CurrentMessageRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+  contextRefs       TutorContextRef[]
+  job               BackgroundJob?         @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}
+
+model TutorMessageRevision {
+  id                String        @id @default(uuid()) @db.Uuid
+  messageId         String        @db.Uuid
+  revisionNo        Int
+  contentCiphertext Bytes
+  keyVersion        String
+  contentHash       String
+  provider          String?
+  model             String?
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  message           TutorMessage  @relation("MessageRevisions", fields: [messageId], references: [id], onDelete: Restrict)
+  currentFor        TutorMessage? @relation("CurrentMessageRevision")
+
+  @@unique([messageId, revisionNo])
+}
+
+model TutorContextRef {
+  id         String       @id @default(uuid()) @db.Uuid
+  messageId  String       @db.Uuid
+  targetKind String
+  targetId   String       @db.Uuid
+  releaseId  String?      @db.Uuid
+  message    TutorMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, targetKind, targetId])
+}
+
+model GrammarDiagnosis {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @db.Uuid
+  jobId            String        @unique @db.Uuid
+  inputCiphertext  Bytes
+  outputCiphertext Bytes?
+  keyVersion       String
+  languageTag      String
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job              BackgroundJob @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}

@@ -1,0 +1,54 @@
+model Etymon {
+  id           String           @id @default(uuid()) @db.Uuid
+  lexiconId    String           @db.Uuid
+  identityKey  String
+  artifactRole String           @default("CURRENT")
+  lexicon      Lexicon          @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  revisions    EtymonRevision[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model EtymonRevision {
+  id           String     @id @default(uuid()) @db.Uuid
+  releaseId    String     @db.Uuid
+  etymonId     String     @db.Uuid
+  languageTag  String
+  form         String
+  gloss        String?
+  provenanceId String     @db.Uuid
+  etymon       Etymon     @relation(fields: [etymonId], references: [id], onDelete: Restrict)
+  provenance   Provenance @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, etymonId])
+}
+
+model EtymologyHypothesis {
+  id             String          @id @default(uuid()) @db.Uuid
+  releaseId      String          @db.Uuid
+  subjectEntryId String          @db.Uuid
+  hypothesisType String
+  status         String
+  provenanceId   String          @db.Uuid
+  provenance     Provenance      @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  links          EtymologyLink[]
+
+  @@unique([releaseId, id])
+}
+
+model EtymologyLink {
+  id           String              @id @default(uuid()) @db.Uuid
+  releaseId    String              @db.Uuid
+  hypothesisId String              @db.Uuid
+  linkType     String
+  sourceKind   String
+  sourceId     String              @db.Uuid
+  targetKind   String
+  targetId     String              @db.Uuid
+  position     Int
+  provenanceId String              @db.Uuid
+  hypothesis   EtymologyHypothesis @relation(fields: [hypothesisId], references: [id], onDelete: Restrict)
+  provenance   Provenance          @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, hypothesisId, position])
+}

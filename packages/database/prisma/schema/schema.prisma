@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LexiconReleaseStatus {
+  DRAFT
+  VALIDATING
+  VALIDATED
+  RETIRED
+}
+
+enum RevisionStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum ProvenanceKind {
+  SOURCE
+  DERIVED
+  GENERATED
+  HUMAN
+}
+
+enum JobKind {
+  TUTOR_RESPONSE
+  READING_GENERATION
+  GRAMMAR_DIAGNOSIS
+  DATA_EXPORT
+  DAILY_PLAN
+  SOURCE_SYNC
+  LEXICON_BUILD
+  LEXICON_IMPORT
+  LEXICON_VALIDATE
+}
+
+enum JobExecutor {
+  WORKER
+  COMPILER_RUNNER
+  IMPORTER_RUNNER
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  RETRY_SCHEDULED
+  PAUSED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum SessionAudience {
+  USER
+  ADMIN
+  SYSTEM
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REVOKED
+}
+
+enum OperatorRole {
+  SUPPORT
+  CONTENT_REVIEWER
+  RELEASE_MANAGER
+  SECURITY_ADMIN
+}
+
+enum AttemptStatus {
+  PRESENTED
+  SUBMITTED
+  ABANDONED
+  EXPIRED
+}
+
+enum ExerciseResponseKind {
+  CHOICE
+  SHORT_TEXT
+  EXTENDED_TEXT
+  NO_CAPTURE
+}
+
+enum ExerciseValidationLevel {
+  PRACTICE_ONLY
+  FORMATIVE_VERIFIED
+  SUMMATIVE_VERIFIED
+}
+
+enum ReadingDocumentStatus {
+  DRAFT
+  PUBLISHED
+  WITHDRAWN
+}

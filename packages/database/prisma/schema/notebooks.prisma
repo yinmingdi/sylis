@@ -1,0 +1,31 @@
+model Notebook {
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String                 @db.Uuid
+  title           String
+  normalizedTitle String
+  description     String?
+  createdAt       DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime               @updatedAt @db.Timestamptz(3)
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items           CollectedLexicalItem[]
+
+  @@unique([userId, normalizedTitle])
+}
+
+model CollectedLexicalItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  notebookId     String   @db.Uuid
+  releaseId      String   @db.Uuid
+  targetKind     String
+  targetId       String   @db.Uuid
+  noteCiphertext Bytes?
+  keyVersion     String?
+  position       Int
+  tags           Json
+  collectedAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+  notebook       Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+
+  @@unique([notebookId, releaseId, targetKind, targetId])
+  @@unique([notebookId, position])
+}

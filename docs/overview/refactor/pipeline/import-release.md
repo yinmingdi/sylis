@@ -148,7 +148,7 @@ staging 以 `BackgroundJob.id` 隔离。runner 只凭当前 lease token 写 prog
 - importer 只 claim `LEXICON_IMPORT`/`LEXICON_VALIDATE`，claim/lease/checkpoint/result 使用 `@sylis/background-jobs` contract；不从 API 源码复用 service/repository。
 - 只拥有 `DATABASE_URL`, artifact read token（如需要）和非敏感 run config。
 - 不拥有 `AI_*`、session/CSRF、field-encryption、SMTP、Reddit 或 Web 变量。
-- source 可以是同一 GitHub repo 的 Dockerfile/root directory，也可以执行已经 CI 验证的镜像。
+- service source 固定为 GitHub Actions 构建、推送并解析出的私有 GHCR immutable digest；Railway 不在 Importer 部署阶段重新构建源码。
 - CPU 未满不代表逐行远程 SQL 快；COPY + set-based SQL 解决 network round trip 和 transaction overhead。
 
 ## 11. 应用部署与内容发布分离

@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [".storybook/main.ts", ".storybook/manager.ts"]
+  "include": [".storybook/main.ts"]
 }

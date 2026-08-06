@@ -1,9 +1,13 @@
-import { createRoot } from 'react-dom/client'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 
-import App from './App'
-import { setRem } from './utils/setRem'
+import { App } from "./app/app";
 
-// 设置 rem 基准值，实现响应式适配
-setRem()
+import "@sylis/components/styles.css";
+import "./app/styles/index.css";
 
-createRoot(document.getElementById('root')!).render(<App />)
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

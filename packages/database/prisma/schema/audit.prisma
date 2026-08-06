@@ -1,0 +1,31 @@
+model SecurityAuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorUserId   String?  @db.Uuid
+  sessionId     String?  @db.Uuid
+  eventType     String
+  subjectType   String?
+  subjectId     String?  @db.Uuid
+  actionDigest  String?
+  outcome       String
+  ipHash        String?
+  userAgentHash String?
+  metadata      Json
+  occurredAt    DateTime @default(now()) @db.Timestamptz(3)
+  actor         User?    @relation("SecurityAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, occurredAt])
+  @@index([subjectType, subjectId, occurredAt])
+}
+
+model DataAccessAuditEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  actorUserId  String   @db.Uuid
+  ownerUserId  String   @db.Uuid
+  purpose      String
+  resourceType String
+  resourceId   String   @db.Uuid
+  keyVersion   String
+  occurredAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([ownerUserId, occurredAt])
+}

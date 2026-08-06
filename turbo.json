@@ -13,7 +13,7 @@
     },
     "docs:build": {
       "dependsOn": ["^build"],
-      "outputs": [".vitepress/dist/**"]
+      "outputs": [".vitepress/dist/**", "dist/**"]
     },
     "lint": {
       "outputs": []
@@ -26,20 +26,70 @@
       "dependsOn": ["build"],
       "env": [
         "NODE_ENV",
+        "PORT",
         "DATABASE_URL",
+        "TEST_DATABASE_URL",
         "REDIS_URL",
-        "JWT_SECRET",
-        "JWT_EXPIRES_IN",
-        "AI_API_KEY",
-        "AI_BASE_URL",
-        "AI_MODEL",
-        "AI_ENRICHMENT_ENABLED",
-        "MAILER_HOST",
-        "MAILER_PORT",
-        "MAILER_SECURE",
-        "MAILER_USER",
-        "MAILER_PASS",
-        "MAILER_FROM"
+        "PUBLIC_ORIGIN",
+        "ADMIN_ORIGIN",
+        "WEBAUTHN_RP_ID",
+        "WEBAUTHN_RP_NAME",
+        "SESSION_HASH_KEY",
+        "SESSION_TTL_SECONDS",
+        "CSRF_SIGNING_KEY",
+        "REGISTRATION_SIGNING_KEY",
+        "CONTENT_ENCRYPTION_KEYS_JSON",
+        "CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION",
+        "COOKIE_SECURE",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "SMTP_FROM",
+        "RUNTIME_AI_ENABLED",
+        "RUNTIME_AI_PROVIDER",
+        "RUNTIME_AI_API_KEY",
+        "RUNTIME_AI_BASE_URL",
+        "RUNTIME_AI_STRICT_BASE_URL",
+        "RUNTIME_AI_MODEL",
+        "RUNTIME_AI_INPUT_USD_PER_MILLION",
+        "RUNTIME_AI_OUTPUT_USD_PER_MILLION",
+        "RUNTIME_AI_CACHE_HIT_USD_PER_MILLION",
+        "LEXICON_AI_ENABLED",
+        "LEXICON_AI_API_KEY",
+        "LEXICON_AI_BASE_URL",
+        "LEXICON_AI_STRICT_BASE_URL",
+        "LEXICON_AI_MODEL",
+        "LEXICON_AI_CACHE_KEY",
+        "LEXICON_AI_MAX_ATTEMPTS",
+        "LEXICON_AI_RETRY_BASE_MS",
+        "LEXICON_AI_RETRY_MAX_MS",
+        "JOB_CHECKPOINT_KEY_BASE64",
+        "JOB_POLL_INTERVAL_MS",
+        "JOB_LEASE_DURATION_MS",
+        "RAILWAY_REPLICA_ID",
+        "LEXICON_RUNNER_WORK_ROOT",
+        "LEXICON_IMPORTER_WORK_ROOT",
+        "LEXICON_ARTIFACT_ROOT",
+        "LEXICON_ARTIFACT_ALLOW_FILE",
+        "AWS_ENDPOINT_URL",
+        "AWS_ENDPOINT_IP",
+        "AWS_DEFAULT_REGION",
+        "AWS_S3_BUCKET_NAME",
+        "AWS_S3_URL_STYLE",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "OBJECT_STORAGE_ENDPOINT",
+        "OBJECT_STORAGE_REGION",
+        "OBJECT_STORAGE_BUCKET",
+        "OBJECT_STORAGE_ACCESS_KEY_ID",
+        "OBJECT_STORAGE_SECRET_ACCESS_KEY",
+        "OBJECT_STORAGE_PREFIX",
+        "REDDIT_CLIENT_ID",
+        "REDDIT_CLIENT_SECRET",
+        "REDDIT_USER_AGENT",
+        "REDDIT_SUBREDDITS",
+        "REDDIT_RETENTION_DAYS"
       ],
       "outputs": []
     },
@@ -73,15 +123,6 @@
       "cache": false
     },
     "prisma:migrate": {
-      "cache": false
-    },
-    "db:generate": {
-      "cache": false
-    },
-    "db:migrate": {
-      "cache": false
-    },
-    "db:seed": {
       "cache": false
     },
     "compile": {

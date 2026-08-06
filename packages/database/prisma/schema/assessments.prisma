@@ -1,0 +1,111 @@
+model AssessmentBlueprint {
+  id           String                        @id @default(uuid()) @db.Uuid
+  lexiconId    String                        @db.Uuid
+  blueprintKey String
+  purpose      String
+  revisions    AssessmentBlueprintRevision[]
+
+  @@unique([lexiconId, blueprintKey])
+}
+
+model AssessmentBlueprintRevision {
+  id                 String              @id @default(uuid()) @db.Uuid
+  releaseId          String              @db.Uuid
+  blueprintId        String              @db.Uuid
+  version            String
+  title              String
+  navigationMode     String
+  feedbackMode       String
+  lookbackDays       Int
+  selectionAlgorithm String
+  timeLimitSeconds   Int?
+  status             RevisionStatus      @default(PUBLISHED)
+  contentHash        String
+  provenanceId       String              @db.Uuid
+  blueprint          AssessmentBlueprint @relation(fields: [blueprintId], references: [id], onDelete: Restrict)
+  provenance         Provenance          @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  sections           AssessmentSection[]
+  sessions           AssessmentSession[]
+
+  @@unique([releaseId, blueprintId])
+}
+
+model AssessmentSection {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  blueprintRevisionId String                      @db.Uuid
+  parentSectionId     String?                     @db.Uuid
+  position            Int
+  sectionKey          String
+  title               String
+  itemCount           Int
+  blueprintRevision   AssessmentBlueprintRevision @relation(fields: [blueprintRevisionId], references: [id], onDelete: Restrict)
+  parent              AssessmentSection?          @relation("AssessmentSectionTree", fields: [parentSectionId], references: [id], onDelete: Restrict)
+  children            AssessmentSection[]         @relation("AssessmentSectionTree")
+  rules               AssessmentSelectionRule[]
+  sessionItems        AssessmentSessionItem[]
+
+  @@unique([blueprintRevisionId, parentSectionId, position])
+}
+
+model AssessmentSelectionRule {
+  id                 String            @id @default(uuid()) @db.Uuid
+  sectionId          String            @db.Uuid
+  position           Int
+  ruleKind           String
+  dimension          String?
+  value              String?
+  minCount           Int?
+  maxCount           Int?
+  targetKind         String?
+  targetId           String?           @db.Uuid
+  scopeKind          String?
+  scopeId            String?           @db.Uuid
+  exerciseRevisionId String?           @db.Uuid
+  section            AssessmentSection @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+
+  @@unique([sectionId, position])
+}
+
+model AssessmentSession {
+  id                        String                      @id @default(uuid()) @db.Uuid
+  userId                    String                      @db.Uuid
+  blueprintRevisionId       String                      @db.Uuid
+  selectionSeed             String
+  selectionAlgorithmVersion String
+  status                    String
+  idempotencyKey            String
+  startedAt                 DateTime                    @default(now()) @db.Timestamptz(3)
+  expiresAt                 DateTime?                   @db.Timestamptz(3)
+  submittedAt               DateTime?                   @db.Timestamptz(3)
+  user                      User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blueprintRevision         AssessmentBlueprintRevision @relation(fields: [blueprintRevisionId], references: [id], onDelete: Restrict)
+  items                     AssessmentSessionItem[]
+  result                    AssessmentResult?
+
+  @@unique([userId, idempotencyKey])
+}
+
+model AssessmentSessionItem {
+  id                  String            @id @default(uuid()) @db.Uuid
+  sessionId           String            @db.Uuid
+  assessmentSectionId String            @db.Uuid
+  exerciseRevisionId  String            @db.Uuid
+  position            Int
+  maxScore            Decimal           @db.Decimal(8, 3)
+  session             AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  assessmentSection   AssessmentSection @relation(fields: [assessmentSectionId], references: [id], onDelete: Restrict)
+  attempts            ExerciseAttempt[]
+
+  @@unique([sessionId, position])
+  @@unique([sessionId, exerciseRevisionId])
+}
+
+model AssessmentResult {
+  id          String            @id @default(uuid()) @db.Uuid
+  sessionId   String            @unique @db.Uuid
+  rawScore    Decimal           @db.Decimal(10, 3)
+  maxScore    Decimal           @db.Decimal(10, 3)
+  domainScore Json
+  computedAt  DateTime          @default(now()) @db.Timestamptz(3)
+  session     AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+}

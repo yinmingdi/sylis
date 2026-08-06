@@ -1,0 +1,63 @@
+model ContentProfile {
+  id         String                  @id @default(uuid()) @db.Uuid
+  key        String
+  targetKind String
+  versions   ContentProfileVersion[]
+
+  @@unique([key, targetKind])
+}
+
+model ContentProfileVersion {
+  id               String                     @id @default(uuid()) @db.Uuid
+  profileId        String                     @db.Uuid
+  version          String
+  requirementsHash String
+  profile          ContentProfile             @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  evaluations      ContentProfileEvaluation[]
+
+  @@unique([profileId, version])
+}
+
+model ContentProfileEvaluation {
+  id               String                           @id @default(uuid()) @db.Uuid
+  releaseId        String                           @db.Uuid
+  profileVersionId String                           @db.Uuid
+  status           String
+  profileVersion   ContentProfileVersion            @relation(fields: [profileVersionId], references: [id], onDelete: Restrict)
+  targets          ContentProfileEvaluationTarget[]
+  requirements     ContentRequirementEvaluation[]
+
+  @@unique([releaseId, id])
+}
+
+model ContentProfileEvaluationTarget {
+  evaluationId String                   @db.Uuid
+  targetKind   String
+  targetId     String                   @db.Uuid
+  evaluation   ContentProfileEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+
+  @@id([evaluationId, targetKind, targetId])
+}
+
+model ContentRequirementEvaluation {
+  id              String                   @id @default(uuid()) @db.Uuid
+  evaluationId    String                   @db.Uuid
+  requirementCode String
+  status          String
+  reasonCode      String?
+  evidenceCount   Int
+  detailsHash     String?
+  evaluation      ContentProfileEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+
+  @@unique([evaluationId, requirementCode])
+}
+
+model ReleaseQualityStatistic {
+  id        String @id @default(uuid()) @db.Uuid
+  releaseId String @db.Uuid
+  category  String
+  key       String
+  count     BigInt
+
+  @@unique([releaseId, category, key])
+}

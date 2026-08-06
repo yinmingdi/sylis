@@ -1,27 +1,32 @@
 # 系统架构
 
-Sylis 是 pnpm monorepo，包含 React Web、NestJS API、共享 DTO/工具包，以及按需运行的 ECDICT 导入器。
+Sylis 是 pnpm + Turbo monorepo。在线系统由 User Web、Admin Web、模块化 NestJS
+API 和 Worker 组成；词典内容由独立 Compiler Runner 生成标准制品，再由 Importer
+写入 PostgreSQL DRAFT release。
 
 ```text
 Internet
    |
-   v
-Railway web (Caddy + React)
-   |  /api/*, Railway private network
-   v
-Railway api (NestJS)
-   |---- PostgreSQL
-   |---- Redis
-   |---- AI provider
-   `---- SMTP provider
+   +--> Railway web (Caddy + React) -----+
+   +--> Railway admin (Caddy + React) ---+--> Railway api (NestJS)
+                                                |--> PostgreSQL
+                                                `--> Redis (wakeup only)
 
-vocabulary-importer ---- PostgreSQL
+Railway worker -------------------------------> PostgreSQL / Redis / runtime AI
+Railway compiler-runner --> source + compiler --> object storage JSON artifact
+Railway importer <--------- JSON artifact -----> PostgreSQL DRAFT release
 ```
 
-Web 是唯一公网服务。Caddy 托管静态文件，并将 `/api/*` 去除前缀后转发到 `api.railway.internal:3000`。浏览器不会接触 Railway 私网地址、数据库连接串或供应商密钥。
+浏览器不接触 Railway 私网地址、数据库连接串或供应商密钥。API 负责同步请求、认证、
+领域事务和 Job 创建；Worker 负责运行时 AI、导出、计划和来源同步。PostgreSQL 是 Job
+状态真相，Redis 只用于唤醒。
 
-API 负责认证、学习流程、AI、邮件、文章、聊天和词汇业务。启动时校验所有必需环境变量；`/health` 同时检查 PostgreSQL 和 Redis。生产环境不公开 Swagger。
+应用发布与词典发布相互独立。GitHub Actions 从触发 workflow 的精确 commit 构建六个
+Docker image，推送到 GHCR，并在 required CI 通过后让 Railway 按不可变 digest 部署。
+`develop` 对应 staging，`main` 对应 production；两套环境分别拥有数据库、Redis、
+Volume、对象存储凭据和密钥。
 
-`vocabulary-importer` 是无公网的手动作业，只获得 `DATABASE_URL`。它校验固定 ECDICT 数据的 SHA-256，通过 advisory lock 防止并发导入，并记录每次导入审计。
-
-staging 与 production 使用独立服务、数据库、Redis 和密钥。GitHub Actions 负责质量门禁，Railway GitHub Autodeploy 在 CI 成功后发布 `develop` 或 `main`。
+词典构建不会随应用部署自动启动。维护者显式发起 Compiler Job，并在制品验证后单独
+执行 Importer dry-run、import、validate 和受保护 activation。完整边界见
+[重构架构总览](../refactor/architecture/system.md) 与
+[CI/CD、Railway 与密钥](../refactor/delivery/cicd-security.md)。

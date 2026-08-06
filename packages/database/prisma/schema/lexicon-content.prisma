@@ -1,0 +1,177 @@
+model MediaAsset {
+  id             String             @id @default(uuid()) @db.Uuid
+  releaseId      String             @db.Uuid
+  mediaType      String
+  mimeType       String
+  contentUri     String
+  contentHash    String
+  byteLength     BigInt
+  durationMs     Int?
+  rightsPolicyId String             @db.Uuid
+  provenanceId   String             @db.Uuid
+  rightsPolicy   SourceRightsPolicy @relation(fields: [rightsPolicyId], references: [id], onDelete: Restrict)
+  provenance     Provenance         @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  formLinks      FormMedia[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, contentHash])
+}
+
+model FormMedia {
+  releaseId    String      @db.Uuid
+  formId       String      @db.Uuid
+  mediaAssetId String      @db.Uuid
+  roleCode     String
+  regionTag    String?
+  displayOrder Int
+  form         LexicalForm @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+  media        MediaAsset  @relation(fields: [releaseId, mediaAssetId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, formId, mediaAssetId, roleCode])
+}
+
+model EntryRelation {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  sourceEntryId String               @db.Uuid
+  targetEntryId String               @db.Uuid
+  typeCode      String
+  direction     String
+  provenanceId  String               @db.Uuid
+  source        LexicalEntryRevision @relation("EntryRelationSource", fields: [releaseId, sourceEntryId], references: [releaseId, entryId], onDelete: Restrict)
+  target        LexicalEntryRevision @relation("EntryRelationTarget", fields: [releaseId, targetEntryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceEntryId, targetEntryId, typeCode])
+}
+
+model SenseRelation {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  sourceSenseId String               @db.Uuid
+  targetSenseId String               @db.Uuid
+  typeCode      String
+  direction     String
+  provenanceId  String               @db.Uuid
+  source        LexicalSenseRevision @relation("SenseRelationSource", fields: [releaseId, sourceSenseId], references: [releaseId, senseId], onDelete: Restrict)
+  target        LexicalSenseRevision @relation("SenseRelationTarget", fields: [releaseId, targetSenseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceSenseId, targetSenseId, typeCode])
+}
+
+model ConceptRelation {
+  id              String                 @id @default(uuid()) @db.Uuid
+  releaseId       String                 @db.Uuid
+  sourceConceptId String                 @db.Uuid
+  targetConceptId String                 @db.Uuid
+  typeCode        String
+  direction       String
+  provenanceId    String                 @db.Uuid
+  source          LexicalConceptRevision @relation("ConceptRelationSource", fields: [releaseId, sourceConceptId], references: [releaseId, conceptId], onDelete: Restrict)
+  target          LexicalConceptRevision @relation("ConceptRelationTarget", fields: [releaseId, targetConceptId], references: [releaseId, conceptId], onDelete: Restrict)
+  provenance      Provenance             @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceConceptId, targetConceptId, typeCode])
+}
+
+model ExampleSentence {
+  id             String               @id @default(uuid()) @db.Uuid
+  releaseId      String               @db.Uuid
+  languageTag    String
+  text           String
+  normalizedHash String
+  provenanceId   String               @db.Uuid
+  provenance     Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  translations   ExampleTranslation[]
+  senseLinks     SenseExample[]
+  citations      ExampleCitation[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, languageTag, normalizedHash])
+}
+
+model ExampleTranslation {
+  id           String          @id @default(uuid()) @db.Uuid
+  releaseId    String          @db.Uuid
+  exampleId    String          @db.Uuid
+  languageTag  String
+  text         String
+  provenanceId String          @db.Uuid
+  example      ExampleSentence @relation(fields: [releaseId, exampleId], references: [releaseId, id], onDelete: Restrict)
+  provenance   Provenance      @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, exampleId, languageTag, text])
+}
+
+model SenseExample {
+  id           String               @id @default(uuid()) @db.Uuid
+  releaseId    String               @db.Uuid
+  senseId      String               @db.Uuid
+  exampleId    String               @db.Uuid
+  displayOrder Int
+  roleCode     String
+  provenanceId String               @db.Uuid
+  sense        LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  example      ExampleSentence      @relation(fields: [releaseId, exampleId], references: [releaseId, id], onDelete: Restrict)
+  provenance   Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, exampleId, roleCode])
+}
+
+model ExampleCitation {
+  id             String          @id @default(uuid()) @db.Uuid
+  exampleId      String          @db.Uuid
+  sourceRecordId String          @db.Uuid
+  workTitle      String?
+  location       String?
+  year           Int?
+  examType       String?
+  verified       Boolean         @default(false)
+  example        ExampleSentence @relation(fields: [exampleId], references: [id], onDelete: Restrict)
+  sourceRecord   SourceRecord    @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+}
+
+model Collocation {
+  id             String                 @id @default(uuid()) @db.Uuid
+  releaseId      String                 @db.Uuid
+  languageTag    String
+  canonicalText  String
+  normalizedText String
+  headEntryId    String?                @db.Uuid
+  provenanceId   String                 @db.Uuid
+  provenance     Provenance             @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  senseLinks     SenseCollocation[]
+  components     CollocationComponent[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, languageTag, normalizedText])
+}
+
+model SenseCollocation {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  senseId       String               @db.Uuid
+  collocationId String               @db.Uuid
+  relationType  String
+  displayOrder  Int
+  provenanceId  String               @db.Uuid
+  sense         LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  collocation   Collocation          @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, collocationId, relationType])
+}
+
+model CollocationComponent {
+  id            String      @id @default(uuid()) @db.Uuid
+  collocationId String      @db.Uuid
+  position      Int
+  surfaceText   String
+  roleCode      String
+  entryId       String?     @db.Uuid
+  morphemeId    String?     @db.Uuid
+  collocation   Collocation @relation(fields: [collocationId], references: [id], onDelete: Restrict)
+
+  @@unique([collocationId, position])
+}

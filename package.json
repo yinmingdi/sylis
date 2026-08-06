@@ -19,7 +19,7 @@
     "build:api": "pnpm --filter ./apps/api run build",
     "build:web": "pnpm --filter ./apps/web run build",
     "build:docs": "pnpm --filter ./docs/overview run docs:build",
-    "build:components": "pnpm --filter ./docs/components run build",
+    "build:components": "pnpm --filter ./docs/components run docs:build",
     "clean": "pnpm -r exec rm -rf node_modules dist .next .turbo && rm -rf node_modules",
     "clean:cache": "pnpm store prune && pnpm -r exec rm -rf .turbo",
     "typecheck": "turbo run typecheck",
@@ -27,7 +27,6 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "phase0:format:check": "prettier --check turbo.json package.json eslint.config.js .github/workflows apps/api/eslint.config.js apps/api/package.json apps/api/nest-cli.json apps/web/eslint.config.js apps/web/package.json packages/*/package.json packages/*/tsdown.config.ts services/vocabulary-importer/package.json docs/components/package.json docs/overview/package.json docs/overview/adr docs/overview/refactor docs/overview/guide/lexicon-architecture.md tools/architecture",
     "turbo:graph": "turbo run build --graph=.turbo/task-graph.html",
     "ci:affected": "turbo run lint typecheck test build docs:build --affected --concurrency=50%",
     "ci:full": "turbo run lint typecheck test build docs:build --concurrency=50%",
@@ -35,23 +34,20 @@
     "workflows:check": "node tools/architecture/check-workflows.mjs",
     "docs:check": "node tools/architecture/check-docs.mjs",
     "artifact:validate": "node tools/architecture/validate-artifact-contract.mjs",
+    "api-contracts:generate": "turbo run build --filter=@sylis/database --filter=@sylis/background-jobs && pnpm --filter @sylis/api openapi:generate && pnpm --filter @sylis/api-client generate && pnpm --filter @sylis/admin-api-client generate && prettier --write apps/api/openapi/*.openapi.json apps/api/src/openapi/metadata.ts packages/api-client/src/generated/schema.ts packages/admin-api-client/src/generated/schema.ts",
+    "api-contracts:breaking": "node tools/architecture/check-api-contracts.mjs",
+    "api-contracts:check": "pnpm api-contracts:generate && node tools/architecture/check-api-contracts.mjs --clean",
     "secrets:check": "node tools/architecture/check-secrets.mjs",
-    "phase0:check": "node tools/architecture/run-phase-0-gate.mjs",
-    "phase1:format:check": "prettier --check packages/lexicon-contracts packages/ai-provider packages/lexicon-compiler services/vocabulary-importer/tsconfig.json tools/architecture/check-workspace.mjs tools/architecture/phase-1-clean-commit.mjs tools/architecture/prepare-phase-1-pilot.mjs tools/architecture/run-phase-1-gate.mjs tools/architecture/run-phase-1-pilot.mjs tools/architecture/run-phase-1-pilot.test.mjs",
-    "phase1:check": "node tools/architecture/run-phase-1-gate.mjs",
-    "phase1:pilot:prepare": "node tools/architecture/prepare-phase-1-pilot.mjs",
-    "phase1:pilot": "node tools/architecture/run-phase-1-pilot.mjs",
+    "ops": "node tools/operations/cli.mjs",
     "harness:init": "pnpm --filter @sylis/harness run init -- --target ../..",
     "harness:check": "pnpm --filter @sylis/harness run check -- --target ../..",
     "harness:test": "pnpm --filter @sylis/harness test",
     "test": "turbo run test",
     "test:e2e": "pnpm --filter ./apps/web run test:e2e --if-present",
-    "db:generate": "pnpm --filter ./apps/api run db:generate",
-    "db:push": "pnpm --filter ./apps/api run db:push",
-    "db:migrate": "pnpm --filter ./apps/api run db:migrate",
-    "db:seed": "pnpm --filter ./apps/api run db:seed",
-    "db:studio": "pnpm --filter ./apps/api run db:studio",
-    "db:reset": "pnpm --filter ./apps/api run db:reset",
+    "db:generate": "pnpm --filter @sylis/database prisma:generate",
+    "db:migrate": "pnpm --filter @sylis/database prisma:migrate",
+    "db:migrate:dev": "pnpm --filter @sylis/database prisma:migrate:dev",
+    "db:studio": "pnpm --filter @sylis/database prisma:studio",
     "commit": "cz",
     "prepare": "husky install"
   },
@@ -62,7 +58,6 @@
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "9.39.1",
-    "@sylis/shared": "workspace:^",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "commitizen": "^4.3.1",
@@ -85,5 +80,12 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "argon2",
+      "prisma"
+    ]
   }
 }

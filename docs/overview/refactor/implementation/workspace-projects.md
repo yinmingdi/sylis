@@ -134,7 +134,7 @@ Turbo 不承担通用代码生成或领域边界判断。项目边界只在 pack
     },
     "lint": { "outputs": [] },
     "dev": { "cache": false, "persistent": true },
-    "db:migrate": { "cache": false },
+    "prisma:migrate": { "cache": false },
     "compile": { "cache": false },
     "deploy": { "cache": false }
   }

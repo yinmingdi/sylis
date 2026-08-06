@@ -2,16 +2,20 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main, "release/**"]
+    branches: [develop, main, "release/**", "hotfix/**"]
   push:
-    branches: [develop, main, "release/**"]
+    branches: [develop, main, "release/**", "hotfix/**"]
 
 permissions:
   contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  NODE_VERSION: "24"
+  PNPM_VERSION: "10.23.0"
 
 jobs:
   secret-scan:
@@ -25,9 +29,11 @@ jobs:
       - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate repository secret policy
+        run: node tools/architecture/check-secrets.mjs
 
-  harness:
-    name: Harness and documentation
+  repository-gates:
+    name: Architecture and documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -36,28 +42,26 @@ jobs:
           persist-credentials: false
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
-          version: 10.23.0
+          version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Test Harness toolkit
-        run: pnpm harness:test
-      - name: Validate repository Harness
-        run: pnpm harness:check
-      - name: Validate workspace architecture
-        run: pnpm architecture:check
-      - name: Validate workflow policy
-        run: pnpm workflows:check
-      - name: Validate documentation contracts
-        run: pnpm docs:check
-      - name: Validate patch whitespace
-        run: git diff --check
+      - run: pnpm install --frozen-lockfile
+      - name: Generate and verify API contracts
+        env:
+          API_CONTRACT_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: pnpm api-contracts:check
+      - run: pnpm harness:test
+      - run: pnpm harness:check
+      - run: pnpm architecture:check
+      - run: pnpm workflows:check
+      - run: pnpm docs:check
+      - run: pnpm artifact:validate
+      - run: git diff --check
 
   quality:
-    name: Build and test
+    name: Workspace quality
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -66,8 +70,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: sylis
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U postgres -d sylis"
           --health-interval 10s
@@ -75,8 +78,7 @@ jobs:
           --health-retries 5
       redis:
         image: redis:7
-        ports:
-          - 6379:6379
+        ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -84,21 +86,28 @@ jobs:
           --health-retries 5
     env:
       NODE_ENV: test
-      PORT: 3000
+      PORT: "3000"
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sylis
       REDIS_URL: redis://localhost:6379
-      JWT_SECRET: ci-only-jwt-secret-not-for-production-000000
-      JWT_EXPIRES_IN: 30d
-      AI_API_KEY: ci-placeholder-key
-      AI_BASE_URL: https://api.deepseek.com
-      AI_MODEL: deepseek-v4-flash
-      AI_ENRICHMENT_ENABLED: "false"
-      MAILER_HOST: localhost
-      MAILER_PORT: 1025
-      MAILER_SECURE: "false"
-      MAILER_USER: ci-user
-      MAILER_PASS: ci-password
-      MAILER_FROM: Sylis CI <ci@example.com>
+      PUBLIC_ORIGIN: http://localhost:5173
+      ADMIN_ORIGIN: http://localhost:5180
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_NAME: Sylis CI
+      SESSION_HASH_KEY: ci-session-hash-key-000000000000000000000000
+      CSRF_SIGNING_KEY: ci-csrf-signing-key-000000000000000000000
+      REGISTRATION_SIGNING_KEY: ci-registration-key-00000000000000000000
+      CONTENT_ENCRYPTION_KEYS_JSON: '{"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
+      CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION: ci
+      COOKIE_SECURE: "false"
+      JOB_CHECKPOINT_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      RUNTIME_AI_ENABLED: "false"
+      RUNTIME_AI_PROVIDER: deepseek
+      RUNTIME_AI_BASE_URL: https://api.deepseek.com
+      RUNTIME_AI_MODEL: deepseek-v4-flash
+      LEXICON_AI_ENABLED: "false"
+      LEXICON_AI_PROVIDER: deepseek
+      LEXICON_AI_BASE_URL: https://api.deepseek.com
+      LEXICON_AI_MODEL: deepseek-v4-flash
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -106,62 +115,320 @@ jobs:
           persist-credentials: false
       - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
-          version: 10.23.0
+          version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Generate Prisma client
-        run: pnpm --filter @sylis/api prisma:generate
-      - name: Configure affected Git range
+      - run: pnpm install --frozen-lockfile
+      - name: Validate and generate database client
+        run: |
+          pnpm --filter @sylis/database prisma:validate
+          pnpm --filter @sylis/database prisma:generate
+      - name: Apply migrations to a fresh database
+        run: pnpm --filter @sylis/database prisma:migrate
+      - name: Configure affected range
         if: github.event_name == 'pull_request'
         run: |
           echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
           echo "TURBO_SCM_HEAD=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
-      - name: Lint, typecheck, test, and build affected packages
+      - name: Check affected workspace
         if: github.event_name == 'pull_request'
         run: pnpm ci:affected
-      - name: Lint, typecheck, test, and build all packages
+      - name: Check full workspace
         if: github.event_name == 'push'
         run: pnpm ci:full
-      - name: Build integration applications
-        run: pnpm exec turbo run build --filter=@sylis/api --filter=@sylis/web --filter=@sylis/vocabulary-importer
-      - name: Apply migrations to a fresh database
-        run: pnpm --filter @sylis/api exec prisma migrate deploy
-      - name: Test vocabulary importer deployment script
-        run: node --test scripts/deploy-vocabulary-importer.test.mjs
-      - name: Vocabulary importer dry-run and idempotency
-        run: |
-          fixture=services/vocabulary-importer/test/fixtures/ecdict.csv
-          checksum=$(sha256sum "$fixture" | cut -d ' ' -f 1)
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3 --dry-run
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
-          pnpm --filter @sylis/vocabulary-importer start --source "test/fixtures/ecdict.csv" --sha256 "$checksum" --scope all --expected-selected 3
-          pnpm --filter @sylis/vocabulary-importer verify:fixture
-      - name: API health smoke test
+      - name: API readiness smoke
         run: |
           pnpm --filter @sylis/api start:prod > /tmp/sylis-api.log 2>&1 &
-          curl --fail --retry 10 --retry-all-errors --retry-delay 2 http://localhost:3000/health
-      - name: Build and smoke test web image
+          curl --fail --retry 20 --retry-all-errors --retry-delay 2 http://localhost:3000/health/ready
+
+  container-images:
+    name: Image ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sylis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sylis"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: apps/api/Dockerfile
+            port: 3000
+            health_path: /health/ready
+          - name: web
+            dockerfile: apps/web/Dockerfile
+            port: 8080
+            health_path: /health
+          - name: admin
+            dockerfile: apps/admin/Dockerfile
+            port: 8080
+            health_path: /health
+          - name: worker
+            dockerfile: apps/worker/Dockerfile
+            port: 3001
+            health_path: /ready
+          - name: compiler-runner
+            dockerfile: services/lexicon-compiler-runner/Dockerfile
+            port: 3002
+            health_path: /ready
+          - name: importer
+            dockerfile: services/lexicon-importer/Dockerfile
+            port: 3003
+            health_path: /ready
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Build immutable image
+        env:
+          IMAGE_NAME: sylis-${{ matrix.name }}
         run: |
-          docker build -f apps/web/Dockerfile -t sylis-web:ci .
-          docker run --detach --name sylis-web-ci -p 8080:8080 -e PORT=8080 sylis-web:ci
-          curl --fail --retry 10 --retry-all-errors --retry-delay 2 http://localhost:8080/health
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/$owner/$IMAGE_NAME"
+          docker build \
+            --file "${{ matrix.dockerfile }}" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$image:$GITHUB_SHA" \
+            .
+          container="sylis-${{ matrix.name }}-smoke"
+          cleanup() {
+            code=$?
+            if [ "$code" -ne 0 ]; then docker logs "$container" || true; fi
+            docker rm --force "$container" > /dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          case "${{ matrix.name }}" in
+            web|admin)
+              docker run --rm --entrypoint caddy "$image:$GITHUB_SHA" \
+                validate --config /etc/caddy/Caddyfile
+              docker run --detach --name "$container" --network host \
+                --env PORT=${{ matrix.port }} "$image:$GITHUB_SHA"
+              ;;
+            api|worker|compiler-runner|importer)
+              database_url=postgresql://postgres:postgres@127.0.0.1:5432/sylis
+              docker run --rm --network host --env DATABASE_URL="$database_url" \
+                --entrypoint sh "$image:$GITHUB_SHA" -c \
+                'cd /app/node_modules/@sylis/database && ./node_modules/.bin/prisma migrate deploy --schema ./prisma/schema'
+              runtime_args=(
+                --env NODE_ENV=production
+                --env PORT=${{ matrix.port }}
+                --env DATABASE_URL="$database_url"
+                --env JOB_CHECKPOINT_KEY_BASE64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+              )
+              if [ "${{ matrix.name }}" = api ]; then
+                runtime_args+=(
+                  --env PUBLIC_ORIGIN=http://localhost:5173
+                  --env ADMIN_ORIGIN=http://localhost:5180
+                  --env WEBAUTHN_RP_ID=localhost
+                  --env WEBAUTHN_RP_NAME="Sylis CI"
+                  --env SESSION_HASH_KEY=ci-session-hash-key-000000000000000000000000
+                  --env CSRF_SIGNING_KEY=ci-csrf-signing-key-000000000000000000000
+                  --env REGISTRATION_SIGNING_KEY=ci-registration-key-00000000000000000000
+                  --env 'CONTENT_ENCRYPTION_KEYS_JSON={"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
+                  --env CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION=ci
+                  --env COOKIE_SECURE=false
+                  --env RUNTIME_AI_ENABLED=false
+                )
+              elif [ "${{ matrix.name }}" = worker ]; then
+                runtime_args+=(
+                  --env 'CONTENT_ENCRYPTION_KEYS_JSON={"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
+                  --env CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION=ci
+                  --env RUNTIME_AI_ENABLED=false
+                )
+              elif [ "${{ matrix.name }}" = compiler-runner ]; then
+                runtime_args+=(--env LEXICON_AI_ENABLED=false)
+              fi
+              docker run --detach --name "$container" --network host \
+                "${runtime_args[@]}" "$image:$GITHUB_SHA"
+              ;;
+          esac
+          curl --fail --retry 20 --retry-all-errors --retry-delay 2 \
+            "http://127.0.0.1:${{ matrix.port }}${{ matrix.health_path }}"
+          trap - EXIT
+          docker rm --force "$container" > /dev/null
+          if [ "$GITHUB_EVENT_NAME" = push ] && { [ "$GITHUB_REF" = refs/heads/main ] || [ "$GITHUB_REF" = refs/heads/develop ]; }; then
+            printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+            docker push "$image:$GITHUB_SHA"
+            docker inspect --format='{{index .RepoDigests 0}}' "$image:$GITHUB_SHA"
+          fi
+
+  browser-e2e:
+    name: User Web desktop and mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=@sylis/web
+      - run: pnpm --filter @sylis/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @sylis/web test:e2e
 
   required:
     name: CI required
     if: always()
-    needs: [secret-scan, harness, quality]
+    needs:
+      [secret-scan, repository-gates, quality, container-images, browser-e2e]
     runs-on: ubuntu-latest
     steps:
-      - name: Require all CI jobs
+      - name: Require every gate
         env:
-          SECRET_SCAN_RESULT: ${{ needs.secret-scan.result }}
-          HARNESS_RESULT: ${{ needs.harness.result }}
-          QUALITY_RESULT: ${{ needs.quality.result }}
+          SECRET_SCAN: ${{ needs.secret-scan.result }}
+          REPOSITORY_GATES: ${{ needs.repository-gates.result }}
+          QUALITY: ${{ needs.quality.result }}
+          CONTAINER_IMAGES: ${{ needs.container-images.result }}
+          BROWSER_E2E: ${{ needs.browser-e2e.result }}
         run: |
-          test "$SECRET_SCAN_RESULT" = success
-          test "$HARNESS_RESULT" = success
-          test "$QUALITY_RESULT" = success
+          test "$SECRET_SCAN" = success
+          test "$REPOSITORY_GATES" = success
+          test "$QUALITY" = success
+          test "$CONTAINER_IMAGES" = success
+          test "$BROWSER_E2E" = success
+
+  deploy-environment:
+    name: Deploy ${{ matrix.name }} digest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: required
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'sylis / production' || 'sylis / staging' }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            service_id: ${{ vars.RAILWAY_API_SERVICE_ID }}
+          - name: web
+            service_id: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
+          - name: admin
+            service_id: ${{ vars.RAILWAY_ADMIN_SERVICE_ID }}
+          - name: worker
+            service_id: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          - name: compiler-runner
+            service_id: ${{ vars.RAILWAY_COMPILER_RUNNER_SERVICE_ID }}
+          - name: importer
+            service_id: ${{ vars.RAILWAY_IMPORTER_SERVICE_ID }}
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install pinned Railway CLI
+        run: npm install --global @railway/cli@5.30.4
+      - name: Resolve and deploy immutable digest
+        env:
+          SERVICE_ID: ${{ matrix.service_id }}
+          IMAGE_NAME: sylis-${{ matrix.name }}
+        run: |
+          test -n "$SERVICE_ID"
+          test -n "$RAILWAY_PROJECT_ID"
+          test -n "$RAILWAY_ENVIRONMENT_ID"
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/$owner/$IMAGE_NAME"
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker pull "$image:$GITHUB_SHA"
+          immutable=$(docker inspect --format='{{index .RepoDigests 0}}' "$image:$GITHUB_SHA")
+          test -n "$immutable"
+          railway service source connect \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$SERVICE_ID" \
+            --image "$immutable" \
+            --json > /tmp/source.json
+          deployment=$(railway service redeploy \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$SERVICE_ID" \
+            --from-source \
+            --yes \
+            --json)
+          deployment_id=$(printf '%s' "$deployment" | jq -r '.id // .deploymentId // empty')
+          test -n "$deployment_id"
+          for attempt in $(seq 1 90); do
+            status_json=$(railway service status \
+              --project "$RAILWAY_PROJECT_ID" \
+              --environment "$RAILWAY_ENVIRONMENT_ID" \
+              --service "$SERVICE_ID" \
+              --json)
+            current_id=$(printf '%s' "$status_json" | jq -r '.deploymentId // empty')
+            status=$(printf '%s' "$status_json" | jq -r '.status // empty')
+            if [ "$current_id" = "$deployment_id" ] && [ "$status" = SUCCESS ]; then
+              printf '%s\n' "service=${{ matrix.name }} image=$immutable deployment=$deployment_id" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            case "$status" in FAILED|CRASHED|REMOVED) exit 1 ;; esac
+            sleep 10
+          done
+          exit 1
+
+  environment-smoke:
+    name: Environment health
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs: deploy-environment
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'sylis / production' || 'sylis / staging' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Check all service health endpoints
+        env:
+          SYLIS_HEALTH_URLS: ${{ vars.SYLIS_HEALTH_URLS }}
+          SYLIS_EVIDENCE_DIR: .artifacts/deployment
+        run: node tools/operations/cli.mjs health-rehearsal
+
+  tag-initial-release:
+    name: Tag v0.0.1
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: environment-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Create the initial release tag once
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          test "$version" = 0.0.1
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null 2>&1; then
+            echo "$tag already exists; no tag was moved" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git tag --annotate "$tag" --message "Sylis $tag"
+          git push origin "refs/tags/$tag"
+          gh release create "$tag" --verify-tag --title "Sylis $tag" --generate-notes

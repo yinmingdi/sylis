@@ -1,0 +1,39 @@
+model TranslationRelation {
+  id              String     @id @default(uuid()) @db.Uuid
+  releaseId       String     @db.Uuid
+  sourceSenseId   String     @db.Uuid
+  targetSenseId   String     @db.Uuid
+  translationType String
+  provenanceId    String     @db.Uuid
+  provenance      Provenance @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceSenseId, targetSenseId, translationType])
+}
+
+model LexicalLineage {
+  id           String     @id @default(uuid()) @db.Uuid
+  releaseId    String     @db.Uuid
+  entityKind   String
+  fromId       String     @db.Uuid
+  toId         String     @db.Uuid
+  lineageType  String
+  provenanceId String     @db.Uuid
+  provenance   Provenance @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, entityKind, fromId, toId, lineageType])
+}
+
+model LexicalExternalIdentifier {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  releaseId          String                     @db.Uuid
+  ownerKind          String
+  ownerId            String                     @db.Uuid
+  namespaceVersionId String                     @db.Uuid
+  externalId         String
+  uri                String?
+  provenanceId       String                     @db.Uuid
+  namespace          VocabularyNamespaceVersion @relation(fields: [namespaceVersionId], references: [id], onDelete: Restrict)
+  provenance         Provenance                 @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, ownerKind, ownerId, namespaceVersionId, externalId])
+}

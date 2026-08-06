@@ -1,0 +1,28 @@
+model RedditDocumentMetadata {
+  documentId      String          @id @db.Uuid
+  subreddit       String
+  postId          String          @unique
+  authorHash      String?
+  sourceUrl       String
+  sourceCreatedAt DateTime        @db.Timestamptz(3)
+  sourceEditedAt  DateTime?       @db.Timestamptz(3)
+  withdrawnAt     DateTime?       @db.Timestamptz(3)
+  retentionUntil  DateTime?       @db.Timestamptz(3)
+  document        ReadingDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+}
+
+model RedditSourceObservation {
+  id                String                @id @default(uuid()) @db.Uuid
+  synchronizationId String                @db.Uuid
+  documentId        String                @db.Uuid
+  postId            String
+  state             String
+  contentHash       String?
+  sourceEditedAt    DateTime?             @db.Timestamptz(3)
+  observedAt        DateTime              @default(now()) @db.Timestamptz(3)
+  synchronization   SourceSynchronization @relation(fields: [synchronizationId], references: [id], onDelete: Restrict)
+  document          ReadingDocument       @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([synchronizationId, postId])
+  @@index([documentId, observedAt])
+}

@@ -471,9 +471,9 @@ export async function compileLexiconInternal(
     return executor;
   };
 
-  const resumedLearningCheckpoint = options.resumeRunId
-    ? await readCheckpoint(learningCheckpointPath)
-    : null;
+  const resumedLearningCheckpoint = await readCheckpoint(
+    learningCheckpointPath,
+  );
   let artifact: SylisLexiconArtifactV1;
   if (resumedLearningCheckpoint) {
     assertCheckpointCompatible(resumedLearningCheckpoint, {
@@ -486,9 +486,9 @@ export async function compileLexiconInternal(
     }
     artifact = resumedLearningCheckpoint.artifact;
   } else {
-    const resumedRelationCheckpoint = options.resumeRunId
-      ? await readCheckpoint(relationCheckpointPath)
-      : null;
+    const resumedRelationCheckpoint = await readCheckpoint(
+      relationCheckpointPath,
+    );
     let records: NormalizedSourceRecord[];
     if (resumedRelationCheckpoint) {
       assertCheckpointCompatible(resumedRelationCheckpoint, {

@@ -1,0 +1,31 @@
+{
+  "name": "@sylis/api-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "generate": "openapi-typescript ../../apps/api/openapi/user.openapi.json -o src/generated/schema.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "tsdown": "0.22.14",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

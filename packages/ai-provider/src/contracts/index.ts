@@ -30,6 +30,28 @@ export interface StructuredGenerationResult<T = unknown> {
   usage: GenerationUsage;
 }
 
+export interface StreamingMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+export interface StreamingGenerationRequest {
+  taskType: string;
+  messages: StreamingMessage[];
+  candidateKey: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface StreamingGenerationChunk {
+  delta: string;
+  providerRequestId: string | null;
+  provider: string;
+  model: string;
+  finished: boolean;
+  usage?: GenerationUsage;
+}
+
 export type StructuredGenerationErrorCode =
   | "CONFIGURATION"
   | "RATE_LIMITED"

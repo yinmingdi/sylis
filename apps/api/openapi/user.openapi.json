@@ -1,0 +1,2154 @@
+{
+  "components": {
+    "schemas": {
+      "AddNotebookItemDto": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "target": {
+            "$ref": "#/components/schemas/LexicalTargetDto"
+          }
+        },
+        "required": ["target"],
+        "type": "object"
+      },
+      "ConsentRecordDto": {
+        "properties": {
+          "decision": {
+            "type": "object"
+          },
+          "policyVersion": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "purpose": {
+            "maxLength": 64,
+            "type": "string"
+          }
+        },
+        "required": ["purpose", "policyVersion", "decision"],
+        "type": "object"
+      },
+      "CreateAssessmentSessionDto": {
+        "properties": {
+          "blueprintRevisionId": {
+            "type": "string"
+          }
+        },
+        "required": ["blueprintRevisionId"],
+        "type": "object"
+      },
+      "CreateEnrollmentDto": {
+        "properties": {
+          "bookId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "dailyNewLimit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          },
+          "editionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["bookId", "editionId", "dailyNewLimit"],
+        "type": "object"
+      },
+      "CreateGrammarDiagnosisDto": {
+        "properties": {
+          "consentRecordId": {
+            "type": "string"
+          },
+          "languageTag": {
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 12000,
+            "type": "string"
+          }
+        },
+        "required": ["text", "languageTag", "consentRecordId"],
+        "type": "object"
+      },
+      "CreateNotebookDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "CreateReadingGenerationDto": {
+        "properties": {
+          "consentRecordId": {
+            "type": "string"
+          },
+          "constraints": {
+            "type": "object"
+          },
+          "difficulty": {
+            "type": "string"
+          }
+        },
+        "required": ["difficulty", "consentRecordId"],
+        "type": "object"
+      },
+      "CreateStudyAttemptDto": {
+        "properties": {
+          "planItemId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["planItemId"],
+        "type": "object"
+      },
+      "CreateTutorMessageDto": {
+        "properties": {
+          "consentRecordId": {
+            "type": "string"
+          },
+          "content": {
+            "maxLength": 8000,
+            "type": "string"
+          },
+          "contextRefs": {
+            "items": {
+              "$ref": "#/components/schemas/TutorContextRefDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["content", "consentRecordId", "contextRefs"],
+        "type": "object"
+      },
+      "CreateTutorSessionDto": {
+        "properties": {
+          "title": {
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DataExportDto": {
+        "properties": {
+          "scope": {
+            "type": "object"
+          }
+        },
+        "required": ["scope"],
+        "type": "object"
+      },
+      "LexicalTargetDto": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "object"
+          }
+        },
+        "required": ["kind", "id"],
+        "type": "object"
+      },
+      "LoginDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"],
+        "type": "object"
+      },
+      "MigrateEnrollmentDto": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "type": "object"
+          },
+          "editionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["editionId", "confirm"],
+        "type": "object"
+      },
+      "Object": {
+        "properties": {},
+        "type": "object"
+      },
+      "RecordReadingActivityDto": {
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "eventKind": {
+            "type": "string"
+          },
+          "offset": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "progress": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "revisionId": {
+            "type": "string"
+          }
+        },
+        "required": ["documentId", "eventKind"],
+        "type": "object"
+      },
+      "RegisterDto": {
+        "properties": {
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 2048,
+            "minLength": 40,
+            "type": "string"
+          }
+        },
+        "required": ["token", "password", "timezone"],
+        "type": "object"
+      },
+      "RegistrationChallengeDto": {
+        "properties": {
+          "email": {
+            "example": "learner@example.com",
+            "format": "email",
+            "type": "string"
+          }
+        },
+        "required": ["email"],
+        "type": "object"
+      },
+      "ResolveSelectionDto": {
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "type": "object"
+      },
+      "SaveReadingDto": {
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "releaseId": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "targetKind": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SubmitAssessmentResponseDto": {
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/SubmitExerciseResponseDto"
+          }
+        },
+        "required": ["attemptId", "response"],
+        "type": "object"
+      },
+      "SubmitExerciseResponseDto": {
+        "properties": {
+          "choiceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "consentRecordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "responseKind": {
+            "type": "object"
+          },
+          "selfReported": {
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 10000,
+            "type": "string"
+          }
+        },
+        "required": ["responseKind"],
+        "type": "object"
+      },
+      "SubmitReviewDto": {
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 4,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": ["attemptId", "rating"],
+        "type": "object"
+      },
+      "TotpCodeDto": {
+        "properties": {
+          "code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "type": "string"
+          }
+        },
+        "required": ["code"],
+        "type": "object"
+      },
+      "TutorContextRefDto": {
+        "properties": {
+          "releaseId": {
+            "type": "string"
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "targetKind": {
+            "type": "string"
+          }
+        },
+        "required": ["targetKind", "targetId"],
+        "type": "object"
+      },
+      "UpdateEnrollmentDto": {
+        "properties": {
+          "dailyNewLimit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateNotebookDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "UpdateNotebookItemDto": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateUserDto": {
+        "properties": {
+          "locale": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          }
+        },
+        "required": ["timezone", "locale"],
+        "type": "object"
+      },
+      "WebAuthnEnrollmentDto": {
+        "properties": {
+          "challengeId": {
+            "maxLength": 36,
+            "minLength": 36,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "response": {
+            "type": "object"
+          }
+        },
+        "required": ["challengeId", "label", "response"],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "sylis_session": {
+        "in": "cookie",
+        "name": "sylis_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "Sylis user and administration HTTP API",
+    "title": "Sylis User API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/ai/grammar-diagnoses": {
+      "post": {
+        "operationId": "AiTutorController_grammar",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGrammarDiagnosisDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/ai/grammar-diagnoses/{id}": {
+      "get": {
+        "operationId": "AiTutorController_diagnosis",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/ai/tutor/sessions": {
+      "get": {
+        "operationId": "AiTutorController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      },
+      "post": {
+        "operationId": "AiTutorController_createSession",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTutorSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/ai/tutor/sessions/{id}/messages": {
+      "get": {
+        "operationId": "AiTutorController_messages",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      },
+      "post": {
+        "operationId": "AiTutorController_createMessage",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTutorMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/ai/usage": {
+      "get": {
+        "operationId": "AiTutorController_usage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/assessments/blueprints": {
+      "get": {
+        "operationId": "AssessmentsController_blueprints",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/history": {
+      "get": {
+        "operationId": "AssessmentsController_history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/sessions": {
+      "post": {
+        "operationId": "AssessmentsController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssessmentSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}": {
+      "get": {
+        "operationId": "AssessmentsController_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/responses": {
+      "post": {
+        "operationId": "AssessmentsController_respond",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAssessmentResponseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/result": {
+      "get": {
+        "operationId": "AssessmentsController_result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/submit": {
+      "post": {
+        "operationId": "AssessmentsController_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Assessments"]
+      }
+    },
+    "/api/v1/auth/mfa/totp/enrollments": {
+      "post": {
+        "operationId": "IdentityController_beginTotp",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/mfa/totp/enrollments/{credentialId}/verify": {
+      "post": {
+        "operationId": "IdentityController_verifyTotp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credentialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpCodeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/mfa/webauthn/enrollments": {
+      "post": {
+        "operationId": "IdentityController_beginWebAuthn",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/mfa/webauthn/enrollments/verify": {
+      "post": {
+        "operationId": "IdentityController_verifyWebAuthn",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAuthnEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "IdentityController_register",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/registration-challenges": {
+      "post": {
+        "operationId": "IdentityController_registrationChallenge",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationChallengeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/session": {
+      "delete": {
+        "operationId": "IdentityController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      },
+      "get": {
+        "operationId": "IdentityController_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "post": {
+        "operationId": "IdentityController_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/explore/ai-reading": {
+      "get": {
+        "operationId": "AiTutorController_readings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/explore/ai-reading/generations": {
+      "post": {
+        "operationId": "AiTutorController_generate",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReadingGenerationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["AiTutor"]
+      }
+    },
+    "/api/v1/explore/reddit/feed": {
+      "get": {
+        "operationId": "RedditController_feed",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "subreddit",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reddit"]
+      }
+    },
+    "/api/v1/explore/reddit/posts/{externalId}": {
+      "get": {
+        "operationId": "RedditController_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "externalId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reddit"]
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "delete": {
+        "operationId": "JobsController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": ["Jobs"]
+      },
+      "get": {
+        "operationId": "JobsController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Jobs"]
+      }
+    },
+    "/api/v1/jobs/{jobId}/events": {
+      "get": {
+        "operationId": "JobsController_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "last-event-id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Jobs"]
+      }
+    },
+    "/api/v1/lexicon/entries/{id}": {
+      "get": {
+        "operationId": "LexiconController_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/entries/{id}/materials": {
+      "get": {
+        "operationId": "LexiconController_entryMaterials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/headwords/{id}": {
+      "get": {
+        "operationId": "LexiconController_headword",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/search": {
+      "get": {
+        "operationId": "LexiconController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/senses/{id}": {
+      "get": {
+        "operationId": "LexiconController_sense",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/senses/{id}/materials": {
+      "get": {
+        "operationId": "LexiconController_senseMaterials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/lexicon/translate": {
+      "post": {
+        "operationId": "LexiconController_translate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Lexicon"]
+      }
+    },
+    "/api/v1/notebooks": {
+      "get": {
+        "operationId": "NotebooksController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      },
+      "post": {
+        "operationId": "NotebooksController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotebookDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      }
+    },
+    "/api/v1/notebooks/{id}": {
+      "delete": {
+        "operationId": "NotebooksController_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      },
+      "get": {
+        "operationId": "NotebooksController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      },
+      "patch": {
+        "operationId": "NotebooksController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      }
+    },
+    "/api/v1/notebooks/{id}/items": {
+      "get": {
+        "operationId": "NotebooksController_items",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      },
+      "post": {
+        "operationId": "NotebooksController_add",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNotebookItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      }
+    },
+    "/api/v1/notebooks/{id}/items/{itemId}": {
+      "delete": {
+        "operationId": "NotebooksController_removeItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      },
+      "patch": {
+        "operationId": "NotebooksController_updateItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Notebooks"]
+      }
+    },
+    "/api/v1/reading/activities": {
+      "post": {
+        "operationId": "ReadingController_activity",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordReadingActivityDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/documents/{id}": {
+      "get": {
+        "operationId": "ReadingController_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/history": {
+      "get": {
+        "operationId": "ReadingController_history",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/revisions/{id}/annotations": {
+      "get": {
+        "operationId": "ReadingController_annotations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/revisions/{id}/resolve-selection": {
+      "post": {
+        "operationId": "ReadingController_resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSelectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/saved": {
+      "get": {
+        "operationId": "ReadingController_saved",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      },
+      "post": {
+        "operationId": "ReadingController_save",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveReadingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/reading/saved/{id}": {
+      "delete": {
+        "operationId": "ReadingController_unsave",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Reading"]
+      }
+    },
+    "/api/v1/study/attempts": {
+      "post": {
+        "operationId": "ExercisesController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyAttemptDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Exercises"]
+      }
+    },
+    "/api/v1/study/attempts/{attemptId}/responses": {
+      "post": {
+        "operationId": "ExercisesController_respond",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitExerciseResponseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Exercises"]
+      }
+    },
+    "/api/v1/study/enrollments": {
+      "get": {
+        "operationId": "BooksController_enrollments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      },
+      "post": {
+        "operationId": "BooksController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      }
+    },
+    "/api/v1/study/enrollments/{id}": {
+      "patch": {
+        "operationId": "BooksController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      }
+    },
+    "/api/v1/study/enrollments/{id}/migrate": {
+      "post": {
+        "operationId": "BooksController_migrate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      }
+    },
+    "/api/v1/study/objectives/{objectiveId}": {
+      "get": {
+        "operationId": "StudyController_objective",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "objectiveId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Study"]
+      }
+    },
+    "/api/v1/study/reviews": {
+      "post": {
+        "operationId": "StudyController_review",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Study"]
+      }
+    },
+    "/api/v1/study/stats": {
+      "get": {
+        "operationId": "StudyController_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Study"]
+      }
+    },
+    "/api/v1/study/today": {
+      "get": {
+        "operationId": "StudyController_today",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "tags": ["Study"]
+      }
+    },
+    "/api/v1/study/today/generation-jobs": {
+      "post": {
+        "operationId": "StudyController_generateToday",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Study"]
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "IdentityController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      },
+      "patch": {
+        "operationId": "IdentityController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/consent-records": {
+      "post": {
+        "operationId": "IdentityController_createConsent",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentRecordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/consents": {
+      "get": {
+        "operationId": "IdentityController_consents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/data-exports": {
+      "post": {
+        "operationId": "IdentityController_requestDataExport",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataExportDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/data-exports/{requestId}": {
+      "get": {
+        "operationId": "IdentityController_dataExport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/sessions": {
+      "get": {
+        "operationId": "IdentityController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/users/me/sessions/{sessionId}": {
+      "delete": {
+        "operationId": "IdentityController_revokeSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": ["Identity"]
+      }
+    },
+    "/api/v1/vocabulary-books": {
+      "get": {
+        "operationId": "BooksController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      }
+    },
+    "/api/v1/vocabulary-books/{bookId}/editions/{editionId}": {
+      "get": {
+        "operationId": "BooksController_edition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "editionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Books"]
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

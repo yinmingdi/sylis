@@ -3,48 +3,49 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-
 import ts from "typescript";
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const workspaceVersion = readJson(
+  resolve(workspaceRoot, "package.json"),
+).version;
 
 const projects = [
+  {
+    name: "@sylis/admin",
+    root: "apps/admin",
+    tags: ["type:app", "scope:operations", "runtime:browser"],
+    allow: ["@sylis/admin-api-client", "@sylis/components", "@sylis/utils"],
+  },
   {
     name: "@sylis/web",
     root: "apps/web",
     tags: ["type:app", "scope:platform", "runtime:browser"],
-    allow: ["@sylis/shared", "@sylis/utils"],
+    allow: ["@sylis/api-client", "@sylis/components", "@sylis/utils"],
   },
   {
     name: "@sylis/api",
     root: "apps/api",
     tags: ["type:app", "scope:platform", "runtime:server"],
-    allow: ["@sylis/shared", "@sylis/utils"],
+    allow: ["@sylis/background-jobs", "@sylis/database", "@sylis/utils"],
   },
   {
-    name: "@sylis/utils",
-    root: "packages/utils",
-    tags: ["type:lib", "scope:platform", "runtime:neutral"],
+    name: "@sylis/worker",
+    root: "apps/worker",
+    tags: ["type:app", "scope:jobs", "runtime:server"],
+    allow: ["@sylis/ai-provider", "@sylis/background-jobs", "@sylis/database"],
+  },
+  {
+    name: "@sylis/admin-api-client",
+    root: "packages/admin-api-client",
+    tags: ["type:lib", "scope:operations", "runtime:browser"],
     allow: [],
     requiresRootExport: true,
   },
   {
-    name: "@sylis/shared",
-    root: "packages/shared",
-    tags: ["type:lib", "scope:platform", "runtime:neutral", "status:legacy"],
-    allow: [],
-    requiresExports: true,
-  },
-  {
-    name: "@sylis/harness",
-    root: "packages/harness",
-    tags: ["type:tool", "scope:platform", "runtime:node"],
-    allow: [],
-  },
-  {
-    name: "@sylis/lexicon-contracts",
-    root: "packages/lexicon-contracts",
-    tags: ["type:lib", "scope:lexicon", "runtime:neutral"],
+    name: "@sylis/api-client",
+    root: "packages/api-client",
+    tags: ["type:lib", "scope:platform", "runtime:browser"],
     allow: [],
     requiresRootExport: true,
   },
@@ -56,6 +57,33 @@ const projects = [
     requiresRootExport: true,
   },
   {
+    name: "@sylis/background-jobs",
+    root: "packages/background-jobs",
+    tags: ["type:lib", "scope:jobs", "runtime:neutral"],
+    allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/components",
+    root: "packages/components",
+    tags: ["type:lib", "scope:ui", "runtime:browser"],
+    allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/database",
+    root: "packages/database",
+    tags: ["type:lib", "scope:data", "runtime:server"],
+    allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/harness",
+    root: "packages/harness",
+    tags: ["type:tool", "scope:platform", "runtime:node"],
+    allow: [],
+  },
+  {
     name: "@sylis/lexicon-compiler",
     root: "packages/lexicon-compiler",
     tags: ["type:lib", "scope:lexicon", "runtime:node"],
@@ -64,10 +92,39 @@ const projects = [
     requiresRootExport: true,
   },
   {
-    name: "@sylis/vocabulary-importer",
-    root: "services/vocabulary-importer",
-    tags: ["type:service", "scope:lexicon", "runtime:server", "status:legacy"],
+    name: "@sylis/lexicon-contracts",
+    root: "packages/lexicon-contracts",
+    tags: ["type:lib", "scope:lexicon", "runtime:neutral"],
     allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/utils",
+    root: "packages/utils",
+    tags: ["type:lib", "scope:platform", "runtime:neutral"],
+    allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/lexicon-compiler-runner",
+    root: "services/lexicon-compiler-runner",
+    tags: ["type:service", "scope:lexicon", "runtime:server"],
+    allow: [
+      "@sylis/ai-provider",
+      "@sylis/background-jobs",
+      "@sylis/database",
+      "@sylis/lexicon-compiler",
+    ],
+  },
+  {
+    name: "@sylis/lexicon-importer",
+    root: "services/lexicon-importer",
+    tags: ["type:service", "scope:lexicon", "runtime:server"],
+    allow: [
+      "@sylis/background-jobs",
+      "@sylis/database",
+      "@sylis/lexicon-contracts",
+    ],
   },
   {
     name: "@sylis/docs",
@@ -79,7 +136,7 @@ const projects = [
     name: "@sylis/components-docs",
     root: "docs/components",
     tags: ["type:docs", "scope:ui", "runtime:docs"],
-    allow: [],
+    allow: ["@sylis/components"],
   },
 ];
 
@@ -235,9 +292,6 @@ if (!existsSync(turboPath)) {
     "test:integration",
     "prisma:generate",
     "prisma:migrate",
-    "db:generate",
-    "db:migrate",
-    "db:seed",
     "compile",
     "sources:fetch",
     "pilot",
@@ -276,6 +330,11 @@ for (const project of projects) {
   if (packageJson.name !== project.name) {
     errors.push(
       `${project.root}: package name ${packageJson.name} must be ${project.name}`,
+    );
+  }
+  if (packageJson.version !== workspaceVersion) {
+    errors.push(
+      `${project.root}: package version ${packageJson.version} must match workspace ${workspaceVersion}`,
     );
   }
   for (const dependency of Object.keys(dependencies).filter((name) =>

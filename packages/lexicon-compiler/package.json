@@ -1,8 +1,12 @@
 {
   "name": "@sylis/lexicon-compiler",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
+  "files": [
+    "dist",
+    "data"
+  ],
   "bin": {
     "sylis-lexicon": "./dist/cli/main.js"
   },

@@ -33,6 +33,9 @@ Generated from the target repository's root package manifest. A listed command i
 | `harness:check` | `pnpm --filter @sylis/harness run check -- --target ../..` |
 | `harness:init` | `pnpm --filter @sylis/harness run init -- --target ../..` |
 | `harness:test` | `pnpm --filter @sylis/harness test` |
+| `lexicon:check` | `turbo run lint typecheck test build --filter=@sylis/ai-provider --filter=@sylis/lexicon-contracts --filter=@sylis/lexicon-compiler --concurrency=50% && node --test tools/lexicon/run-protected-pilot.test.mjs` |
+| `lexicon:pilot` | `node tools/lexicon/run-protected-pilot.mjs` |
+| `lexicon:pilot:prepare` | `node tools/lexicon/prepare-pilot-manifest.mjs` |
 | `lint` | `turbo run lint` |
 | `lint:fix` | `eslint . --fix` |
 | `ops` | `node tools/operations/cli.mjs` |

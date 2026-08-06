@@ -171,7 +171,7 @@ pnpm ci:affected
 pnpm ci:full
 ```
 
-required workflow 不使用 workflow-level path filters。Secret scan、policy/harness 与 quality 并行，最后由 `if: always()` 的稳定汇总 job 判断全部结果。Phase 0/1 是手动里程碑 gate，不进入普通 PR 串行路径。
+required workflow 不使用 workflow-level path filters。Secret scan、policy/harness 与 quality 并行，最后由 `if: always()` 的稳定汇总 job 判断全部结果。Artifact contract 与 lexicon compiler 的专项检查使用正式职责命令，不进入普通 PR 串行路径。
 
 本地 cache 默认启用；未配置受保护的 remote cache 前不共享可写 cache。部署只消费同 commit 已验证的 image digest/static artifact，不在 deploy job 重新解释源码状态。
 

@@ -7,9 +7,28 @@ const docsRoot = join(workspaceRoot, "docs/overview");
 const roots = [
   join(docsRoot, "refactor"),
   join(docsRoot, "adr"),
+  join(docsRoot, "references"),
   join(docsRoot, "guide/lexicon-architecture.md"),
 ];
 const errors = [];
+const retiredOperationalNames = [
+  {
+    pattern: /\bphase\d+:[a-z0-9:-]+/i,
+    description: "phase-numbered command",
+  },
+  {
+    pattern: /\.work\/phase-\d+-/i,
+    description: "phase-numbered work directory",
+  },
+  {
+    pattern: /sylis\.phase-\d+-/i,
+    description: "phase-numbered data contract",
+  },
+  {
+    pattern: /phase-\d+-source-acquisition\.md/i,
+    description: "phase-numbered reference document",
+  },
+];
 
 function listMarkdown(path) {
   if (extname(path) === ".md") return [path];
@@ -89,6 +108,13 @@ for (const path of roots.flatMap(listMarkdown)) {
 
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex];
+    for (const { pattern, description } of retiredOperationalNames) {
+      if (pattern.test(line)) {
+        errors.push(
+          `${path.slice(workspaceRoot.length + 1)}:${lineIndex + 1}: retired ${description}`,
+        );
+      }
+    }
     if (/^\s*```/.test(line)) {
       fenced = !fenced;
       continue;

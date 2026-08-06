@@ -13,7 +13,7 @@
 
 机器可读的 [JSON Schema 2020-12](./schemas/sylis-lexicon-artifact-v1.schema.json) 是字段、required/null、typed union 和 `additionalProperties` 的唯一结构真相。本页是与 Schema 对齐的人类可读说明，面向 compiler/importer 开发者、API 聚合层和第三方离线消费者。`@sylis/lexicon-contracts` 从 Schema 生成 TypeScript 类型，并追加纯引用与业务语义验证器；compiler 与 importer 都依赖该包，互不依赖。
 
-[最小合法 Artifact](./examples/minimal-artifact.json) 由正式 Schema 确定性生成并纳入 Phase 0 门禁，用来证明所有 required 章节和空实体集合的基线形状；它不代表可发布的内容质量，真实 release 仍必须通过引用、计数、profile 和语义验证。
+[最小合法 Artifact](./examples/minimal-artifact.json) 由正式 Schema 确定性生成并纳入 artifact contract 门禁，用来证明所有 required 章节和空实体集合的基线形状；它不代表可发布的内容质量，真实 release 仍必须通过引用、计数、profile 和语义验证。
 
 ## 2. 顶层结构
 

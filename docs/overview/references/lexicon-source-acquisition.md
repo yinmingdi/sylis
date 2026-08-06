@@ -1,6 +1,6 @@
-# Phase 1 source acquisition
+# Lexicon source acquisition
 
-本文记录 Phase 1 词典来源的可重复获取方式。调查时间为 2026-08-05，仅把上游项目自己的仓库、发布页、下载页和格式文档当作事实依据。
+本文记录 Sylis lexicon compiler 词典来源的可重复获取方式。调查时间为 2026-08-05，仅把上游项目自己的仓库、发布页、下载页和格式文档当作事实依据。
 
 结论先行：ECDICT 与 Open English WordNet 可以直接固定；Kaikki 的公开文件名会被周期性覆盖，必须先镜像到内容寻址存储；`kajweb/dict` 可以按 Git commit 固定字节，但它是无许可证的有道衍生抓取物，不能作为公开 artifact 的已授权来源。
 
@@ -18,7 +18,7 @@
 
 ## 2. 推荐来源矩阵
 
-| 来源                 | Phase 1 canonical input                                                                                                         | 版本与 SHA-256                                                                                                                    | 容器/内部格式                                                                                    | 结论                                                      |
+| 来源                 | Canonical input                                                                                                                 | 版本与 SHA-256                                                                                                                    | 容器/内部格式                                                                                    | 结论                                                      |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
 | ECDICT               | commit-pinned `ecdict.csv`                                                                                                      | commit `bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b`; SHA-256 `1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf`     | 65,933,428-byte UTF-8 CSV                                                                        | 可直接使用                                                |
 | Kaikki/Wiktextract   | 完整 `raw-wiktextract-data.jsonl.gz` 下载后写入项目控制的 SHA-256 内容寻址镜像                                                  | 上游页面给 dump/extraction 日期与两个 extractor commit，但不提供不可变历史 URL 或 checksum                                        | gzip 压缩 JSONL；一行一个对象；包含 English Wiktionary 中的所有语言                              | 完成镜像前阻塞 protected pilot                            |
@@ -31,7 +31,7 @@
 
 [ECDICT 官方仓库](https://github.com/skywind3000/ECDICT)说明仓库数据使用 UTF-8 CSV，并列出 `word`、`phonetic`、`definition`、`translation`、`pos`、`collins`、`oxford`、`tag`、`bnc`、`frq`、`exchange`、`detail` 和 `audio` 字段。README 同时说明仓库根部的 `ecdict.csv` 是约 76 万条的基础版本，`stardict.7z` 是另一个压缩数据库制品。
 
-官方 GitHub release 只有 [1.0.28](https://github.com/skywind3000/ECDICT/releases/tag/1.0.28) 等旧 tag；1.0.28 发布于 2017 年，资产是 Eudic/MDX/MOBI/SQLite/StarDict ZIP，而不是当前 raw CSV，GitHub 对这些旧资产也没有发布 SHA-256 digest。因此 Phase 1 不使用旧 release asset。
+官方 GitHub release 只有 [1.0.28](https://github.com/skywind3000/ECDICT/releases/tag/1.0.28) 等旧 tag；1.0.28 发布于 2017 年，资产是 Eudic/MDX/MOBI/SQLite/StarDict ZIP，而不是当前 raw CSV，GitHub 对这些旧资产也没有发布 SHA-256 digest。因此正式 compiler 不使用旧 release asset。
 
 ### 3.2 固定获取
 
@@ -41,7 +41,7 @@
 https://raw.githubusercontent.com/skywind3000/ECDICT/bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b/ecdict.csv
 ```
 
-对应仓库对象可在 [commit-pinned file](https://github.com/skywind3000/ECDICT/blob/bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b/ecdict.csv) 审查。项目现有 importer 已对该字节流固定上表 SHA-256；首次 Phase 1 获取仍必须重新计算并比较，不得信任 URL、Content-Length 或 Git blob SHA-1。
+对应仓库对象可在 [commit-pinned file](https://github.com/skywind3000/ECDICT/blob/bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b/ecdict.csv) 审查。项目现有 importer 已对该字节流固定上表 SHA-256；首次正式获取仍必须重新计算并比较，不得信任 URL、Content-Length 或 Git blob SHA-1。
 
 该 commit 中 CSV 的 Git blob 是 `c4ade63ea08cf39d9c3475e96929036d64d94c94`；
 现有 importer 的完整投影基线是 770,611 个数据 row。blob ID 只作为 Git tree 证据，
@@ -77,7 +77,7 @@ https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz
 - Wiktextract commit：[`d9fa2335957c9089ce2c3fb110a075cf072903da`](https://github.com/tatuylonen/wiktextract/commit/d9fa2335957c9089ce2c3fb110a075cf072903da)；
 - wikitextprocessor commit：[`9e92f4b53a98748f849ef6186617535abb0fca7b`](https://github.com/tatuylonen/wikitextprocessor/commit/9e92f4b53a98748f849ef6186617535abb0fca7b)。
 
-English language 的 postprocessed 下载 `https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl` 由 [English dictionary page](https://kaikki.org/dictionary/English/index.html)标为将移除的 deprecated website-build data；Phase 1 不使用它。
+English language 的 postprocessed 下载 `https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl` 由 [English dictionary page](https://kaikki.org/dictionary/English/index.html)标为将移除的 deprecated website-build data；正式 compiler 不使用它。
 
 ### 4.2 版本阻塞
 
@@ -92,7 +92,7 @@ English language 的 postprocessed 下载 `https://kaikki.org/dictionary/English
 5. protected pilot manifest 指向镜像 URI 和实际 SHA-256，`homepageUri` 才指向 Kaikki 页面；
 6. 保留 origin URL、Content-Length、上游版本四元组和 acquisition timestamp 作为 provenance，不把它们当完整性证明。
 
-在镜像 URI 与 digest 都未确定前，Kaikki source acquisition 是 Phase 1 protected pilot 的 blocker。若不建立镜像，唯一更强但成本更高的替代方案是固定 Wikimedia dump 和两个 extractor 的完整 commits 后自行运行 Wiktextract；这会形成 Sylis 自建 extraction，而不是重新取得相同 Kaikki artifact。
+在镜像 URI 与 digest 都未确定前，Kaikki source acquisition 是 protected lexicon pilot 的 blocker。若不建立镜像，唯一更强但成本更高的替代方案是固定 Wikimedia dump 和两个 extractor 的完整 commits 后自行运行 Wiktextract；这会形成 Sylis 自建 extraction，而不是重新取得相同 Kaikki artifact。
 
 Kaikki 页面没有公开它实际读取的 Wikimedia dump URI/checksum、完整 extractor invocation、
 Python 版本或 dependency lock。不能根据页面中的 `2026-07-06` 自行拼接 dump URL，
@@ -115,7 +115,7 @@ Kaikki 是唯一值得物理生成 pilot slice 的大来源。切片算法必须
 
 [Open English WordNet 官方仓库](https://github.com/globalwordnet/english-wordnet)说明它以 synset 组织词义并提供 hypernym、antonym、meronym 等关系，发布格式包含 GWA WN-LMF；许可证为 CC BY 4.0。自 2025 release 起，普通词网、含人工验证专名的 Plus 和完整 Namenet 分开。
 
-Phase 1 使用普通 2025 Edition，避免把 Namenet 大量专名混入成人通用英语目标。准确 release asset 是：
+正式 compiler 使用普通 2025 Edition，避免把 Namenet 大量专名混入成人通用英语目标。准确 release asset 是：
 
 ```text
 https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz
@@ -177,7 +177,7 @@ NDJSON 的 acquisition 工具仍未实现，因此不构成公开来源可用性
 
 当前公开 artifact profile 要求 `mayBuild`、`mayServe`、`mayExport` 全为 true。现有官方/仓库材料不能支持对 `kajweb/dict` 设置这些值。因此：
 
-- 它不能进入公开 Phase 1 artifact 或后续公开 release；
+- 它不能进入公开 lexicon artifact 或后续公开 release；
 - 若仅做 adapter 技术测试，必须使用隔离、不可发布的内部 profile，并明确 `mayServe=false`、`mayExport=false`；
 - 在建立可核验的授权依据前，不得通过 owner approval 把 blocker 改成通过。
 
@@ -198,7 +198,7 @@ NDJSON 的 acquisition 工具仍未实现，因此不构成公开来源可用性
 
 这个流程不需要把任何网页或在线 API response 当 canonical data。ECDICT、OEWN 和私有 `kajweb` 输入来自固定 Git/release bytes；Kaikki 来自一次完整下载后按 SHA-256 固定的内部镜像。
 
-## 8. Phase 1 blockers
+## 8. Protected pilot blockers
 
 | Blocker                                       | 关闭条件                                                                                                    |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -207,5 +207,5 @@ NDJSON 的 acquisition 工具仍未实现，因此不构成公开来源可用性
 | `kajweb/dict` 无 release/tag/license          | commit + 81-file digest 只能解决重复性，不能解决权利；公开 artifact 仍需可核验授权依据                      |
 | `kajweb/dict` 上游快照信息不明                | source provenance 明确标记 `UNKNOWN`，不能伪造日期或把 commit date 当抓取日期                               |
 | 有道 ZIP 不是 adapter 的直接输入              | 81-file manifest 和确定性 NDJSON 均固定 SHA-256，稳定 source key 保留跨书 membership                        |
-| OEWN relation slice 可能悬空                  | Phase 1 直接消费完整 XML；未来 standalone slice 必须实现并验证 reference closure                            |
+| OEWN relation slice 可能悬空                  | 正式 compiler 直接消费完整 XML；未来 standalone slice 必须实现并验证 reference closure                      |
 | exact-200 被误解为每来源 200 rows             | 门禁分别统计 target identities、source records、Entries/Senses/Synsets；只对最终 Headword 数量要求恰好 200  |

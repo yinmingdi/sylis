@@ -58,6 +58,8 @@ jobs:
       - run: pnpm workflows:check
       - run: pnpm docs:check
       - run: pnpm artifact:validate
+      - name: Validate protected lexicon pilot orchestration
+        run: node --test tools/lexicon/run-protected-pilot.test.mjs
       - run: git diff --check
 
   quality:

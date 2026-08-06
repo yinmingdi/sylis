@@ -121,8 +121,8 @@ pnpm --filter @sylis/lexicon-compiler sources:slice \
   --headwords "$PWD/packages/lexicon-compiler/data/pilot-headwords-v1.json" \
   --headword-version pilot-en-v1 \
   --headword-sha256 b9c0935fa2190cb0a230215daeea274045cd29d1e9eb62bb404fdbd917c3dd8b \
-  --output "$PWD/.work/phase-1-pilot-input/kaikki-en.jsonl" \
-  --metadata-output "$PWD/.work/phase-1-pilot-input/kaikki-en.slice.json"
+  --output "$PWD/.work/lexicon-pilot-input/kaikki-en.jsonl" \
+  --metadata-output "$PWD/.work/lexicon-pilot-input/kaikki-en.slice.json"
 
 # 200 词真实 pilot，允许 AI，输出到被 gitignore 的 work 目录
 pnpm --filter @sylis/lexicon-compiler compile \
@@ -244,15 +244,15 @@ CLI exit code：`0` 成功；`2` 输入/配置错误；`3` source checksum 错�
 source manifest 模板可以提交，私有路径和凭据不可提交；包含最终 `release.gitCommit` 的运行 manifest 不能声称与自身所在 commit 相同，因为修改该字段本身会产生新 commit。protected pilot 必须先确定并 checkout 干净目标 commit，再从已审核模板把 `release.gitCommit` 物化为该 `HEAD`，把结果写到 gitignored `.work` 或工作树外的受保护路径，并让 `LEXICON_SOURCE_MANIFEST` 指向这份运行 manifest。脚本记录运行 manifest 的实际 SHA-256，模板、运行 manifest 或目标 commit 任一变化都必须重新开始 pilot。DictionaryByGPT4 不出现在 `sources`：项目只借鉴其内容维度，现成 `word + content` NDJSON 不进入 compiler。
 
 ```bash
-pnpm phase1:pilot:prepare -- \
-  --template ./pilot-source-manifest.template.json \
-  --output ./.work/phase-1-pilot-input/source-manifest.json
+pnpm lexicon:pilot:prepare -- \
+  --template ./packages/lexicon-compiler/data/pilot-source-manifest.template.json \
+  --output ./.work/lexicon-pilot-input/source-manifest.json
 
-export LEXICON_SOURCE_MANIFEST="$PWD/.work/phase-1-pilot-input/source-manifest.json"
-pnpm phase1:pilot
+export LEXICON_SOURCE_MANIFEST="$PWD/.work/lexicon-pilot-input/source-manifest.json"
+pnpm lexicon:pilot
 ```
 
-prepare 命令拒绝任何 tracked/staged diff，也拒绝 `packages/ai-provider`、`packages/lexicon-contracts`、`packages/lexicon-compiler`、`tools/architecture` 和相关根配置中的未跟踪文件；这些条件证明执行代码与 `HEAD` 一致。Phase 1 所有权外的未跟踪个人文件不会参与 compiler，也不会再无意义地阻塞 pilot。命令不修改模板；它固定当前 `HEAD`，并把模板中的相对本地 source/headword/rich-target 路径解析为绝对路径，避免运行 manifest 移到 `.work` 后改变路径语义。它只输出路径、commit 和 manifest SHA-256，不解析或打印任何 source checksum 环境变量与密钥。
+prepare 命令拒绝任何 tracked/staged diff，也拒绝 `packages/ai-provider`、`packages/lexicon-contracts`、`packages/lexicon-compiler`、`tools/lexicon` 和相关根配置中的未跟踪文件；这些条件证明执行代码与 `HEAD` 一致。受保护 pilot 所有权外的未跟踪个人文件不会参与 compiler，也不会再无意义地阻塞 pilot。命令不修改模板；它固定当前 `HEAD`，并把模板中的相对本地 source/headword/rich-target 路径解析为绝对路径，避免运行 manifest 移到 `.work` 后改变路径语义。它只输出路径、commit 和 manifest SHA-256，不解析或打印任何 source checksum 环境变量与密钥。
 
 ### 4.1 固定词头集合
 

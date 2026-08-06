@@ -6,9 +6,8 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const workspaceVersion = readJson(
-  resolve(workspaceRoot, "package.json"),
-).version;
+const workspacePackage = readJson(resolve(workspaceRoot, "package.json"));
+const workspaceVersion = workspacePackage.version;
 
 const projects = [
   {
@@ -148,6 +147,18 @@ const nodeBuiltins = new Set([
   ...builtinModules.map((specifier) => `node:${specifier}`),
 ]);
 const errors = [];
+
+function checkScriptNames(packageJson, packagePath) {
+  for (const scriptName of Object.keys(packageJson.scripts ?? {})) {
+    if (/^phase\d+(?::|$)/i.test(scriptName)) {
+      errors.push(
+        `${packagePath}: script ${scriptName} must use a stable responsibility name`,
+      );
+    }
+  }
+}
+
+checkScriptNames(workspacePackage, "package.json");
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -315,6 +326,7 @@ for (const project of projects) {
 
   const packageJson = readJson(packagePath);
   const dependencies = packageDependencies(packageJson);
+  checkScriptNames(packageJson, `${project.root}/package.json`);
 
   for (const dependency of Object.keys(dependencies)) {
     if (

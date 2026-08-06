@@ -63,7 +63,7 @@
       "path": "docs/overview/generated/command-registry.md",
       "kind": "generated",
       "template": "docs/generated/command-registry.md",
-      "hash": "fc76bba405f3b8eaacae4c7837561d3c10255831b5812c8a24a8d5daf81841c6"
+      "hash": "89eb2d0a41c7192c779a577c5bba455ce6f4ff43706c30b09bdc74d7f1db9c99"
     },
     {
       "path": "docs/overview/generated/harness-migration-map.md",

@@ -36,8 +36,8 @@ GitHub Actions run `30967844682` 的历史实测：
 | 步骤                       |       时间 | 结论                      |
 | -------------------------- | ---------: | ------------------------- |
 | Harness dependency install |      14 秒 | 不是瓶颈                  |
-| Phase 0 gate               |  3 分 9 秒 | 每个 PR 重跑历史里程碑    |
-| Phase 1 gate               | 1 分 25 秒 | 串行重复 package checks   |
+| Artifact contract gate     |  3 分 9 秒 | 每个 PR 重跑历史里程碑    |
+| Lexicon compiler gate      | 1 分 25 秒 | 串行重复 package checks   |
 | Quality service/init       |      38 秒 | 被 `needs: harness` 延后  |
 | Quality dependency install |       5 秒 | pnpm cache 已有效         |
 | `@sylis/utils` tsup build  |    约 2 秒 | tsup 不是五分钟等待的原因 |
@@ -45,7 +45,7 @@ GitHub Actions run `30967844682` 的历史实测：
 因此 CI 优化不是换一个更快的 installer，而是：
 
 1. Secret scan、policy/harness 与 quality 并行。
-2. Phase 0/1 保留为 `workflow_dispatch` 里程碑，不进入普通 PR 串行路径。
+2. Artifact contract 与 lexicon compiler 专项门禁保留为按需审计，不进入普通 PR 串行路径。
 3. PR 使用 Turbo affected；受保护分支 push 运行全量 task graph。
 4. 同一 job 内让 Turbo 去重并缓存重复 build。
 5. 用稳定的 `CI required` aggregate job 汇总结果。
@@ -115,9 +115,9 @@ Nest 官方 SWC recipe 说明 SWC 不自行 typecheck；使用 Nest CLI plugins 
 
 执行 `pnpm ci:full`、fresh migration、integration 和 image smoke。真实 AI pilot、全量 lexicon build、production import 与 activation 仍属于受保护独立 workflow。
 
-### Phase gate
+### 专项门禁
 
-`phase0:check` 与 `phase1:check` 保留为本地审计和手动 `Architecture phase gates` workflow。长期有效断言要逐步进入正常 lint/typecheck/test/build/contract targets。
+Artifact contract 使用 `pnpm artifact:validate`，lexicon compiler 使用 `pnpm lexicon:check`。长期有效断言进入正常 lint/typecheck/test/build/contract targets，不再暴露按实施阶段编号的命令。
 
 ## 8. Cache 安全
 
@@ -135,4 +135,4 @@ Nest 官方 SWC recipe 说明 SWC 不自行 typecheck；使用 Nest CLI plugins 
 - Utils CJS/ESM、provider subpaths、contracts 与 compiler built CLI 可真实加载。
 - 连续两次 Turbo build 的第二次命中本地 cache。
 - API SWC build、Jest、fresh migration 和 health smoke 通过。
-- GitHub Actions 的 Phase 0/1 不再阻塞普通 PR，手动 gate 仍可运行。
+- GitHub Actions 不再串行重复历史里程碑；专项门禁仍可通过正式职责命令运行。

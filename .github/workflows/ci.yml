@@ -514,6 +514,22 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [e2e-harness, e2e-sharded, e2e-api, e2e-system, e2e-browser-quality]
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-bookworm
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sylis
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sylis"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sylis
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -534,6 +550,8 @@ jobs:
         run: |
           tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
           pnpm --filter @sylis/database prisma:generate
+      - name: Install the evidence database from the Prisma schema
+        run: pnpm --filter @sylis/database database:install
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: blob-report-*

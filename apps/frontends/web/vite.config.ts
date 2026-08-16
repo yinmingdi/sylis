@@ -3,8 +3,17 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig, type Plugin, type ProxyOptions } from 'vite';
 import svgr from 'vite-plugin-svgr';
 
-const agentApiProxyTarget =
-  process.env.SYLIS_AGENT_API_PROXY_TARGET ?? 'http://localhost:3200';
+export function createAgentApiProxyOptions(
+  environment: NodeJS.ProcessEnv = process.env,
+): ProxyOptions {
+  const origin = environment.SYLIS_AGENT_API_PROXY_ORIGIN?.trim();
+  return {
+    target: environment.SYLIS_AGENT_API_PROXY_TARGET ?? 'http://localhost:3200',
+    changeOrigin: true,
+    secure: false,
+    ...(origin ? { headers: { origin } } : {}),
+  };
+}
 
 export function createUserApiProxyOptions(
   environment: NodeJS.ProcessEnv = process.env,
@@ -74,9 +83,7 @@ export default defineConfig({
     port: 5178,
     proxy: {
       '/api/agent': {
-        target: agentApiProxyTarget,
-        changeOrigin: true,
-        secure: false,
+        ...createAgentApiProxyOptions(),
       },
       '/api': createUserApiProxyOptions(),
     },

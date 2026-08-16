@@ -1,14 +1,17 @@
 import {
   AgentCredentialSource,
   AgentMessageRole,
+  AgentRunStatus,
   AgentSessionStatus,
+  AgentWaitKind,
+  AgentWaitStatus,
   CapabilityKey,
-  CapabilitySelection,
   agentMessagePlainText,
   agentClient,
   type AgentCapabilityView,
   type AgentExecutionSelectionInput,
   type AgentMessageView,
+  type AgentSessionSnapshotView,
   type AgentSessionView,
 } from '@sylis/api-client/agent';
 
@@ -354,31 +357,50 @@ async function runAgentChat(
   configId: string | undefined,
   handlers: StreamChatHandlers,
 ): Promise<void> {
-  const capabilities = await agentClient.capabilities();
-  const execution = selectionFromConfig(capabilities, configId);
-  if (!execution) throw new Error('请先在设置中配置可用的 AI 模型');
-  handlers.onStart?.();
   const events = acquireAgentSessionEvents(sessionId);
   try {
     await events.ready();
-    const submitted = await agentClient.sessions.submitInstruction(sessionId, {
-      content: instruction.trim(),
-      requestedCapability: CapabilitySelection.AUTO,
-      idempotencyKey: crypto.randomUUID(),
-      execution,
-    });
+    const snapshot = events.snapshot();
+    const pendingWait = activeLearnerInputWait(snapshot);
+    let runId: string;
+    let eventCursor: number;
+    if (pendingWait) {
+      handlers.onStart?.();
+      runId = pendingWait.runId;
+      eventCursor = snapshot!.cursor;
+      await agentClient.runs.respondToWait(runId, pendingWait.waitId, {
+        value: instruction.trim(),
+      });
+    } else {
+      const capabilities = await agentClient.capabilities();
+      const execution = selectionFromConfig(capabilities, configId);
+      if (!execution) throw new Error('请先在设置中配置可用的 AI 模型');
+      handlers.onStart?.();
+      const submitted = await agentClient.sessions.submitInstruction(
+        sessionId,
+        {
+          content: instruction.trim(),
+          requestedCapability: CapabilityKey.LEARNING_CHAT,
+          idempotencyKey: crypto.randomUUID(),
+          execution,
+        },
+      );
+      runId = submitted.runId;
+      eventCursor = submitted.eventCursor;
+    }
     let emitted = '';
     const completed = await events.waitForRun({
-      runId: submitted.runId,
-      after: submitted.eventCursor,
+      runId,
+      after: eventCursor,
       onDelta: (chunk) => {
         emitted += chunk;
         handlers.onChunk?.(chunk);
       },
     });
     const content = completed.message
-      ? agentMessagePlainText(completed.message)
-      : emitted;
+      ? agentMessagePlainText(completed.message) ||
+        waitingForLearnerInputMessage(completed.status)
+      : emitted || waitingForLearnerInputMessage(completed.status);
     if (content.startsWith(emitted)) {
       const tail = content.slice(emitted.length);
       if (tail) handlers.onChunk?.(tail);
@@ -396,4 +418,25 @@ async function runAgentChat(
   } finally {
     events.close();
   }
+}
+
+function activeLearnerInputWait(
+  snapshot: AgentSessionSnapshotView | null,
+): { runId: string; waitId: string } | null {
+  for (const run of snapshot?.runs ?? []) {
+    if (run.status !== AgentRunStatus.WAITING) continue;
+    const wait = run.waits.find(
+      (candidate) =>
+        candidate.status === AgentWaitStatus.ACTIVE &&
+        candidate.kind === AgentWaitKind.USER_INPUT,
+    );
+    if (wait) return { runId: run.id, waitId: wait.id };
+  }
+  return null;
+}
+
+function waitingForLearnerInputMessage(status: AgentRunStatus): string {
+  return status === AgentRunStatus.WAITING
+    ? '我还需要一些信息，请直接回复后继续。'
+    : '';
 }

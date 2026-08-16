@@ -157,7 +157,7 @@ describe("FakeProviderAdapter", () => {
         streamInput(
           deterministicProviderInstruction(
             DeterministicProviderScenario.MIXED_MULTI_TOOL,
-            JSON.stringify({ query: "bank", limit: 1 }),
+            JSON.stringify({ queries: ["bank"], limitPerQuery: 1 }),
           ),
           {},
           CapabilityKey.LEARNING_CHAT,
@@ -186,8 +186,8 @@ describe("FakeProviderAdapter", () => {
     });
     const toolCalls = completedToolCalls(chunks);
     expect(toolCalls.map(({ input }) => input)).toEqual([
-      { query: "bank", limit: 1 },
-      { query: "bank", limit: 1 },
+      { queries: ["bank"], limitPerQuery: 1 },
+      { queries: ["bank"], limitPerQuery: 1 },
     ]);
     expect(
       new Set(toolCalls.map(({ providerCallId }) => providerCallId)).size,
@@ -398,10 +398,15 @@ function lexiconSearchTool(): AgentToolDefinition {
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["query"],
+      required: ["queries"],
       properties: {
-        query: { type: "string" },
-        limit: { type: "integer" },
+        queries: {
+          type: "array",
+          minItems: 1,
+          maxItems: 20,
+          items: { type: "string" },
+        },
+        limitPerQuery: { type: "integer" },
       },
     },
     outputSchema: { type: "object" },

@@ -15,7 +15,7 @@ import {
   subscribeToAgentEvents,
   type AgentEventSubscription,
 } from './event-stream';
-import { reduceAgentMessages } from '../model/event-reducer';
+import { reduceAgentMessages, reduceAgentRuns } from '../model/event-reducer';
 
 const MAX_BUFFERED_EVENTS = 500;
 const DEFAULT_RUN_TIMEOUT_MS = 180_000;
@@ -132,6 +132,7 @@ class SessionEventHub {
             ...this.currentSnapshot,
             cursor: frame.sequence,
             messages: reduceAgentMessages(this.currentSnapshot.messages, frame),
+            runs: reduceAgentRuns(this.currentSnapshot.runs, frame),
           };
         }
         for (const subscriber of this.subscribers) subscriber.onEvent?.(frame);

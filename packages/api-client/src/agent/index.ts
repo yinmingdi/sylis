@@ -15,6 +15,7 @@ export {
   AgentMessageVisibility,
   AgentHeadingLevel,
   AgentListStyle,
+  AgentNoticeKind,
   AgentRichTextSpanKind,
   AgentTextMark,
   AgentMemoryManagementKind,

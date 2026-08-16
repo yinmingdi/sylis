@@ -16,13 +16,17 @@ describe("ProblemDetailsFilter", () => {
       switchToHttp: () => ({ getResponse: () => response }),
     } as unknown as ArgumentsHost;
 
-    new ProblemDetailsFilter().catch(new HttpException("Forbidden", 403), host);
+    new ProblemDetailsFilter().catch(
+      new HttpException({ code: "AGENT_FORBIDDEN", detail: "Forbidden" }, 403),
+      host,
+    );
 
     expect(response.type).toHaveBeenCalledWith("application/problem+json");
     expect(response.json).toHaveBeenCalledWith({
       type: "https://sylis.app/problems/403",
       title: "FORBIDDEN",
       status: 403,
+      code: "AGENT_FORBIDDEN",
       detail: "Forbidden",
     });
   });

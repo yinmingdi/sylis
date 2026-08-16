@@ -5,6 +5,7 @@ export * from "./exercise-candidate";
 export * from "./evaluation";
 export * from "./message-blocks";
 export * from "./model-stream";
+export * from "./problem-details";
 export * from "./runtime";
 
 import {

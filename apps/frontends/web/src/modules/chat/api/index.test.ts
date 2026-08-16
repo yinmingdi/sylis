@@ -1,10 +1,8 @@
 import {
   AgentCredentialSource,
   AgentExecutionMode,
-  AgentMessageStatus,
-  AgentMessageRole,
-  AgentMessageVisibility,
   AgentRunStatus,
+  AgentSessionStatus,
   AgentWaitKind,
   AgentWaitStatus,
   CapabilityKey,
@@ -12,32 +10,27 @@ import {
   type AgentCapabilityView,
   type AgentRunView,
 } from '@sylis/api-client/agent';
-import { MessageRole, type StreamChatReqDto } from '@/legacy-dto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { streamChat } from './index';
+import { getSessions, submitAgentChat } from './index';
 
-const eventLease = vi.hoisted(() => ({
-  ready: vi.fn().mockResolvedValue(undefined),
-  snapshot: vi.fn().mockReturnValue({ cursor: 0, runs: [] }),
-  waitForRun: vi.fn(),
-  close: vi.fn(),
-}));
+describe('chat Agent commands', () => {
+  afterEach(() => vi.restoreAllMocks());
 
-vi.mock('../../agent/api/session-event-hub', () => ({
-  acquireAgentSessionEvents: () => eventLease,
-}));
+  it('loads the session list without one message request per session', async () => {
+    vi.spyOn(agentClient.sessions, 'list').mockResolvedValue([
+      session('session-1', 'First'),
+      session('session-2', 'Second'),
+    ]);
+    const messages = vi.spyOn(agentClient.sessions, 'messages');
 
-describe('legacy chat agent bridge', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-    eventLease.ready.mockResolvedValue(undefined);
-    eventLease.snapshot.mockReturnValue({ cursor: 0, runs: [] });
-    eventLease.waitForRun.mockReset();
-    eventLease.close.mockReset();
+    await expect(getSessions()).resolves.toMatchObject({
+      data: { total: 2, sessions: [{ id: 'session-1' }, { id: 'session-2' }] },
+    });
+    expect(messages).not.toHaveBeenCalled();
   });
 
-  it('keeps the legacy chat surface on the conversational capability', async () => {
+  it('submits one conversational command without polling messages or Runs', async () => {
     const capability: AgentCapabilityView = {
       capabilityKey: CapabilityKey.LEARNING_CHAT,
       version: '1',
@@ -55,16 +48,10 @@ describe('legacy chat agent bridge', () => {
       ],
       credentials: [],
     };
-    const run = {
-      id: 'run-id',
-      status: AgentRunStatus.SUCCEEDED,
-    } as AgentRunView;
-
+    const run = { id: 'run-id', status: AgentRunStatus.QUEUED } as AgentRunView;
     vi.spyOn(agentClient, 'capabilities').mockResolvedValue([capability]);
-    const messages = vi
-      .spyOn(agentClient.sessions, 'messages')
-      .mockResolvedValue([]);
-    const runs = vi.spyOn(agentClient.sessions, 'runs').mockResolvedValue([]);
+    const messages = vi.spyOn(agentClient.sessions, 'messages');
+    const runs = vi.spyOn(agentClient.sessions, 'runs');
     const submitInstruction = vi
       .spyOn(agentClient.sessions, 'submitInstruction')
       .mockResolvedValue({
@@ -73,34 +60,15 @@ describe('legacy chat agent bridge', () => {
         eventCursor: 1,
         run,
       });
-    eventLease.waitForRun.mockResolvedValue({
-      runId: run.id,
-      status: AgentRunStatus.SUCCEEDED,
-      message: {
-        id: 'message-id',
-        role: AgentMessageRole.ASSISTANT,
-        sequence: 2,
-        visibility: AgentMessageVisibility.USER,
-        status: AgentMessageStatus.COMPLETED,
-        createdAt: '2026-08-14T00:00:00.000Z',
-        blocks: [],
-      },
+
+    await submitAgentChat({
+      sessionId: 'session-id',
+      instruction:
+        '帮我分析一下 A Programming Paradigm for Spatiotemporal Composability 语法',
+      runs: [],
     });
 
-    await streamChat(
-      {
-        sessionId: 'session-id',
-        messages: [
-          {
-            role: MessageRole.user,
-            content:
-              '帮我分析一下 A Programming Paradigm for Spatiotemporal Composability 语法',
-          },
-        ],
-      } as StreamChatReqDto,
-      {},
-    );
-
+    expect(submitInstruction).toHaveBeenCalledTimes(1);
     expect(submitInstruction).toHaveBeenCalledWith(
       'session-id',
       expect.objectContaining({
@@ -113,32 +81,20 @@ describe('legacy chat agent bridge', () => {
     );
     expect(messages).not.toHaveBeenCalled();
     expect(runs).not.toHaveBeenCalled();
-    expect(eventLease.waitForRun).toHaveBeenCalledWith(
-      expect.objectContaining({ runId: run.id, after: 1 }),
-    );
   });
 
-  it('uses the next chat message to resume an active learner-input wait', async () => {
-    eventLease.snapshot.mockReturnValue({
-      cursor: 12,
-      runs: [
+  it('uses the next message to resume an active learner-input wait', async () => {
+    const waitingRun = {
+      id: 'waiting-run-id',
+      status: AgentRunStatus.WAITING,
+      waits: [
         {
-          id: 'waiting-run-id',
-          status: AgentRunStatus.WAITING,
-          waits: [
-            {
-              id: 'wait-id',
-              kind: AgentWaitKind.USER_INPUT,
-              status: AgentWaitStatus.ACTIVE,
-            },
-          ],
+          id: 'wait-id',
+          kind: AgentWaitKind.USER_INPUT,
+          status: AgentWaitStatus.ACTIVE,
         },
       ],
-    });
-    eventLease.waitForRun.mockResolvedValue({
-      runId: 'waiting-run-id',
-      status: AgentRunStatus.WAITING,
-    });
+    } as unknown as AgentRunView;
     const respondToWait = vi
       .spyOn(agentClient.runs, 'respondToWait')
       .mockResolvedValue(undefined);
@@ -146,25 +102,28 @@ describe('legacy chat agent bridge', () => {
       agentClient.sessions,
       'submitInstruction',
     );
-    const onChunk = vi.fn();
 
-    await streamChat(
-      {
+    await expect(
+      submitAgentChat({
         sessionId: 'session-id',
-        messages: [{ role: MessageRole.user, content: '我是初学者' }],
-      } as StreamChatReqDto,
-      { onChunk },
-    );
+        instruction: '我是初学者',
+        runs: [waitingRun],
+      }),
+    ).resolves.toMatchObject({ resumedRunId: waitingRun.id });
 
     expect(respondToWait).toHaveBeenCalledWith('waiting-run-id', 'wait-id', {
       value: '我是初学者',
     });
     expect(submitInstruction).not.toHaveBeenCalled();
-    expect(eventLease.waitForRun).toHaveBeenCalledWith(
-      expect.objectContaining({ runId: 'waiting-run-id', after: 12 }),
-    );
-    expect(onChunk).toHaveBeenCalledWith(
-      '我还需要一些信息，请直接回复后继续。',
-    );
   });
 });
+
+function session(id: string, title: string) {
+  return {
+    id,
+    title,
+    status: AgentSessionStatus.ACTIVE,
+    createdAt: '2026-08-14T00:00:00.000Z',
+    archivedAt: null,
+  };
+}

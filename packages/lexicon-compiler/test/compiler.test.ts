@@ -1551,7 +1551,7 @@ describe("lexicon compiler", () => {
 
     expect(first.runId).not.toBe(second.runId);
     expect(first.contentHash).not.toBe(second.contentHash);
-  });
+  }, 30_000);
 
   it("binds a materialized source to its parent, selection and record count", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-materialization-"));

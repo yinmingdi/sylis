@@ -16,7 +16,7 @@ import {
 import { stableUuid } from "@sylis/utils";
 
 export enum LocalDeepSeekCapabilityVersion {
-  V0_0_2 = "0.0.2",
+  V0_0_3 = "0.0.3",
 }
 
 export enum LocalDeepSeekReleasePolicyVersion {
@@ -140,7 +140,7 @@ export async function activateLocalDeepSeekRuntime(
           );
         }
         if (
-          source.version === LocalDeepSeekCapabilityVersion.V0_0_2 &&
+          source.version === LocalDeepSeekCapabilityVersion.V0_0_3 &&
           source.allowedRoutes.length === 1 &&
           source.allowedRoutes[0]?.routeReleaseId === route.id
         ) {
@@ -306,7 +306,7 @@ export function localDeepSeekCapabilityRelease(
 ): LocalDeepSeekCapabilityRelease {
   const base = {
     capabilityKey: source.capabilityKey,
-    version: LocalDeepSeekCapabilityVersion.V0_0_2,
+    version: LocalDeepSeekCapabilityVersion.V0_0_3,
     executionMode: source.executionMode,
     systemPrompt: source.systemPrompt,
     promptHash: source.promptHash,
@@ -364,7 +364,7 @@ function capabilityDigest(
 ): string {
   return capabilityReleaseDigest({
     capabilityKey: source.capabilityKey,
-    version: source.version ?? LocalDeepSeekCapabilityVersion.V0_0_2,
+    version: source.version ?? LocalDeepSeekCapabilityVersion.V0_0_3,
     executionMode: source.executionMode,
     systemPrompt: source.systemPrompt,
     promptHash: source.promptHash,

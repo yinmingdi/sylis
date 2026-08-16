@@ -44,14 +44,7 @@ import type {
   JobStatus,
 } from "@sylis/job-contracts";
 
-export interface AgentProblemDetails {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  code?: string;
-  requestId?: string;
-}
+export type { AgentProblemDetails } from "@sylis/agent-contracts";
 
 export interface AgentSessionView {
   id: string;

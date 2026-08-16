@@ -56,11 +56,33 @@ export class LexiconQueryService {
 
   async search(query: string, limit: number) {
     const release = await this.releases.resolve();
+    return {
+      ...release,
+      data: await this.searchRelease(release.releaseId, query, limit),
+    };
+  }
+
+  async searchMany(queries: readonly string[], limitPerQuery: number) {
+    const release = await this.releases.resolve();
+    const results = await Promise.all(
+      queries.map(async (query) => ({
+        query,
+        matches: await this.searchRelease(
+          release.releaseId,
+          query,
+          limitPerQuery,
+        ),
+      })),
+    );
+    return { ...release, results };
+  }
+
+  private async searchRelease(releaseId: string, query: string, limit: number) {
     const normalized = query.trim().normalize("NFC");
     const [headwords, collocations] = await Promise.all([
       this.database.headwordRevision.findMany({
         where: {
-          releaseId: release.releaseId,
+          releaseId,
           OR: [
             { normalizedText: { startsWith: normalized, mode: "insensitive" } },
             { searchKey: { contains: normalized, mode: "insensitive" } },
@@ -82,14 +104,14 @@ export class LexiconQueryService {
       }),
       this.database.collocation.findMany({
         where: {
-          releaseId: release.releaseId,
+          releaseId,
           normalizedText: { contains: normalized, mode: "insensitive" },
         },
         orderBy: { normalizedText: "asc" },
         take: Math.min(Math.max(limit, 1), 50),
       }),
     ]);
-    return { ...release, data: { headwords, collocations } };
+    return { headwords, collocations };
   }
 
   async headword(headwordId: string) {

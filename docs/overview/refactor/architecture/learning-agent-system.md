@@ -272,7 +272,7 @@ interface AgentStepProposal {
 
 `ModelContentBlock`、`AgentMessageBlock` 与 `AgentArtifactDocument` 是三个不同层次。Runtime 只负责从第一种组装第二种 proposal；结构化长内容先成为 immutable Artifact revision，聊天只保存 exact revision reference Block。完整 Block kind、树约束、流式状态和前端 reducer 见 [Agent 会话 Block 与流式投影](./agent-conversation-blocks.md)。
 
-Agent API 在任何副作用发生前以一个事务 preflight 完整 Step：核对 Run/Step/Invocation/fencing token、CapabilityRelease、ToolRelease、schema、provider call identity、Grant、scope、expiry、action digest、目标 revision、组合策略和 Run 剩余预算；随后创建所有 Step/action/call 事实并返回闭合的 `AgentStepExecutionPlan`。schema 或授权 preflight 失败时整步零副作用，并保留逐项拒绝原因。Executor 不接收任意模型 JSON，只执行该 plan 中已授权 directive。每个 `EXECUTE` directive 在调用 Tool adapter 前必须通过 `startToolCall()` 原子绑定当前 JobAttempt 与 fencing token，并从 `QUEUED` 进入 `RUNNING`；adapter 返回后立即通过 `recordToolOutcome()` 独立持久化终态和结果 body，不能等整步 commit。
+Agent API 在任何副作用发生前以一个事务 preflight 完整 Step：核对 Run/Step/Invocation/fencing token、CapabilityRelease、ToolRelease、schema、provider call identity、Grant、scope、expiry、action digest、目标 revision、组合策略和 Run 剩余预算；随后创建所有 Step/action/call 事实并返回闭合的 `AgentStepExecutionPlan`。结构、schema、身份、授权或领域不变量失败时整步零副作用，并通过 RFC Problem Details 返回稳定 `code`；Run/Grant 调用额度不足则不是结构错误，受影响的调用以 `SETTLED/REJECTED + errorCode` 持久化，仍有额度的 sibling 继续以 `EXECUTE` 返回。Executor 不接收任意模型 JSON，只执行该 plan 中已授权 directive。每个 `EXECUTE` directive 在调用 Tool adapter 前必须通过 `startToolCall()` 原子绑定当前 JobAttempt 与 fencing token，并从 `QUEUED` 进入 `RUNNING`；adapter 返回后立即通过 `recordToolOutcome()` 独立持久化终态和结果 body，不能等整步 commit。
 
 Runtime 完成或暂停 plan 后通过 `AgentStepPort.commit()` 提交 `AgentStepReceipt`。Receipt 必须覆盖每个已接受 action，按 `modelPosition` 排序，并包含独立 success/failure/cancelled/unknown outcome；Tool body 的普通失败只失败该调用，不取消无关 sibling。Commit 只核对已持久化 Tool receipt 并推进 Step/Run，不能再次创建结果 body 或覆盖终态 ToolCall。Runtime 只有收到完整 commit result 才可构造下一次模型请求；结果返回模型时使用原 provider call identity，完成顺序不得改变模型顺序。进入 `WAITING` 时当前 activation 结束，后续 activation 从关系真相恢复，不重新执行已终态调用。
 
@@ -291,6 +291,8 @@ Runtime 完成或暂停 plan 后通过 `AgentStepPort.commit()` 提交 `AgentSte
 Raw Agent 输出不能直接成为领域 truth。Typed command 必须经过：schema 校验、当前 User/Session/Run 校验、Grant 校验、目标 revision 校验、领域不变量校验、幂等校验和安全审计。
 
 Runtime 按 `modelPosition` 扫描 Agent API 返回的 execution plan。连续 `PARALLEL_SAFE` 调用进入配置为 `maxParallelToolCalls` 的有界滚动池；`EXCLUSIVE` 调用先排空池、独占执行，再允许后续调用开始。超过并发度的调用只排队，不拒绝整步；不存在单独的“每批最多 N 个调用”限制，调用总量仍受 Run 级 `maxToolCalls`、token、成本、时间和权限预算约束。所有写入、审批、Memory、ChildRun、Wait 和 control action 固定为 `EXCLUSIVE`。Tool adapter 在 dispatch 前只能把调用从 `PARALLEL_SAFE` 降级为 `EXCLUSIVE`，不能扩大 Agent API 已批准的并发权限。
+
+预算不是“一个调用超额就让整个 Run 409”的开关。Agent API 在持有 Run 与 Grant 锁的事务中按模型顺序分配剩余额度；额度内调用正常执行，超额调用保存为独立 `REJECTED` 事实并作为 tool result 回灌模型，由模型在下一 Step 使用已有证据完成回答。`learning.chat` 的发布 fixture 使用版本 `0.0.2` 和 24 次 Run 工具额度；高风险写工具仍各自最多一次。多词查询必须先去重，再用一次 `lexicon.search({ queries, limitPerQuery })` 批量调用，不能用多个单词查询浪费调用额度和 release 解析。
 
 Tool body 可以乱序完成，但 policy 判定、持久结果与传回模型的 receipt 必须保持模型顺序。取消时停止启动新调用、向已启动调用传播 `AbortSignal` 并等待收敛；未启动项记为 `CANCELLED`，无法确定副作用结果的已启动项记为 `UNKNOWN_OUTCOME`。每个已接受调用必须恰好有一个终态结果事件。
 
@@ -361,13 +363,13 @@ User Web 删除孤立的 Tutor、Grammar 和 AI Reading 页面，新增：
 - `/agent`：新会话或最近会话；
 - `/agent/sessions/:id`：稳定可分享给本人设备的会话 URL。
 
-桌面端是三栏工作区：Session 列表、事件/消息/输入流、Artifact/Approval inspector。全局 Agent 入口从词典、阅读、练习等页面打开带当前上下文的侧栏；移动端使用全屏工作区。一个 Step 的文本 preamble 与多个 ToolCall 按 `stepId + callId` 投影在同一时间线中，每个调用独立显示 queued/running/succeeded/failed/cancelled。Artifact、ToolCall、Proposal、WaitCondition 和错误都有独立可访问状态，断线后以 SSE cursor 恢复，不靠页面猜测进度。前端不执行或重放工具，不直接访问 Model Gateway/Executor，也不轮询 Run。
+桌面端主布局只有 Session 列表和事件/消息/输入流两个常驻区域；Artifact/Approval inspector 是覆盖在主内容之上的 modal drawer，打开时不能挤压聊天形成第三栏。全局 Agent 入口从词典、阅读、练习等页面打开带当前上下文的侧栏；移动端使用全屏工作区和全屏覆盖 inspector。正式 `/agent` 工作区与现有 `/ai` 学习入口复用同一 Agent API、Session event hub、typed Message/Run store 和 Block renderer，不保留 Markdown 字符串桥或第二套聊天状态。一个 Step 的文本 preamble 与多个 ToolCall 按 `stepId + callId` 投影在同一时间线中，每个调用独立显示 queued/running/succeeded/failed/rejected/cancelled。Artifact、ToolCall、Proposal、WaitCondition 和错误都有独立可访问状态，断线后以 SSE cursor 恢复，不靠页面猜测进度。前端不执行或重放工具，不直接访问 Model Gateway/Executor，也不轮询 Run。
 
 ## 14. 可观察性与隐私
 
 所有长任务必须输出 stage、processed/total、速率、可靠性标记、预计时间、token/cost、heartbeat 和最后安全 checkpoint。每个工具调用额外记录 `invocationId + stepId + callId + toolKey`、queue/handler/total duration、terminal status 和稳定错误码。`AgentEvent` 与 `JobProgressEvent` 的 sequence 单调递增，SSE 支持 `Last-Event-ID`。User Job SSE 的 owner projection 同时覆盖 User 自己的数据导出 Job 和其 `ContentAssetRevision` 的处理 Job；该可观察权限不自动授予通用取消权限。
 
-日志和普通 telemetry 禁止记录密钥、Authorization、cookie、完整 prompt、完整聊天、User 原始答案和 provider raw body。可关联事实只使用 requestId、runId、jobId、invocationId、hash 和 redacted error code。
+Agent Executor 使用结构化 JSON 日志记录 activation、Agent API request 和 tool plan 摘要；允许字段只包括 Run/Job/Attempt/Step identity、HTTP method/path/status、稳定错误码和工具调用数量。日志和普通 telemetry 禁止记录密钥、Authorization、cookie、完整 prompt、完整聊天、Tool 参数、User 原始答案和 provider raw body。跨服务非 2xx 使用 RFC Problem Details 的稳定 `code`，Executor 必须原样保留该 code，不能统一掩盖为 `AGENT_API_HTTP_409`。可关联事实只使用 requestId、runId、jobId、attemptId、stepId、invocationId、hash 和 redacted error code。
 
 ## 15. 验收不变量
 
@@ -389,3 +391,5 @@ User Web 删除孤立的 Tutor、Grammar 和 AI Reading 页面，新增：
 16. Browser 只提交 User command 并消费单一 Session SSE；v1 没有本地 Agent、Connector、Cordis、前端工具执行或 Run polling 路径。
 17. AgentMessage 的内容只由 closed `AgentMessageBlock` tree 表达；Block identity、parent、tree position 和 `modelPosition + modelSubPosition` 稳定，sealed/interrupted 后不可改写，引用块只指向 typed relation truth。
 18. SSE 重连以 snapshot + cursor 恢复相同 Block tree；不会重复 fragment、创建新 Block/Run/Invocation 或重放 ToolCall。
+19. 一个 Step 超出 Run/Grant 工具额度时，额度内 sibling 仍执行，超额调用独立成为 `REJECTED` 终态并回灌模型；结构、schema 或授权失败仍整步 fail closed。
+20. `/ai` 一次普通发送只有必要的 command request，并在一个 React 生命周期内持有一条共享 Session SSE；Message、Run、Artifact 和 Proposal 不通过轮询补齐。

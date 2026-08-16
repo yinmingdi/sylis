@@ -256,7 +256,7 @@ test(
       page,
       deterministicProviderInstruction(
         DeterministicProviderScenario.MIXED_MULTI_TOOL,
-        JSON.stringify({ query: "bank", limit: 1 }),
+        JSON.stringify({ queries: ["bank"], limitPerQuery: 1 }),
       ),
       "学习问答",
     );
@@ -373,7 +373,7 @@ test(
     await registerAndOpenAgent(page, testInfo);
     await submitInstruction(
       page,
-      '[tool:lexicon.search] {"query":"bank","limit":1}',
+      '[tool:lexicon.search] {"queries":["bank"],"limitPerQuery":1}',
       "学习问答",
     );
 

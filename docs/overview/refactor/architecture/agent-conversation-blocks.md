@@ -131,7 +131,9 @@ Rich text renderer 必须保留 `CITATION.evidence` 与 `LEXICAL_MENTION.target`
 - 桌面和移动端使用同一 projection；移动端 inspector 可以换成底部层或独立路由，但不能创建另一份聊天状态；
 - `aria-live` 只播报 Block/Run 状态摘要，不逐 fragment 朗读；代码、表格、引用和操作均可键盘访问。
 
-前端没有 `PATCH /blocks`、tool execute、Run polling 或 Provider stream endpoint。Composer 仍只提交一次 Instruction POST；一个 Session 只维护一条 SSE。
+正式 `/agent` 工作区与现有 `/ai` 学习入口共享同一个 `SessionEventHub`、typed `AgentMessageView[]/AgentRunView[]` store、event reducer 和 `AgentMessageBlocks` renderer。`/ai` 不能把 Block 再转成 Markdown 字符串，也不能为发送动作临时创建第二条 EventSource；Artifact/Proposal inspector 必须使用覆盖层，不能改变消息列宽。
+
+前端没有 `PATCH /blocks`、tool execute、Run polling 或 Provider stream endpoint。Composer 仍只提交一次 Instruction POST；一个 Tab/Session 只维护一条引用计数的 SSE lease，React cleanup 释放 lease，断线恢复由同一个 hub 处理。
 
 ## 8. 安全、容量与可观测性
 
@@ -153,6 +155,7 @@ Rich text renderer 必须保留 `CITATION.evidence` 与 `LEXICAL_MENTION.target`
 8. Artifact 更新产生新 revision；旧聊天 Block 仍打开原 revision。
 9. User 请求本地文件、shell 或任意 MCP Block 时，v1 返回受控拒绝，不在浏览器执行。
 10. desktop/mobile/keyboard/screen-reader 覆盖长文本、代码、table、citation、ToolCall、Proposal、Wait、unknown schema 和 interrupted 状态。
+11. `/ai` 一次发送不会请求 messages/runs 轮询接口；Table、ToolCall、Notice、interrupted Block 直接由 typed snapshot/event 渲染，取消、retry 和 User-input Wait 使用显式 command。
 
 ## 10. 非目标
 

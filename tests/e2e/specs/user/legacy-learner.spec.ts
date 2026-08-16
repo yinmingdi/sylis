@@ -1,3 +1,4 @@
+import { AgentMessageBlockKind } from "@sylis/agent-contracts";
 import type { Page } from "@playwright/test";
 
 import {
@@ -338,6 +339,65 @@ test(
     await deletedSessionMenu.click();
     await page.getByRole("button", { name: "删除", exact: true }).click();
     await expect(deletedSessionMenu).toHaveCount(0);
+  },
+);
+
+test(
+  "LEGACY-LEARNER-012-E2E chat sends through one typed Session SSE without polling",
+  {
+    tag: e2eTags(TestTag.BROWSER),
+  },
+  async ({ learnerPage: page, namespace }) => {
+    const requests: Array<{ method: string; url: string; type: string }> = [];
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/agent/v1/")) return;
+      requests.push({
+        method: request.method(),
+        url: request.url(),
+        type: request.resourceType(),
+      });
+    });
+
+    await registerUserViaApi(page, namespace, "legacy-typed-chat");
+    await page.goto("/chat");
+    await page.getByRole("button", { name: "新建对话" }).click();
+    await expect
+      .poll(
+        () =>
+          requests.filter(
+            ({ type, url }) =>
+              type === "eventsource" &&
+              new URL(url).pathname.endsWith("/events"),
+          ).length,
+      )
+      .toBe(1);
+    requests.length = 0;
+
+    const instruction = "Explain bank in one sentence.";
+    await page.getByPlaceholder("输入你的学习问题").fill(instruction);
+    await page.getByPlaceholder("输入你的学习问题").press("Enter");
+    await expect(
+      page
+        .locator(`[data-block-kind="${AgentMessageBlockKind.PARAGRAPH}"]`)
+        .filter({ hasText: instruction })
+        .last(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    expect(
+      requests.filter(
+        ({ method, url }) => method === "POST" && url.endsWith("/instructions"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      requests.filter(
+        ({ method, url }) =>
+          method === "GET" &&
+          /\/(messages|runs|artifacts|proposals)(?:\?|\/|$)/.test(url),
+      ),
+    ).toHaveLength(0);
+    expect(requests.filter(({ type }) => type === "eventsource")).toHaveLength(
+      0,
+    );
   },
 );
 

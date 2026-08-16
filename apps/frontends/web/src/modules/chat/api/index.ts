@@ -1,63 +1,41 @@
 import {
   AgentCredentialSource,
-  AgentMessageRole,
   AgentRunStatus,
   AgentSessionStatus,
   AgentWaitKind,
   AgentWaitStatus,
   CapabilityKey,
-  agentMessagePlainText,
   agentClient,
   type AgentCapabilityView,
   type AgentExecutionSelectionInput,
-  type AgentMessageView,
-  type AgentSessionSnapshotView,
+  type AgentInstructionSubmissionView,
+  type AgentRunView,
   type AgentSessionView,
 } from '@sylis/api-client/agent';
 
 import {
-  MessageRole,
   type ChatConfigDto,
-  type ChatMessageDto,
   type CreateConfigReqDto,
   type CreateSessionReqDto,
   type CreateSessionResDto,
   type GetConfigsResDto,
-  type GetMessagesReqDto,
-  type GetMessagesResDto,
   type GetSessionsReqDto,
   type GetSessionsResDto,
-  type SendMessageReqDto,
-  type SendMessageResDto,
   type SessionItemDto,
-  type StreamChatReqDto,
   type UpdateConfigReqDto,
   type UpdateSessionReqDto,
   type UpdateSessionResDto,
 } from '@/legacy-dto';
 
-import { acquireAgentSessionEvents } from '../../agent/api/session-event-hub';
 import { defaultAgentExecutionSelection } from '../../agent/model/execution-selection';
 
 export type ChatConfig = ChatConfigDto & { isPreset?: boolean };
 export type CreateConfigReq = CreateConfigReqDto;
-export type ChatMessage = ChatMessageDto;
 
 const CONFIG_STORAGE_KEY = 'sylis-legacy-chat-configs';
 const response = <T>(data: T) => ({ data, message: 'ok', code: 0 });
 
-const legacyRole = (role: AgentMessageRole): MessageRole => {
-  switch (role) {
-    case AgentMessageRole.USER:
-      return MessageRole.user;
-    case AgentMessageRole.ASSISTANT:
-      return MessageRole.assistant;
-    case AgentMessageRole.SYSTEM:
-      return MessageRole.system;
-  }
-};
-
-const sessionView = (
+export const agentSessionItem = (
   session: AgentSessionView,
   messageCount?: number,
 ): SessionItemDto => ({
@@ -70,15 +48,6 @@ const sessionView = (
   messageCount,
   createdAt: new Date(session.createdAt),
   updatedAt: new Date(session.archivedAt ?? session.createdAt),
-});
-
-const messageView = (message: AgentMessageView): SendMessageResDto => ({
-  id: message.id,
-  sessionId: '',
-  role: legacyRole(message.role),
-  content: agentMessagePlainText(message),
-  createdAt: new Date(message.createdAt),
-  updatedAt: new Date(message.createdAt),
 });
 
 const readCustomConfigs = (): ChatConfig[] => {
@@ -185,7 +154,7 @@ export const createSession = async (data: CreateSessionReqDto) => {
   const session = await agentClient.sessions.create(
     data.title?.trim() || '新对话',
   );
-  return response<CreateSessionResDto>(sessionView(session));
+  return response<CreateSessionResDto>(agentSessionItem(session));
 };
 
 export const getSessions = async (params: GetSessionsReqDto = {}) => {
@@ -198,17 +167,8 @@ export const getSessions = async (params: GetSessionsReqDto = {}) => {
   const offset = Math.max(0, params.offset ?? 0);
   const limit = Math.max(1, params.limit ?? (sessions.length || 1));
   const selected = sessions.slice(offset, offset + limit);
-  const messageCounts = await Promise.all(
-    selected.map((session) =>
-      agentClient.sessions
-        .messages(session.id)
-        .then((messages) => messages.length),
-    ),
-  );
   return response<GetSessionsResDto>({
-    sessions: selected.map((session, index) =>
-      sessionView(session, messageCounts[index]),
-    ),
+    sessions: selected.map((session) => agentSessionItem(session)),
     total: sessions.length,
   });
 };
@@ -218,7 +178,7 @@ export const getSessionDetail = async (id: string) => {
     agentClient.sessions.get(id),
     agentClient.sessions.messages(id),
   ]);
-  return response<SessionItemDto>(sessionView(session, messages.length));
+  return response<SessionItemDto>(agentSessionItem(session, messages.length));
 };
 
 export const updateSession = async (id: string, data: UpdateSessionReqDto) => {
@@ -226,7 +186,7 @@ export const updateSession = async (id: string, data: UpdateSessionReqDto) => {
     title: data.title,
     archived: data.isArchived,
   });
-  return response<UpdateSessionResDto>(sessionView(session));
+  return response<UpdateSessionResDto>(agentSessionItem(session));
 };
 
 export const archiveSession = async (id: string) => {
@@ -237,39 +197,6 @@ export const archiveSession = async (id: string) => {
 export const deleteSession = async (id: string) => {
   await agentClient.sessions.remove(id);
   return response(undefined);
-};
-
-export const getMessages = async (
-  sessionId: string,
-  params: GetMessagesReqDto = {},
-) => {
-  const messages = await agentClient.sessions.messages(sessionId);
-  const offset = Math.max(0, params.offset ?? 0);
-  const limit = Math.max(1, params.limit ?? (messages.length || 1));
-  const selected = messages.slice(offset, offset + limit);
-  return response<GetMessagesResDto>({
-    messages: selected.map((message) => ({
-      ...messageView(message),
-      sessionId,
-    })),
-    total: messages.length,
-  });
-};
-
-export const sendMessage = async (
-  sessionId: string,
-  data: SendMessageReqDto,
-) => {
-  let result: SendMessageResDto | null = null;
-  await runAgentChat(sessionId, data.content, undefined, {
-    onComplete: async (completed) => {
-      if (completed.message) {
-        result = { ...messageView(completed.message), sessionId };
-      }
-    },
-  });
-  if (!result) throw new Error('Agent 未返回消息');
-  return response(result);
 };
 
 export const getConfigs = async () => {
@@ -319,111 +246,53 @@ export const getConfigById = async (id: string) => {
   return response<ChatConfigDto>(config);
 };
 
-export interface StreamChatHandlers {
-  onStart?: () => void;
-  onChunk?: (content: string) => void;
-  onComplete?: (data: {
-    content: string;
-    sessionId?: string;
-    userMessageId?: string;
-    assistantMessageId?: string;
-    message?: AgentMessageView;
-  }) => void | Promise<void>;
-  onError?: (error: string) => void;
-  onSession?: (data: { sessionId: string; title?: string }) => void;
-  onTitle?: (data: { sessionId: string; title: string }) => void;
+export interface SubmitAgentChatInput {
+  sessionId?: string;
+  instruction: string;
+  configId?: string;
+  runs?: readonly AgentRunView[];
 }
 
-export const streamChat = async (
-  data: StreamChatReqDto,
-  handlers: StreamChatHandlers,
-): Promise<void> => {
-  let sessionId = data.sessionId;
-  if (!sessionId) {
-    const session = await agentClient.sessions.create('新对话');
-    sessionId = session.id;
-    handlers.onSession?.({ sessionId, title: session.title });
-  }
-  const instruction = [...data.messages]
-    .reverse()
-    .find((message) => message.role === MessageRole.user)?.content;
-  if (!instruction?.trim()) throw new Error('请输入消息');
-  await runAgentChat(sessionId, instruction, data.configId, handlers);
-};
+export interface SubmitAgentChatResult {
+  session?: AgentSessionView;
+  submission?: AgentInstructionSubmissionView;
+  resumedRunId?: string;
+}
 
-async function runAgentChat(
-  sessionId: string,
-  instruction: string,
-  configId: string | undefined,
-  handlers: StreamChatHandlers,
-): Promise<void> {
-  const events = acquireAgentSessionEvents(sessionId);
-  try {
-    await events.ready();
-    const snapshot = events.snapshot();
-    const pendingWait = activeLearnerInputWait(snapshot);
-    let runId: string;
-    let eventCursor: number;
-    if (pendingWait) {
-      handlers.onStart?.();
-      runId = pendingWait.runId;
-      eventCursor = snapshot!.cursor;
-      await agentClient.runs.respondToWait(runId, pendingWait.waitId, {
-        value: instruction.trim(),
-      });
-    } else {
-      const capabilities = await agentClient.capabilities();
-      const execution = selectionFromConfig(capabilities, configId);
-      if (!execution) throw new Error('请先在设置中配置可用的 AI 模型');
-      handlers.onStart?.();
-      const submitted = await agentClient.sessions.submitInstruction(
-        sessionId,
-        {
-          content: instruction.trim(),
-          requestedCapability: CapabilityKey.LEARNING_CHAT,
-          idempotencyKey: crypto.randomUUID(),
-          execution,
-        },
-      );
-      runId = submitted.runId;
-      eventCursor = submitted.eventCursor;
-    }
-    let emitted = '';
-    const completed = await events.waitForRun({
-      runId,
-      after: eventCursor,
-      onDelta: (chunk) => {
-        emitted += chunk;
-        handlers.onChunk?.(chunk);
-      },
-    });
-    const content = completed.message
-      ? agentMessagePlainText(completed.message) ||
-        waitingForLearnerInputMessage(completed.status)
-      : emitted || waitingForLearnerInputMessage(completed.status);
-    if (content.startsWith(emitted)) {
-      const tail = content.slice(emitted.length);
-      if (tail) handlers.onChunk?.(tail);
-    }
-    await handlers.onComplete?.({
-      content,
-      sessionId,
-      assistantMessageId: completed.message?.id,
-      message: completed.message,
-    });
-  } catch (error) {
-    handlers.onError?.(
-      error instanceof Error ? error.message : 'Agent 执行失败',
+export async function submitAgentChat(
+  input: SubmitAgentChatInput,
+): Promise<SubmitAgentChatResult> {
+  const instruction = input.instruction.trim();
+  if (!instruction) throw new Error('请输入消息');
+  const session = input.sessionId
+    ? undefined
+    : await agentClient.sessions.create('新对话');
+  const sessionId = input.sessionId ?? session!.id;
+  const pendingWait = activeLearnerInputWait(input.runs ?? []);
+  if (pendingWait) {
+    await agentClient.runs.respondToWait(
+      pendingWait.runId,
+      pendingWait.waitId,
+      { value: instruction },
     );
-  } finally {
-    events.close();
+    return { ...(session ? { session } : {}), resumedRunId: pendingWait.runId };
   }
+  const capabilities = await agentClient.capabilities();
+  const execution = selectionFromConfig(capabilities, input.configId);
+  if (!execution) throw new Error('请先在设置中配置可用的 AI 模型');
+  const submission = await agentClient.sessions.submitInstruction(sessionId, {
+    content: instruction,
+    requestedCapability: CapabilityKey.LEARNING_CHAT,
+    idempotencyKey: crypto.randomUUID(),
+    execution,
+  });
+  return { ...(session ? { session } : {}), submission };
 }
 
 function activeLearnerInputWait(
-  snapshot: AgentSessionSnapshotView | null,
+  runs: readonly AgentRunView[],
 ): { runId: string; waitId: string } | null {
-  for (const run of snapshot?.runs ?? []) {
+  for (const run of runs) {
     if (run.status !== AgentRunStatus.WAITING) continue;
     const wait = run.waits.find(
       (candidate) =>
@@ -433,10 +302,4 @@ function activeLearnerInputWait(
     if (wait) return { runId: run.id, waitId: wait.id };
   }
   return null;
-}
-
-function waitingForLearnerInputMessage(status: AgentRunStatus): string {
-  return status === AgentRunStatus.WAITING
-    ? '我还需要一些信息，请直接回复后继续。'
-    : '';
 }

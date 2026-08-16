@@ -1,5 +1,8 @@
 import { AgentExecutionMode } from "@sylis/database";
-import { capabilityReleaseDigest } from "@sylis/agent-contracts/release-fixtures";
+import {
+  AgentFixtureVersion,
+  capabilityReleaseDigest,
+} from "@sylis/agent-contracts/release-fixtures";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -40,7 +43,8 @@ describe("local DeepSeek runtime activation", () => {
       "00000000-0000-4000-8000-000000000999",
     );
 
-    expect(release.version).toBe(LocalDeepSeekCapabilityVersion.V0_0_2);
+    expect(release.version).toBe(LocalDeepSeekCapabilityVersion.V0_0_3);
+    expect(release.version).not.toBe(AgentFixtureVersion.V2);
     expect(release.allowedRouteReleaseIds).toEqual([
       "00000000-0000-4000-8000-000000000999",
     ]);

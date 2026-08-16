@@ -1,0 +1,79 @@
+{
+  "$schema": "../tools/engineering-harness/schema/harness-config.schema.json",
+  "schemaVersion": 1,
+  "project": {
+    "name": "Sylis"
+  },
+  "docsRoot": "docs/overview",
+  "strategy": "hybrid",
+  "requiredPaths": [
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    ".harness/config.json",
+    ".harness/manifest.json",
+    "tools/engineering-harness/package.json",
+    "docs/overview/agent-harness.md",
+    "docs/overview/generated/project-profile.md",
+    "docs/overview/generated/tool-capabilities.md",
+    "docs/overview/generated/command-registry.md",
+    "docs/overview/generated/harnessability-report.md",
+    "docs/overview/generated/harness-migration-map.md",
+    "docs/overview/planning/TEMPLATE.md",
+    "docs/overview/planning/active",
+    "docs/overview/planning/completed",
+    "docs/overview/guide/harness-engineering.md"
+  ],
+  "documentMappings": {
+    "product/index.md": ["docs/overview/guide/what-is-sylis.md"],
+    "product/domain.md": [
+      "docs/overview/guide/what-is-sylis.md",
+      "docs/overview/guide/lexicon-architecture.md"
+    ],
+    "architecture/index.md": [
+      "docs/overview/guide/architecture.md",
+      "docs/overview/refactor/architecture/system.md"
+    ],
+    "quality/testing.md": ["docs/overview/refactor/delivery/testing.md"],
+    "quality/security.md": ["docs/overview/refactor/delivery/cicd-security.md"]
+  },
+  "workspace": {
+    "groups": {
+      "root": ["."],
+      "shared": ["packages/*"],
+      "consumer": ["apps/frontends/*", "apps/backends/*", "docs/*"]
+    },
+    "allowedEdges": ["root->shared", "shared->shared", "consumer->shared"],
+    "requireWorkspaceProtocol": true
+  },
+  "sources": [
+    {
+      "name": "OpenAI Harness Engineering",
+      "url": "https://openai.com/index/harness-engineering/",
+      "reviewedAt": "2026-08-04",
+      "warnAfterDays": 120,
+      "failAfterDays": 180
+    },
+    {
+      "name": "OpenAI Codex ExecPlans",
+      "url": "https://developers.openai.com/cookbook/articles/codex_exec_plans",
+      "reviewedAt": "2026-08-04",
+      "warnAfterDays": 120,
+      "failAfterDays": 180
+    },
+    {
+      "name": "harness-init design reference",
+      "url": "https://github.com/Gizele1/harness-init/tree/71d48b2ec74768d6bcd96afb68376e0d5c9c4fea",
+      "reviewedAt": "2026-08-04",
+      "warnAfterDays": 120,
+      "failAfterDays": 180
+    }
+  ],
+  "capabilities": [
+    {
+      "name": "codebase-memory-mcp",
+      "kind": "code knowledge graph",
+      "availability": "repository guidance configured",
+      "evidence": "The repository AGENTS guidance requires graph-first code discovery; active-client availability must still be checked."
+    }
+  ]
+}

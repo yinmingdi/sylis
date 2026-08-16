@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sylis.local/schemas/harness-config.schema.json",
+  "title": "Agent Harness configuration",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "project",
+    "docsRoot",
+    "strategy",
+    "requiredPaths",
+    "documentMappings",
+    "workspace",
+    "sources"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "docsRoot": { "type": "string", "minLength": 1 },
+    "strategy": { "enum": ["reference", "hybrid"] },
+    "requiredPaths": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "documentMappings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string", "minLength": 1 },
+        "minItems": 1,
+        "uniqueItems": true
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["groups", "allowedEdges", "requireWorkspaceProtocol"],
+      "properties": {
+        "groups": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "allowedEdges": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+->[A-Za-z0-9_-]+$"
+          },
+          "uniqueItems": true
+        },
+        "requireWorkspaceProtocol": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "url",
+          "reviewedAt",
+          "warnAfterDays",
+          "failAfterDays"
+        ],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "format": "uri" },
+          "reviewedAt": { "type": "string", "format": "date" },
+          "warnAfterDays": { "type": "integer", "minimum": 1 },
+          "failAfterDays": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "availability", "evidence"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "availability": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

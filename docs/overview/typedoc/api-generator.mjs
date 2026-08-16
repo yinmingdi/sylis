@@ -1,5 +1,3 @@
-/* eslint-env node */
-/* global console */
 import {
   existsSync,
   mkdirSync,
@@ -31,6 +29,7 @@ const CONFIG = {
 // TypeDoc 配置模板
 const TYPEDOC_CONFIGS = {
   PACKAGE: {
+    skipErrorChecking: true,
     excludeExternals: true,
     excludeInternal: true,
     excludePrivate: true,
@@ -40,6 +39,7 @@ const TYPEDOC_CONFIGS = {
     includeVersion: true,
   },
   APP: {
+    skipErrorChecking: true,
     excludeExternals: true,
     excludeInternal: true,
     excludePrivate: true,
@@ -332,8 +332,16 @@ export class ApiGenerator {
     console.log("Starting documentation generation...");
 
     try {
-      await this._generatePackageDocs();
-      await this._generateAppDocs();
+      const failures = [
+        ...(await this._generatePackageDocs()),
+        ...(await this._generateAppDocs()),
+      ];
+      if (failures.length > 0) {
+        throw new AggregateError(
+          failures,
+          `TypeDoc failed for ${failures.length} project(s).`,
+        );
+      }
       await this._generateIndexFile();
       console.log("Documentation generation completed successfully!");
     } catch (error) {
@@ -347,9 +355,10 @@ export class ApiGenerator {
    * @private
    */
   async _generatePackageDocs() {
+    const failures = [];
     if (this.packages.length === 0) {
       console.log("No packages found, skipping package documentation...");
-      return;
+      return failures;
     }
 
     console.log(
@@ -361,12 +370,16 @@ export class ApiGenerator {
         await this._generateSingleDoc(pkg, this.packagesPath, "package");
         console.log(`✓ Generated docs for package: ${pkg}`);
       } catch (error) {
+        failures.push(
+          new Error(`Package ${pkg}: ${error.message}`, { cause: error }),
+        );
         console.error(
           `✗ Failed to generate docs for package ${pkg}:`,
           error.message,
         );
       }
     }
+    return failures;
   }
 
   /**
@@ -374,9 +387,10 @@ export class ApiGenerator {
    * @private
    */
   async _generateAppDocs() {
+    const failures = [];
     if (this.apps.length === 0) {
       console.log("No apps found, skipping app documentation...");
-      return;
+      return failures;
     }
 
     console.log(`Generating documentation for ${this.apps.length} apps...`);
@@ -386,12 +400,18 @@ export class ApiGenerator {
         await this._generateSingleDoc(appName, this.appsPath, "app");
         console.log(`✓ Generated docs for app: ${appName}`);
       } catch (error) {
+        failures.push(
+          new Error(`Application ${appName}: ${error.message}`, {
+            cause: error,
+          }),
+        );
         console.error(
           `✗ Failed to generate docs for app ${appName}:`,
           error.message,
         );
       }
     }
+    return failures;
   }
 
   /**
@@ -402,30 +422,27 @@ export class ApiGenerator {
    * @private
    */
   async _generateSingleDoc(name, basePath, type) {
-    try {
-      const config = this._createTypedocConfig(name, basePath, type);
-      const app = await Application.bootstrapWithPlugins(config);
+    const config = this._createTypedocConfig(name, basePath, type);
+    const app = await Application.bootstrapWithPlugins(config);
 
-      // 对于 shared 包，设置更严格的选项
-      if (name === "shared") {
-        app.options.setValue("skipErrorChecking", true);
-        app.options.setValue("excludeNotDocumented", false);
-      }
+    // shared 仍需包含未显式标注文档的公开声明。
+    if (name === "shared") {
+      app.options.setValue("excludeNotDocumented", false);
+    }
 
-      const project = await app.convert();
+    const project = await app.convert();
 
-      // ✅ 打印当前 theme 和插件加载情况
-      console.log(
-        `Generating docs for ${name} using theme: ${app.options.getValue("theme")}`,
-      );
-      console.log(`Output path: ${config.out}`);
+    console.log(
+      `Generating docs for ${name} using theme: ${app.options.getValue("theme")}`,
+    );
+    console.log(`Output path: ${config.out}`);
 
-      if (project) {
-        await app.generateOutputs(project);
-      }
-    } catch (error) {
-      console.error(`Error generating docs for ${name}:`, error.message);
-      // 不抛出错误，继续处理其他包
+    if (!project) {
+      throw new Error("TypeDoc conversion failed; no project was generated.");
+    }
+    await app.generateOutputs(project);
+    if (!existsSync(resolve(config.out, "index.md"))) {
+      throw new Error("TypeDoc did not generate an index.md entry page.");
     }
   }
 
@@ -477,10 +494,11 @@ export class ApiGenerator {
       // 排除配置文件和构建产物
       exclude: [
         "**/node_modules/**",
+        "**/*.spec.ts",
+        "**/*.test.ts",
         "**/*.config.*",
         "**/*.d.ts",
         "**/dist/**",
-        resolve(basePath, name, "tsup.config.ts"),
       ],
       ...baseConfig,
     };
@@ -581,11 +599,12 @@ ${appsSection}
    * @private
    */
   _generatePackagesSection() {
-    if (this.packages.length === 0) {
+    const generatedPackages = this._generatedProjects(this.packages);
+    if (generatedPackages.length === 0) {
       return "暂无 packages 文档。";
     }
 
-    const packageItems = this.packages
+    const packageItems = generatedPackages
       .map((pkg) => {
         const pkgInfo = this._packagesJSON.find((p) => p.pathName === pkg);
         const description = pkgInfo?.description || "暂无描述";
@@ -609,11 +628,12 @@ ${packageItems}`;
    * @private
    */
   _generateAppsSection() {
-    if (this.apps.length === 0) {
+    const generatedApps = this._generatedProjects(this.apps);
+    if (generatedApps.length === 0) {
       return "暂无 applications 文档。";
     }
 
-    const appItems = this.apps
+    const appItems = generatedApps
       .map((app) => {
         const appInfo = this._packagesJSON.find((p) => p.pathName === app);
         const description = appInfo?.description || "暂无描述";
@@ -629,5 +649,17 @@ ${packageItems}`;
     return `以下是所有可用的 applications：
 
 ${appItems}`;
+  }
+
+  /**
+   * 只返回实际生成了入口页的项目，避免总索引产生死链接。
+   * @param {string[]} projects - 已发现的项目名称
+   * @returns {string[]} 已生成入口页的项目名称
+   * @private
+   */
+  _generatedProjects(projects) {
+    return projects.filter((name) =>
+      existsSync(resolve(this.outputPath, name, "index.md")),
+    );
   }
 }

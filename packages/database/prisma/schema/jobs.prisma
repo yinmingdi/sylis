@@ -1,0 +1,258 @@
+model Job {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  kind               JobKind
+  ownerType          JobOwnerType
+  ownerId            String                 @db.Uuid
+  status             JobStatus              @default(QUEUED)
+  inputRef           Json
+  inputHash          String
+  resultRef          Json?
+  idempotencyKey     String
+  priority           Int                    @default(0)
+  nextAttemptAt      DateTime               @default(now()) @db.Timestamptz(3)
+  cancelRequestedAt  DateTime?              @db.Timestamptz(3)
+  errorCode          String?
+  supersedesJobId    String?                @db.Uuid
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  startedAt          DateTime?              @db.Timestamptz(3)
+  completedAt        DateTime?              @db.Timestamptz(3)
+  supersedes         Job?                   @relation("SupersededJob", fields: [supersedesJobId], references: [id], onDelete: Restrict)
+  supersededBy       Job?                   @relation("SupersededJob")
+  attempts           JobAttempt[]
+  progress           JobProgressEvent[]
+  checkpoints        JobCheckpoint[]
+  buildRunActivation BuildRunActivation?
+  publishRun         PublishRun?
+  dataExport         DataExportRequest?
+  sourceSync         SourceSynchronization?
+  assetProcessing    AssetProcessingRun?
+  auditExport        AuditExport?
+  createdAuditArchive AuditArchive?         @relation("AuditArchiveCreationJob")
+
+  @@unique([ownerType, ownerId, kind, idempotencyKey])
+  @@unique([supersedesJobId])
+  @@index([kind, status, nextAttemptAt, priority])
+}
+
+model JobAttempt {
+  id                      String             @id @default(uuid()) @db.Uuid
+  jobId                   String             @db.Uuid
+  attemptNumber           Int
+  handlerVersion          String
+  checkpointSchemaVersion String
+  leaseOwner              String
+  leaseToken              String             @unique
+  leaseExpiresAt          DateTime           @db.Timestamptz(3)
+  heartbeatAt             DateTime           @db.Timestamptz(3)
+  fencingToken            BigInt             @unique
+  status                  JobAttemptStatus   @default(RUNNING)
+  failureClass            JobFailureClass?
+  errorEvidence           Json?
+  startedAt               DateTime           @default(now()) @db.Timestamptz(3)
+  completedAt             DateTime?          @db.Timestamptz(3)
+  job                     Job                @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  progress                JobProgressEvent[]
+  checkpoints             JobCheckpoint[]
+
+  @@unique([jobId, attemptNumber])
+  @@unique([jobId, id])
+  @@index([jobId, status, leaseExpiresAt])
+}
+
+model JobProgressEvent {
+  id             String     @id @default(uuid()) @db.Uuid
+  jobId          String     @db.Uuid
+  attemptId      String     @db.Uuid
+  sequence       Int
+  eventType      String
+  stage          String
+  processed      BigInt
+  total          BigInt?
+  ratePerSecond  Float?
+  etaSeconds     Int?
+  etaReliability String?
+  warningCode    String?
+  message        String?
+  tokens         BigInt?
+  costMicros     BigInt?
+  occurredAt     DateTime   @default(now()) @db.Timestamptz(3)
+  job            Job        @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  attempt        JobAttempt @relation(fields: [jobId, attemptId], references: [jobId, id], onDelete: Restrict)
+
+  @@unique([jobId, sequence])
+  @@index([jobId, occurredAt])
+}
+
+model JobCheckpoint {
+  id                      String     @id @default(uuid()) @db.Uuid
+  jobId                   String     @db.Uuid
+  attemptId               String     @db.Uuid
+  sequence                Int
+  handlerVersion          String
+  checkpointSchemaVersion String
+  inputHash               String
+  stateCiphertext         Bytes?
+  objectRef               String?
+  stateHash               String
+  createdAt               DateTime   @default(now()) @db.Timestamptz(3)
+  job                     Job        @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  attempt                 JobAttempt @relation(fields: [jobId, attemptId], references: [jobId, id], onDelete: Restrict)
+
+  @@unique([jobId, sequence])
+  @@index([attemptId, sequence])
+}
+
+model JobKindPolicy {
+  id                      String                @id @default(uuid()) @db.Uuid
+  jobKind                 JobKind
+  executor                ExecutorKind
+  policyVersion           String
+  cancellable             Boolean
+  cancelAllowedStatuses   JobStatus[]
+  retryAllowedStatuses    JobStatus[]
+  retryableFailureClasses JobFailureClass[]
+  resumableStates         JobStatus[]
+  reconciliationRule      JobReconciliationRule
+  requiredOperatorRoles   OperatorRole[]
+  operatorRoleMatch       JobOperatorRoleMatch
+  maxAttempts             Int
+  timeoutMs               BigInt
+  effectiveAt             DateTime              @db.Timestamptz(3)
+  createdAt               DateTime              @default(now()) @db.Timestamptz(3)
+
+  @@unique([jobKind, policyVersion])
+  @@index([jobKind, effectiveAt])
+}
+
+model BuildRun {
+  id                          String                               @id @default(uuid()) @db.Uuid
+  mode                        BuildRunMode
+  status                      BuildRunStatus
+  manifestUri                 String
+  inputManifestHash           String
+  compileProfile              LexiconCompileProfile
+  providerRouteReleaseId      String?                              @db.Uuid
+  credentialRevisionId        String?                              @db.Uuid
+  modelPolicy                 Json
+  budgetMicros                BigInt
+  forecastHash                String?
+  codeVersion                 String
+  schemaVersion               String
+  requestHash                 String                               @unique
+  pilotEvidenceRunId          String?                              @db.Uuid
+  artifactUri                 String?
+  artifactHash                String?
+  reportUri                   String?
+  compilerRunId               String?
+  createdAt                   DateTime                             @default(now()) @db.Timestamptz(3)
+  completedAt                 DateTime?                            @db.Timestamptz(3)
+  providerRouteRelease        ProviderRouteRelease?                @relation(fields: [providerRouteReleaseId], references: [id], onDelete: Restrict)
+  credentialRevision          CredentialRevision?                  @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+  pilotEvidence               BuildRun?                            @relation("PilotEvidence", fields: [pilotEvidenceRunId], references: [id], onDelete: Restrict)
+  fullRuns                    BuildRun[]                           @relation("PilotEvidence")
+  modelExecutionPermitTargets ModelExecutionPermitBuildRunTarget[]
+  activations                 BuildRunActivation[]
+  budgetApprovals             BudgetApproval[]
+  candidates                  Candidate[]
+  reviewBatches               ReviewBatch[]
+
+  @@index([inputManifestHash, mode, codeVersion, schemaVersion])
+}
+
+model BuildRunActivation {
+  id               String                   @id @default(uuid()) @db.Uuid
+  buildRunId       String                   @db.Uuid
+  jobId            String                   @unique @db.Uuid
+  reviewBatchId    String?                  @unique @db.Uuid
+  budgetApprovalId String?                  @db.Uuid
+  sequence         Int
+  reason           BuildRunActivationReason
+  createdAt        DateTime                 @default(now()) @db.Timestamptz(3)
+  buildRun         BuildRun                 @relation(fields: [buildRunId], references: [id], onDelete: Restrict)
+  job              Job                      @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  reviewBatch      ReviewBatch?             @relation(fields: [reviewBatchId], references: [id], onDelete: Restrict)
+  budgetApproval   BudgetApproval?          @relation(fields: [buildRunId, budgetApprovalId], references: [buildRunId, id], onDelete: Restrict)
+
+  @@unique([buildRunId, sequence])
+  @@unique([buildRunId, budgetApprovalId])
+  @@index([buildRunId, createdAt])
+}
+
+model BudgetApproval {
+  id                   String              @id @default(uuid()) @db.Uuid
+  buildRunId           String              @db.Uuid
+  sequence             Int
+  approvedBudgetMicros BigInt
+  forecastHash         String
+  actionDigest         String
+  idempotencyKey       String
+  requestHash          String
+  actorUserId          String              @db.Uuid
+  reason               String
+  approvedAt           DateTime            @default(now()) @db.Timestamptz(3)
+  buildRun             BuildRun            @relation(fields: [buildRunId], references: [id], onDelete: Restrict)
+  actor                User                @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  activation           BuildRunActivation?
+
+  @@unique([buildRunId, sequence])
+  @@unique([buildRunId, id])
+  @@unique([buildRunId, idempotencyKey])
+}
+
+model PublishRun {
+  id             String           @id @default(uuid()) @db.Uuid
+  jobId          String           @unique @db.Uuid
+  artifactUri    String
+  artifactHash   String
+  expectedSchema String
+  mode           PublishRunMode
+  status         PublishRunStatus
+  releaseId      String?          @db.Uuid
+  importedCounts Json?
+  validation     Json?
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime?        @db.Timestamptz(3)
+  job            Job              @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  release        LexiconRelease?  @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+
+  @@unique([artifactHash, mode])
+}
+
+model LexiconStagingRecord {
+  id             BigInt   @id @default(autoincrement())
+  publishRunId   String   @db.Uuid
+  collectionPath String
+  position       Int
+  payloadHash    String
+  payload        Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  @@unique([publishRunId, collectionPath, position])
+  @@index([publishRunId, collectionPath, id])
+}
+
+model DataExportRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  jobId       String    @unique @db.Uuid
+  userId      String    @db.Uuid
+  scope       Json
+  artifactUri String?
+  expiresAt   DateTime? @db.Timestamptz(3)
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+}
+
+model SourceSynchronization {
+  id                     String                    @id @default(uuid()) @db.Uuid
+  jobId                  String                    @unique @db.Uuid
+  sourceKind             SourceSynchronizationKind
+  sourceDatasetVersionId String                    @db.Uuid
+  requestHash            String                    @unique
+  cursor                 String?
+  summary                Json?
+  createdAt              DateTime                  @default(now()) @db.Timestamptz(3)
+  completedAt            DateTime?                 @db.Timestamptz(3)
+  job                    Job                       @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  sourceDatasetVersion   SourceDatasetVersion      @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+  redditObservations     RedditSourceObservation[]
+}

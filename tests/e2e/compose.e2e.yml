@@ -1,0 +1,554 @@
+name: sylis-e2e
+
+x-api-image: &api-image
+  image: ${SYLIS_E2E_IMAGE_PREFIX}-api:${SYLIS_E2E_IMAGE_TAG}
+  pull_policy: ${SYLIS_E2E_PULL_POLICY}
+  build:
+    context: ../..
+    dockerfile: apps/backends/api/Dockerfile
+
+x-admin-api-image: &admin-api-image
+  image: ${SYLIS_E2E_IMAGE_PREFIX}-admin-api:${SYLIS_E2E_IMAGE_TAG}
+  pull_policy: ${SYLIS_E2E_PULL_POLICY}
+  build:
+    context: ../..
+    dockerfile: apps/backends/admin-api/Dockerfile
+
+x-agent-api-image: &agent-api-image
+  image: ${SYLIS_E2E_IMAGE_PREFIX}-agent-api:${SYLIS_E2E_IMAGE_TAG}
+  pull_policy: ${SYLIS_E2E_PULL_POLICY}
+  build:
+    context: ../..
+    dockerfile: apps/backends/agent-api/Dockerfile
+
+x-model-gateway-image: &model-gateway-image
+  image: ${SYLIS_E2E_IMAGE_PREFIX}-model-gateway:${SYLIS_E2E_IMAGE_TAG}
+  pull_policy: ${SYLIS_E2E_PULL_POLICY}
+  build:
+    context: ../..
+    dockerfile: apps/backends/model-gateway/Dockerfile
+
+x-database-environment: &database-environment
+  NODE_ENV: test
+  DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis
+
+x-object-storage-environment: &object-storage-environment
+  OBJECT_STORAGE_ENDPOINT: http://minio:9000
+  OBJECT_STORAGE_PUBLIC_ENDPOINT: http://127.0.0.1:${E2E_MINIO_PORT}
+  OBJECT_STORAGE_REGION: us-east-1
+  OBJECT_STORAGE_FORCE_PATH_STYLE: "true"
+  OBJECT_STORAGE_ACCESS_KEY_ID: ${E2E_MINIO_ACCESS_KEY}
+  OBJECT_STORAGE_SECRET_ACCESS_KEY: ${E2E_MINIO_SECRET_KEY}
+  QUARANTINE_BUCKET: sylis-quarantine
+  CLEAN_ASSET_BUCKET: sylis-assets
+  EXPORT_BUCKET: sylis-exports
+  AUDIT_ARCHIVE_BUCKET: sylis-audit-archives
+
+services:
+  postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_DB: sylis
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${E2E_POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sylis"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${E2E_MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${E2E_MINIO_SECRET_KEY}
+    ports:
+      - "127.0.0.1:${E2E_MINIO_PORT}:9000"
+    healthcheck:
+      test:
+        ["CMD", "curl", "--fail", "http://localhost:9000/minio/health/ready"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing local/sylis-quarantine
+        mc mb --ignore-existing local/sylis-assets
+        mc mb --ignore-existing local/sylis-lexicon
+        mc mb --ignore-existing local/sylis-exports
+        mc mb --ignore-existing local/sylis-audit-archives
+    environment:
+      MINIO_ROOT_USER: ${E2E_MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${E2E_MINIO_SECRET_KEY}
+
+  clamav:
+    image: clamav/clamav:1.4.3
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/clamdcheck.sh"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    environment:
+      MP_DISABLE_VERSION_CHECK: "true"
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      MP_MAX_MESSAGES: "500"
+    ports:
+      - "127.0.0.1:${E2E_MAILPIT_PORT}:8025"
+    healthcheck:
+      test: ["CMD", "/usr/bin/nc", "-z", "localhost", "1025"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  source-fixture:
+    image: caddy:2.10.2-alpine
+    volumes:
+      - ./fixtures/source/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./fixtures/source/registered-source.csv:/srv/registered-source.csv:ro
+      - ./fixtures/source/brave-search.json:/srv/brave-search.json:ro
+      - ./fixtures/source/public-web-article.html:/srv/public-web-article.html:ro
+      - source-fixture-data:/data
+      - source-fixture-config:/config
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-check-certificate --quiet --output-document=- https://source-fixture/health | grep -q ready",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  source-fixture-ca:
+    image: caddy:2.10.2-alpine
+    user: "0:0"
+    depends_on:
+      source-fixture:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        cp /source-fixture-data/caddy/pki/authorities/local/root.crt
+        /trusted-ca/root.crt && chmod 0444 /trusted-ca/root.crt
+    volumes:
+      - source-fixture-data:/source-fixture-data:ro
+      - source-fixture-ca:/trusted-ca
+
+  database-install:
+    <<: *api-image
+    profiles: ["control"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *database-environment
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - cd /app/node_modules/@sylis/database && node dist/operations/install-database.js
+
+  seed:
+    <<: *api-image
+    profiles: ["control"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *database-environment
+      E2E_CREDENTIAL_KEK_BASE64: ${E2E_CREDENTIAL_KEK_BASE64}
+      E2E_CREDENTIAL_FINGERPRINT_KEY_BASE64: ${E2E_CREDENTIAL_FINGERPRINT_KEY_BASE64}
+      E2E_CONTENT_KEY_BASE64: ${E2E_CONTENT_KEY_BASE64}
+      E2E_ADMIN_EMAIL: ${E2E_ADMIN_EMAIL}
+      E2E_ADMIN_PASSWORD: ${E2E_ADMIN_PASSWORD}
+      E2E_ADMIN_TOTP_SECRET: ${E2E_ADMIN_TOTP_SECRET}
+      E2E_OPERATORS_JSON: ${E2E_OPERATORS_JSON}
+      E2E_ROLE_OPERATORS_JSON: ${E2E_ROLE_OPERATORS_JSON}
+      E2E_HEADWORD_SET_PATH: /fixtures/pilot-headwords-v1.json
+    volumes:
+      - ../../packages/lexicon-compiler/data/pilot-headwords-v1.json:/fixtures/pilot-headwords-v1.json:ro
+    entrypoint: ["node"]
+    command:
+      - /app/node_modules/@sylis/database/dist/testing/seed-e2e-cli.js
+
+  api:
+    <<: *api-image
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    environment:
+      <<: *database-environment
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_api
+      PORT: "3000"
+      REDIS_URL: redis://redis:6379
+      PUBLIC_ORIGIN: http://127.0.0.1:${E2E_WEB_PORT}
+      ADMIN_ORIGIN: http://127.0.0.1:${E2E_ADMIN_PORT}
+      WEBAUTHN_RP_ID: 127.0.0.1
+      WEBAUTHN_RP_NAME: Sylis E2E
+      COOKIE_SECURE: "false"
+      SESSION_HASH_KEY: ${E2E_SESSION_HASH_KEY}
+      CSRF_SIGNING_KEY: ${E2E_CSRF_SIGNING_KEY}
+      REGISTRATION_SIGNING_KEY: ${E2E_REGISTRATION_SIGNING_KEY}
+      USER_CONTENT_RETENTION_MS: ${E2E_USER_CONTENT_RETENTION_MS}
+      SERVICE_GRANT_TOKENS_JSON: ${E2E_API_SERVICE_TOKENS}
+      AGENT_API_URL: http://agent-api:3200
+      AGENT_API_SERVICE_TOKEN: ${E2E_API_TOKEN}
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      MODEL_GATEWAY_SERVICE_TOKEN: ${E2E_API_TOKEN}
+      CONTENT_ENCRYPTION_KEYS_JSON: '{"e2e":"${E2E_CONTENT_KEY_BASE64}"}'
+      CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION: e2e
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_USER: e2e
+      SMTP_PASSWORD: e2e
+      SMTP_FROM: Sylis E2E <no-reply@sylis.test>
+    ports:
+      - "127.0.0.1:${E2E_API_PORT}:3000"
+
+  admin-api:
+    <<: *admin-api-image
+    depends_on:
+      api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+    environment:
+      <<: *database-environment
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_admin_api
+      DEPLOYMENT_INGEST_DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_ci_ingestor
+      DEPLOYMENT_INGEST_TOKEN: ${E2E_DEPLOYMENT_INGEST_TOKEN}
+      PORT: "3100"
+      ADMIN_ORIGIN: http://127.0.0.1:${E2E_ADMIN_PORT}
+      COOKIE_SECURE: "false"
+      SERVICE_GRANT_TOKENS_JSON: ${E2E_ADMIN_SERVICE_TOKENS}
+      JOB_CHECKPOINT_KEY_BASE64: ${E2E_JOB_CHECKPOINT_KEY_BASE64}
+      JOB_LEASE_DURATION_MS: "3000"
+      IDENTITY_API_URL: http://api:3000
+      IDENTITY_API_SERVICE_TOKEN: ${E2E_ADMIN_API_TOKEN}
+      AGENT_API_URL: http://agent-api:3200
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      AGENT_API_SERVICE_TOKEN: ${E2E_ADMIN_API_TOKEN}
+      MODEL_GATEWAY_SERVICE_TOKEN: ${E2E_ADMIN_API_TOKEN}
+    ports:
+      - "127.0.0.1:${E2E_ADMIN_API_PORT}:3100"
+
+  agent-api:
+    <<: *agent-api-image
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      model-gateway:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    environment:
+      <<: [*database-environment, *object-storage-environment]
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_agent_api
+      REDIS_URL: redis://redis:6379
+      PORT: "3200"
+      OBJECT_STORAGE_PUBLIC_ENDPOINT: http://127.0.0.1:${E2E_MINIO_PORT}
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      PRODUCT_API_URL: http://api:3000
+      PRODUCT_API_SERVICE_TOKEN: ${E2E_AGENT_API_TOKEN}
+      SERVICE_GRANT_TOKEN: ${E2E_AGENT_API_TOKEN}
+      SERVICE_GRANT_TOKENS_JSON: ${E2E_AGENT_SERVICE_TOKENS}
+      SESSION_HASH_KEY: ${E2E_SESSION_HASH_KEY}
+      PUBLIC_ORIGIN: http://127.0.0.1:${E2E_WEB_PORT}
+      COOKIE_SECURE: "false"
+      MAX_ASSET_BYTES: "26214400"
+    ports:
+      - "127.0.0.1:${E2E_AGENT_API_PORT}:3200"
+
+  model-gateway:
+    <<: *model-gateway-image
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *database-environment
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_model_gateway
+      PORT: "3300"
+      SERVICE_GRANT_TOKENS_JSON: ${E2E_GATEWAY_SERVICE_TOKENS}
+      CREDENTIAL_KEK_ACTIVE_VERSION: e2e
+      CREDENTIAL_KEK_KEYS_JSON: '{"e2e":"${E2E_CREDENTIAL_KEK_BASE64}"}'
+      CREDENTIAL_FINGERPRINT_KEY_BASE64: ${E2E_CREDENTIAL_FINGERPRINT_KEY_BASE64}
+      MODEL_CONTENT_KEK_ACTIVE_VERSION: e2e
+      MODEL_CONTENT_KEK_KEYS_JSON: '{"e2e":"${E2E_MODEL_CONTENT_KEK_BASE64}"}'
+      DEEPSEEK_BASE_URL: http://127.0.0.1:9
+      OPENAI_BASE_URL: http://127.0.0.1:9
+      ANTHROPIC_BASE_URL: http://127.0.0.1:9
+      GEMINI_BASE_URL: http://127.0.0.1:9
+    ports:
+      - "127.0.0.1:${E2E_MODEL_GATEWAY_PORT}:3300"
+
+  agent-executor:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-agent-executor:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/agent-executor/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+      admin-api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+      source-fixture:
+        condition: service_healthy
+      source-fixture-ca:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: test
+      PORT: "3400"
+      ADMIN_API_URL: http://admin-api:3100
+      API_URL: http://api:3000
+      AGENT_API_URL: http://agent-api:3200
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      PRODUCT_API_URL: http://api:3000
+      SERVICE_GRANT_TOKEN: ${E2E_AGENT_EXECUTOR_TOKEN}
+      BRAVE_SEARCH_API_KEY: ${E2E_BRAVE_SEARCH_API_KEY}
+      PUBLIC_WEB_SEARCH_URL: https://source-fixture/brave-search.json
+      PUBLIC_WEB_PRIVATE_FIXTURE_ORIGINS: https://source-fixture
+      AGENT_RECONCILIATION_INTERVAL_MS: "250"
+      JOB_HEARTBEAT_INTERVAL_MS: "1000"
+      JOB_LEASE_DURATION_MS: "5000"
+      JOB_POLL_INTERVAL_MS: "100"
+      NODE_EXTRA_CA_CERTS: /trusted-ca/root.crt
+    volumes:
+      - source-fixture-ca:/trusted-ca:ro
+
+  agent-evaluator:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-agent-evaluator:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/agent-evaluator/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: "3500"
+      ADMIN_API_URL: http://admin-api:3100
+      AGENT_API_URL: http://agent-api:3200
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      SERVICE_GRANT_TOKEN: ${E2E_AGENT_EVALUATOR_TOKEN}
+
+  asset-processor:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-asset-processor:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/asset-processor/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      PORT: "3600"
+      ADMIN_API_URL: http://admin-api:3100
+      AGENT_API_URL: http://agent-api:3200
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      SERVICE_GRANT_TOKEN: ${E2E_ASSET_PROCESSOR_TOKEN}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+
+  automation-executor:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-automation-executor:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/automation-executor/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      source-fixture:
+        condition: service_healthy
+      source-fixture-ca:
+        condition: service_completed_successfully
+    environment:
+      <<: [*database-environment, *object-storage-environment]
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_automation_executor
+      PORT: "3700"
+      ADMIN_API_URL: http://admin-api:3100
+      API_URL: http://api:3000
+      AGENT_API_URL: http://agent-api:3200
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      SERVICE_GRANT_TOKEN: ${E2E_AUTOMATION_EXECUTOR_TOKEN}
+      AUDIT_ARCHIVE_ENCRYPTION_KEYS_JSON: '{"e2e":"${E2E_CONTENT_KEY_BASE64}"}'
+      AUDIT_ARCHIVE_ENCRYPTION_ACTIVE_KEY_VERSION: e2e
+      SOURCE_SYNC_ALLOWED_ORIGINS: https://source-fixture
+      JOB_HEARTBEAT_INTERVAL_MS: "1000"
+      AUTOMATION_FAILPOINT: ${E2E_AUTOMATION_FAILPOINT:-NONE}
+      AUTOMATION_FAILPOINT_DELAY_MS: ${E2E_AUTOMATION_FAILPOINT_DELAY_MS:-1}
+      NODE_EXTRA_CA_CERTS: /trusted-ca/root.crt
+    volumes:
+      - source-fixture-ca:/trusted-ca:ro
+
+  lexicon-builder:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-lexicon-builder:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/lexicon-builder/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+      model-gateway:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *database-environment
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_lexicon_builder
+      PORT: "3800"
+      ADMIN_API_URL: http://admin-api:3100
+      MODEL_GATEWAY_URL: http://model-gateway:3300
+      SERVICE_GRANT_TOKEN: ${E2E_LEXICON_BUILDER_TOKEN}
+      JOB_POLL_INTERVAL_MS: "100"
+      JOB_HEARTBEAT_INTERVAL_MS: "1000"
+      LEXICON_BUILDER_WORK_ROOT: /data/lexicon-builder/work
+      LEXICON_ARTIFACT_ROOT: /data/lexicon-builder/artifacts
+      LEXICON_AI_ENABLED: "false"
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_ENDPOINT_ALLOW_INSECURE: "true"
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_S3_BUCKET_NAME: sylis-lexicon
+      AWS_S3_URL_STYLE: path
+      AWS_ACCESS_KEY_ID: ${E2E_MINIO_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${E2E_MINIO_SECRET_KEY}
+    volumes:
+      - lexicon-builder-data:/data/lexicon-builder
+      - ${E2E_LEXICON_FIXTURE_ROOT}:/fixtures/lexicon:ro
+
+  lexicon-publisher:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-lexicon-publisher:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/backends/lexicon-publisher/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      <<: *database-environment
+      DATABASE_URL: postgresql://postgres:${E2E_POSTGRES_PASSWORD}@postgres:5432/sylis?options=-c%20role%3Dsylis_lexicon_publisher
+      PORT: "3900"
+      ADMIN_API_URL: http://admin-api:3100
+      SERVICE_GRANT_TOKEN: ${E2E_LEXICON_PUBLISHER_TOKEN}
+      JOB_POLL_INTERVAL_MS: "100"
+      JOB_HEARTBEAT_INTERVAL_MS: "1000"
+      LEXICON_PUBLISHER_WORK_ROOT: /data/lexicon-publisher/work
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_S3_URL_STYLE: path
+      AWS_ACCESS_KEY_ID: ${E2E_MINIO_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${E2E_MINIO_SECRET_KEY}
+    volumes:
+      - lexicon-publisher-data:/data/lexicon-publisher
+
+  web:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-web:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/frontends/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+      agent-api:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      API_UPSTREAM: http://api:3000
+      AGENT_API_UPSTREAM: http://agent-api:3200
+    ports:
+      - "127.0.0.1:${E2E_WEB_PORT}:8080"
+
+  admin:
+    image: ${SYLIS_E2E_IMAGE_PREFIX}-admin:${SYLIS_E2E_IMAGE_TAG}
+    pull_policy: ${SYLIS_E2E_PULL_POLICY}
+    build:
+      context: ../..
+      dockerfile: apps/frontends/admin/Dockerfile
+    depends_on:
+      admin-api:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      ADMIN_API_UPSTREAM: http://admin-api:3100
+    ports:
+      - "127.0.0.1:${E2E_ADMIN_PORT}:8080"
+
+volumes:
+  postgres-data:
+  minio-data:
+  lexicon-builder-data:
+  lexicon-publisher-data:
+  source-fixture-data:
+  source-fixture-config:
+  source-fixture-ca:

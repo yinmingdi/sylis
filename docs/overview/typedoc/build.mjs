@@ -17,4 +17,4 @@ async function main() {
   await api.generateDocs();
 }
 
-main();
+await main();

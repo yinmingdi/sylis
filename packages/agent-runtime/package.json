@@ -1,0 +1,32 @@
+{
+  "name": "@sylis/agent-runtime",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sylis/agent-contracts": "workspace:*",
+    "@sylis/utils": "workspace:*",
+    "markdown-it": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^24.0.0",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

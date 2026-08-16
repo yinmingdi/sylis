@@ -1,0 +1,612 @@
+model ProficiencyFramework {
+  id              String                        @id @default(uuid()) @db.Uuid
+  key             String                        @unique
+  name            String
+  sourceDatasetId String                        @db.Uuid
+  sourceDataset   SourceDataset                 @relation(fields: [sourceDatasetId], references: [id], onDelete: Restrict)
+  versions        ProficiencyFrameworkVersion[]
+}
+
+model ProficiencyFrameworkVersion {
+  id                     String               @id @default(uuid()) @db.Uuid
+  frameworkId            String               @db.Uuid
+  version                String
+  namespace              String
+  sourceDatasetVersionId String               @db.Uuid
+  framework              ProficiencyFramework @relation(fields: [frameworkId], references: [id], onDelete: Restrict)
+  sourceDatasetVersion   SourceDatasetVersion @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+  levels                 ProficiencyLevel[]
+
+  @@unique([frameworkId, version])
+}
+
+model ProficiencyLevel {
+  id                   String                                @id @default(uuid()) @db.Uuid
+  versionId            String                                @db.Uuid
+  code                 String
+  label                String
+  rank                 Int
+  version              ProficiencyFrameworkVersion           @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  headwordClaims       ProficiencyHeadwordClaim[]
+  entryClaims          ProficiencyEntryClaim[]
+  senseClaims          ProficiencySenseClaim[]
+  assessmentScopeRules AssessmentProficiencyLevelScopeRule[]
+
+  @@unique([versionId, code])
+  @@unique([versionId, rank])
+}
+
+model ProficiencyHeadwordClaim {
+  id               String               @id @default(uuid()) @db.Uuid
+  releaseId        String               @db.Uuid
+  levelId          String               @db.Uuid
+  headwordId       String               @db.Uuid
+  claimType        ProficiencyClaimType
+  provenanceId     String               @db.Uuid
+  level            ProficiencyLevel     @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  headwordRevision HeadwordRevision     @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
+  provenance       Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, levelId, headwordId, claimType])
+}
+
+model ProficiencyEntryClaim {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  levelId       String               @db.Uuid
+  entryId       String               @db.Uuid
+  claimType     ProficiencyClaimType
+  provenanceId  String               @db.Uuid
+  level         ProficiencyLevel     @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  entryRevision LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, levelId, entryId, claimType])
+}
+
+model ProficiencySenseClaim {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  levelId       String               @db.Uuid
+  senseId       String               @db.Uuid
+  claimType     ProficiencyClaimType
+  provenanceId  String               @db.Uuid
+  level         ProficiencyLevel     @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  senseRevision LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, levelId, senseId, claimType])
+}
+
+model LearningObjective {
+  id            String                      @id @default(uuid()) @db.Uuid
+  lexiconId     String                      @db.Uuid
+  identityKey   String
+  revisions     LearningObjectiveRevision[]
+  memory        UserObjectiveMemoryState[]
+  exerciseItems ExerciseItem[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model LearningObjectiveRevision {
+  id                       String                                            @id @default(uuid()) @db.Uuid
+  releaseId                String                                            @db.Uuid
+  objectiveId              String                                            @db.Uuid
+  knowledgeFacet           KnowledgeFacet
+  retrievalDirection       RetrievalDirection
+  status                   RevisionStatus                                    @default(PUBLISHED)
+  contentHash              String
+  provenanceId             String                                            @db.Uuid
+  release                  LexiconRelease                                    @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  objective                LearningObjective                                 @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+  provenance               Provenance                                        @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  hints                    LearningObjectiveHint[]
+  senseSubjects            LearningObjectiveSenseSubject[]
+  formSubjects             LearningObjectiveFormSubject[]
+  collocationSubjects      LearningObjectiveCollocationSubject[]
+  frameSubjects            LearningObjectiveFrameSubject[]
+  exampleSubjects          LearningObjectiveExampleSubject[]
+  pedagogicalTargets       PedagogicalMaterialLearningObjectiveTarget[]
+  profileTargets           ContentProfileEvaluationLearningObjectiveTarget[]
+  exerciseRevisions        ExerciseRevision[]
+  memory                   UserObjectiveMemoryState[]
+  reviewEvents             ReviewEvent[]
+  planItems                DailyStudyPlanItem[]
+  readingAnnotationTargets LexicalAnnotationObjectiveTarget[]
+  readingTargets           ReadingTarget[]
+
+  @@unique([releaseId, objectiveId])
+  @@unique([releaseId, id])
+  @@unique([releaseId, objectiveId, id])
+}
+
+model LearningObjectiveSenseSubject {
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  subjectRole         LearningTargetRole
+  senseId             String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  senseRevision       LexicalSenseRevision      @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, objectiveRevisionId, subjectRole, senseId])
+  @@index([releaseId, senseId])
+}
+
+model LearningObjectiveFormSubject {
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  subjectRole         LearningTargetRole
+  formId              String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  form                LexicalForm               @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, objectiveRevisionId, subjectRole, formId])
+  @@index([releaseId, formId])
+}
+
+model LearningObjectiveCollocationSubject {
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  subjectRole         LearningTargetRole
+  collocationId       String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  collocation         Collocation               @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, objectiveRevisionId, subjectRole, collocationId])
+  @@index([releaseId, collocationId])
+}
+
+model LearningObjectiveFrameSubject {
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  subjectRole         LearningTargetRole
+  frameId             String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  frame               SyntacticFrame            @relation(fields: [releaseId, frameId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, objectiveRevisionId, subjectRole, frameId])
+  @@index([releaseId, frameId])
+}
+
+model LearningObjectiveExampleSubject {
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  subjectRole         LearningTargetRole
+  senseExampleId      String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  senseExample        SenseExample              @relation(fields: [releaseId, senseExampleId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, objectiveRevisionId, subjectRole, senseExampleId])
+  @@index([releaseId, senseExampleId])
+}
+
+model LearningObjectiveHint {
+  id                  String                    @id @default(uuid()) @db.Uuid
+  releaseId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  hintKind            LearningObjectiveHintKind
+  languageTag         String
+  text                String
+  displayOrder        Int
+  provenanceId        String                    @db.Uuid
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  provenance          Provenance                @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, objectiveRevisionId, displayOrder])
+}
+
+model PedagogicalMaterial {
+  id          String                        @id @default(uuid()) @db.Uuid
+  lexiconId   String                        @db.Uuid
+  identityKey String
+  revisions   PedagogicalMaterialRevision[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model PedagogicalMaterialRevision {
+  id                   String                                              @id @default(uuid()) @db.Uuid
+  releaseId            String                                              @db.Uuid
+  materialId           String                                              @db.Uuid
+  kind                 PedagogicalMaterialKind
+  learningLanguageTag  String
+  supportLanguageTag   String
+  audienceProfileKey   String
+  status               RevisionStatus                                      @default(PUBLISHED)
+  contentHash          String
+  provenanceId         String                                              @db.Uuid
+  release              LexiconRelease                                      @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  material             PedagogicalMaterial                                 @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  provenance           Provenance                                          @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  blocks               PedagogicalMaterialBlock[]
+  entryTargets         PedagogicalMaterialEntryTarget[]
+  senseTargets         PedagogicalMaterialSenseTarget[]
+  formTargets          PedagogicalMaterialFormTarget[]
+  morphemeTargets      PedagogicalMaterialMorphemeTarget[]
+  wordFormationTargets PedagogicalMaterialWordFormationTarget[]
+  collocationTargets   PedagogicalMaterialCollocationTarget[]
+  objectiveTargets     PedagogicalMaterialLearningObjectiveTarget[]
+  profileTargets       ContentProfileEvaluationPedagogicalMaterialTarget[]
+  stimulusBlocks       AssessmentStimulusMaterialBlock[]
+
+  @@unique([releaseId, materialId])
+  @@unique([releaseId, id])
+}
+
+model PedagogicalMaterialEntryTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  entryId            String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  entryRevision      LexicalEntryRevision        @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, entryId])
+}
+
+model PedagogicalMaterialSenseTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  senseId            String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  senseRevision      LexicalSenseRevision        @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, senseId])
+}
+
+model PedagogicalMaterialFormTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  formId             String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  form               LexicalForm                 @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, formId])
+}
+
+model PedagogicalMaterialMorphemeTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  morphemeId         String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  morpheme           Morpheme                    @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, morphemeId])
+}
+
+model PedagogicalMaterialWordFormationTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  wordFormationId    String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  wordFormation      WordFormation               @relation(fields: [releaseId, wordFormationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, wordFormationId])
+}
+
+model PedagogicalMaterialCollocationTarget {
+  releaseId          String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  targetRole         LearningTargetRole
+  collocationId      String                      @db.Uuid
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  collocation        Collocation                 @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, collocationId])
+}
+
+model PedagogicalMaterialLearningObjectiveTarget {
+  releaseId           String                      @db.Uuid
+  materialRevisionId  String                      @db.Uuid
+  targetRole          LearningTargetRole
+  learningObjectiveId String                      @db.Uuid
+  materialRevision    PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  objectiveRevision   LearningObjectiveRevision   @relation(fields: [releaseId, learningObjectiveId], references: [releaseId, objectiveId], onDelete: Restrict)
+
+  @@id([releaseId, materialRevisionId, targetRole, learningObjectiveId])
+}
+
+model PedagogicalMaterialBlock {
+  id                 String                            @id @default(uuid()) @db.Uuid
+  releaseId          String                            @db.Uuid
+  materialRevisionId String                            @db.Uuid
+  position           Int
+  roleCode           String
+  materialRevision   PedagogicalMaterialRevision       @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+  textBlocks         PedagogicalMaterialTextBlock[]
+  exampleBlocks      PedagogicalMaterialExampleBlock[]
+  mediaBlocks        PedagogicalMaterialMediaBlock[]
+  citations          PedagogicalMaterialCitation[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, materialRevisionId, position])
+}
+
+model PedagogicalMaterialTextBlock {
+  releaseId   String                       @db.Uuid
+  blockId     String                       @db.Uuid
+  languageTag String
+  text        String
+  block       PedagogicalMaterialBlock     @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  mentions    PedagogicalMaterialMention[]
+
+  @@id([releaseId, blockId])
+}
+
+model PedagogicalMaterialExampleBlock {
+  releaseId      String                   @db.Uuid
+  blockId        String                   @db.Uuid
+  senseExampleId String                   @db.Uuid
+  block          PedagogicalMaterialBlock @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  senseExample   SenseExample             @relation(fields: [releaseId, senseExampleId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model PedagogicalMaterialMediaBlock {
+  releaseId    String                   @db.Uuid
+  blockId      String                   @db.Uuid
+  mediaAssetId String                   @db.Uuid
+  block        PedagogicalMaterialBlock @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  media        MediaAsset               @relation(fields: [releaseId, mediaAssetId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model PedagogicalMaterialMention {
+  id                  String                                         @id @default(uuid()) @db.Uuid
+  releaseId           String                                         @db.Uuid
+  materialBlockId     String                                         @db.Uuid
+  startOffset         Int
+  endOffset           Int
+  textBlock           PedagogicalMaterialTextBlock                   @relation(fields: [releaseId, materialBlockId], references: [releaseId, blockId], onDelete: Restrict)
+  headwordTargets     PedagogicalMaterialMentionHeadwordTarget[]
+  entryTargets        PedagogicalMaterialMentionEntryTarget[]
+  formTargets         PedagogicalMaterialMentionFormTarget[]
+  senseTargets        PedagogicalMaterialMentionSenseTarget[]
+  conceptTargets      PedagogicalMaterialMentionConceptTarget[]
+  senseExampleTargets PedagogicalMaterialMentionSenseExampleTarget[]
+  collocationTargets  PedagogicalMaterialMentionCollocationTarget[]
+  frameTargets        PedagogicalMaterialMentionFrameTarget[]
+  morphemeTargets     PedagogicalMaterialMentionMorphemeTarget[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, materialBlockId, startOffset, endOffset])
+}
+
+model PedagogicalMaterialMentionHeadwordTarget {
+  releaseId  String                     @db.Uuid
+  mentionId  String                     @db.Uuid
+  headwordId String                     @db.Uuid
+  mention    PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  headword   HeadwordRevision           @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionEntryTarget {
+  releaseId String                     @db.Uuid
+  mentionId String                     @db.Uuid
+  entryId   String                     @db.Uuid
+  mention   PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  entry     LexicalEntryRevision       @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionFormTarget {
+  releaseId String                     @db.Uuid
+  mentionId String                     @db.Uuid
+  formId    String                     @db.Uuid
+  mention   PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  form      LexicalForm                @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionSenseTarget {
+  releaseId String                     @db.Uuid
+  mentionId String                     @db.Uuid
+  senseId   String                     @db.Uuid
+  mention   PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  sense     LexicalSenseRevision       @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionConceptTarget {
+  releaseId String                     @db.Uuid
+  mentionId String                     @db.Uuid
+  conceptId String                     @db.Uuid
+  mention   PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  concept   LexicalConceptRevision     @relation(fields: [releaseId, conceptId], references: [releaseId, conceptId], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionSenseExampleTarget {
+  releaseId      String                     @db.Uuid
+  mentionId      String                     @db.Uuid
+  senseExampleId String                     @db.Uuid
+  mention        PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  senseExample   SenseExample               @relation(fields: [releaseId, senseExampleId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionCollocationTarget {
+  releaseId     String                     @db.Uuid
+  mentionId     String                     @db.Uuid
+  collocationId String                     @db.Uuid
+  mention       PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  collocation   Collocation                @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionFrameTarget {
+  releaseId String                     @db.Uuid
+  mentionId String                     @db.Uuid
+  frameId   String                     @db.Uuid
+  mention   PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  frame     SyntacticFrame             @relation(fields: [releaseId, frameId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialMentionMorphemeTarget {
+  releaseId  String                     @db.Uuid
+  mentionId  String                     @db.Uuid
+  morphemeId String                     @db.Uuid
+  mention    PedagogicalMaterialMention @relation(fields: [releaseId, mentionId], references: [releaseId, id], onDelete: Restrict)
+  morpheme   Morpheme                   @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, mentionId])
+}
+
+model PedagogicalMaterialCitation {
+  id                String                   @id @default(uuid()) @db.Uuid
+  releaseId         String                   @db.Uuid
+  materialBlockId   String                   @db.Uuid
+  contentEvidenceId String                   @db.Uuid
+  block             PedagogicalMaterialBlock @relation(fields: [releaseId, materialBlockId], references: [releaseId, id], onDelete: Restrict)
+  evidence          ContentEvidence          @relation(fields: [contentEvidenceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, materialBlockId, contentEvidenceId])
+}
+
+model UserBookEnrollment {
+  id            String                @id @default(uuid()) @db.Uuid
+  userId        String                @db.Uuid
+  bookId        String                @db.Uuid
+  editionId     String                @db.Uuid
+  active        Boolean               @default(true)
+  dailyNewLimit Int                   @default(20)
+  enrolledAt    DateTime              @default(now()) @db.Timestamptz(3)
+  completedAt   DateTime?             @db.Timestamptz(3)
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book          VocabularyBook        @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  edition       VocabularyBookEdition @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  plans         DailyStudyPlan[]
+
+  @@unique([userId, bookId, editionId])
+}
+
+model DailyStudyPlan {
+  id           String               @id @default(uuid()) @db.Uuid
+  userId       String               @db.Uuid
+  enrollmentId String?              @db.Uuid
+  releaseId    String               @db.Uuid
+  localDate    DateTime             @db.Date
+  timezone     String
+  status       DailyStudyPlanStatus
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollment   UserBookEnrollment?  @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  release      LexiconRelease       @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  items        DailyStudyPlanItem[]
+
+  @@unique([userId, localDate])
+  @@unique([releaseId, id])
+}
+
+model DailyStudyPlanItem {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  releaseId            String                    @db.Uuid
+  planId               String                    @db.Uuid
+  objectiveRevisionId  String                    @db.Uuid
+  position             Int
+  mode                 StudyPlanItemMode
+  recognitionDecision  StudyRecognitionDecision  @default(NOT_STARTED)
+  correctStreak        Int                       @default(0)
+  requiredCorrectCount Int                       @default(1)
+  completedAt          DateTime?                 @db.Timestamptz(3)
+  plan                 DailyStudyPlan            @relation(fields: [releaseId, planId], references: [releaseId, id], onDelete: Cascade)
+  objectiveRevision    LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  attempts             ExerciseAttempt[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, planId, position])
+  @@unique([releaseId, planId, objectiveRevisionId])
+}
+
+enum StudyRecognitionDecision {
+  NOT_STARTED
+  RECOGNIZED
+  NOT_RECOGNIZED
+}
+
+model FSRSParameterSet {
+  id          String        @id @default(uuid()) @db.Uuid
+  version     String        @unique
+  parameters  Json
+  contentHash String        @unique
+  effectiveAt DateTime      @db.Timestamptz(3)
+  reviews     ReviewEvent[]
+}
+
+model UserObjectiveMemoryState {
+  id                  String                    @id @default(uuid()) @db.Uuid
+  userId              String                    @db.Uuid
+  releaseId           String                    @db.Uuid
+  objectiveId         String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  dueAt               DateTime                  @db.Timestamptz(3)
+  fsrsState           Int                       @default(0)
+  stability           Float
+  difficulty          Float
+  elapsedDays         Int                       @default(0)
+  scheduledDays       Int                       @default(0)
+  reviewCount         Int                       @default(0)
+  lapseCount          Int                       @default(0)
+  lastReviewedAt      DateTime?                 @db.Timestamptz(3)
+  version             Int                       @default(0)
+  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  objective           LearningObjective         @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveId, objectiveRevisionId], references: [releaseId, objectiveId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, objectiveId])
+  @@index([userId, dueAt])
+}
+
+model ReviewEvent {
+  id                  String                    @id @default(uuid()) @db.Uuid
+  userId              String                    @db.Uuid
+  releaseId           String                    @db.Uuid
+  attemptId           String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  parameterSetId      String                    @db.Uuid
+  rating              Int
+  reviewedAt          DateTime                  @db.Timestamptz(3)
+  idempotencyKey      String
+  user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt             ExerciseAttempt           @relation(fields: [releaseId, attemptId], references: [releaseId, id], onDelete: Restrict)
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  parameterSet        FSRSParameterSet          @relation(fields: [parameterSetId], references: [id], onDelete: Restrict)
+  snapshots           ReviewStateSnapshot[]
+
+  @@unique([userId, idempotencyKey])
+  @@unique([releaseId, id])
+  @@unique([releaseId, attemptId])
+}
+
+model ReviewStateSnapshot {
+  id            String              @id @default(uuid()) @db.Uuid
+  releaseId     String              @db.Uuid
+  reviewId      String              @db.Uuid
+  phase         ReviewSnapshotPhase
+  dueAt         DateTime            @db.Timestamptz(3)
+  fsrsState     Int
+  stability     Float
+  difficulty    Float
+  elapsedDays   Int
+  scheduledDays Int
+  review        ReviewEvent         @relation(fields: [releaseId, reviewId], references: [releaseId, id], onDelete: Restrict)
+
+  @@unique([releaseId, reviewId, phase])
+}

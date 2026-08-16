@@ -1,0 +1,81 @@
+{
+  "manifestVersion": "sylis.source-manifest/1",
+  "release": {
+    "lexiconKey": "sylis-en-zh-fixture",
+    "releaseVersion": "2026.08.04.1",
+    "sourceLanguageTag": "en",
+    "learningLanguageTags": ["zh-CN"],
+    "compilerVersion": "1.0.0",
+    "gitCommit": "0000000000000000000000000000000000000000"
+  },
+  "sources": [
+    {
+      "key": "ecdict",
+      "version": "fixture-1",
+      "retrievedAt": "2026-08-07T00:00:00.000Z",
+      "uri": "ecdict.csv",
+      "sha256": "800af63693c852b7a7aad2e349206cf0c0000ee61c7c612ba3f2a26c24b9acb1",
+      "adapter": "ECDICT",
+      "homepageUri": "https://github.com/skywind3000/ECDICT",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": false,
+        "effectiveFrom": "2026-08-07T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    },
+    {
+      "key": "kaikki",
+      "version": "fixture-1",
+      "retrievedAt": "2026-08-07T00:00:00.000Z",
+      "uri": "kaikki.jsonl",
+      "sha256": "0c2cc01353f18f20f337f3da8eec0fc7bd6ff0fbc30ef43d883c792dbac08893",
+      "adapter": "WIKTEXTRACT_EN",
+      "homepageUri": "https://kaikki.org/dictionary/English/",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": false,
+        "effectiveFrom": "2026-08-07T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    },
+    {
+      "key": "oewn",
+      "version": "fixture-1",
+      "retrievedAt": "2026-08-07T00:00:00.000Z",
+      "uri": "oewn.xml",
+      "sha256": "fe665b1efc7114097ece6934f29cc207667f13db2a2a1cef3a9bf8a848371b3f",
+      "adapter": "WN_LMF",
+      "homepageUri": "https://en-word.net/",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": false,
+        "effectiveFrom": "2026-08-07T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    },
+    {
+      "key": "youdao",
+      "version": "fixture-1",
+      "retrievedAt": "2026-08-07T00:00:00.000Z",
+      "uri": "youdao.ndjson",
+      "sha256": "367d4dbc646ca2f6629bf036da8a61e53904a58483d0e027d7741d774a8680e7",
+      "adapter": "YOUDAO_NDJSON",
+      "homepageUri": "urn:sylis:fixture:youdao",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": false,
+        "effectiveFrom": "2026-08-07T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    }
+  ]
+}

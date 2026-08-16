@@ -1,0 +1,119 @@
+name: Lexicon release control
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Release operation
+        type: choice
+        required: true
+        options: [validate, preview, request, activate, rollback]
+      release_id:
+        description: Immutable LexiconRelease UUID
+        type: string
+        required: true
+      content_hash:
+        description: Expected uncompressed artifact content hash
+        type: string
+        required: false
+      approval_id:
+        description: Approval created and approved by a second release manager
+        type: string
+        required: false
+      reason:
+        description: Audited operational reason
+        type: string
+        required: false
+      confirmation:
+        description: Exact release ID for activate or rollback
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lexicon-production-control
+  cancel-in-progress: false
+
+jobs:
+  control:
+    name: ${{ inputs.operation }} release ${{ inputs.release_id }}
+    runs-on: ubuntu-latest
+    environment: sylis / production-activate
+    env:
+      SYLIS_ADMIN_BASE_URL: ${{ vars.SYLIS_ADMIN_BASE_URL }}
+      SYLIS_ADMIN_ORIGIN: ${{ vars.SYLIS_ADMIN_ORIGIN }}
+      SYLIS_ADMIN_COOKIE: ${{ secrets.SYLIS_ADMIN_COOKIE }}
+      SYLIS_ADMIN_CSRF_TOKEN: ${{ secrets.SYLIS_ADMIN_CSRF_TOKEN }}
+      SYLIS_EVIDENCE_DIR: .artifacts/lexicon-release
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require an exact main commit
+        run: test "$(git branch --show-current)" = main
+      - name: Validate operation inputs
+        env:
+          OPERATION: ${{ inputs.operation }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          CONTENT_HASH: ${{ inputs.content_hash }}
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          REASON: ${{ inputs.reason }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          [[ "$RELEASE_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          case "$OPERATION" in
+            validate|preview) ;;
+            request) test -n "$CONTENT_HASH"; test -n "$REASON" ;;
+            activate|rollback)
+              test -n "$CONTENT_HASH"
+              test -n "$APPROVAL_ID"
+              test -n "$REASON"
+              test "$CONFIRMATION" = "$RELEASE_ID"
+              ;;
+          esac
+      - name: Execute audited release operation
+        env:
+          OPERATION: ${{ inputs.operation }}
+          RELEASE_ID: ${{ inputs.release_id }}
+          CONTENT_HASH: ${{ inputs.content_hash }}
+          APPROVAL_ID: ${{ inputs.approval_id }}
+          REASON: ${{ inputs.reason }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          case "$OPERATION" in
+            validate)
+              node tools/operations/cli.mjs lexicon-release \
+                --action validate --release-id "$RELEASE_ID"
+              ;;
+            preview)
+              args=(lexicon-release --action preview --release-id "$RELEASE_ID")
+              if [ -n "$CONTENT_HASH" ]; then args+=(--expected-content-hash "$CONTENT_HASH"); fi
+              node tools/operations/cli.mjs "${args[@]}"
+              ;;
+            request)
+              node tools/operations/cli.mjs lexicon-release \
+                --action request --release-id "$RELEASE_ID" \
+                --expected-content-hash "$CONTENT_HASH" --reason "$REASON"
+              ;;
+            activate)
+              node tools/operations/cli.mjs lexicon-release \
+                --action activate --release-id "$RELEASE_ID" \
+                --expected-content-hash "$CONTENT_HASH" \
+                --approval-id "$APPROVAL_ID" --reason "$REASON" \
+                --confirm "$CONFIRMATION"
+              ;;
+            rollback)
+              node tools/operations/cli.mjs lexicon-rollback \
+                --action activate --release-id "$RELEASE_ID" \
+                --expected-content-hash "$CONTENT_HASH" \
+                --approval-id "$APPROVAL_ID" --reason "$REASON" \
+                --confirm "$CONFIRMATION"
+              ;;
+          esac
+      - name: Generate evidence manifest
+        if: always()
+        run: node tools/operations/cli.mjs evidence-manifest

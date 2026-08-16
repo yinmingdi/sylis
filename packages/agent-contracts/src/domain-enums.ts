@@ -1,0 +1,228 @@
+export enum CapabilityKey {
+  LEARNING_CHAT = "learning.chat",
+  LEXICON_EXPLAIN = "lexicon.explain",
+  GRAMMAR_ANALYZE = "grammar.analyze",
+  TRANSLATION_ANALYZE = "translation.analyze",
+  READING_COMPOSE = "reading.compose",
+  PRACTICE_GENERATE = "practice.generate",
+  STUDY_COACH = "study.coach",
+}
+
+export const CAPABILITY_KEYS = Object.values(CapabilityKey);
+
+export enum AgentExecutionMode {
+  SINGLE_CALL = "SINGLE_CALL",
+  WORKFLOW = "WORKFLOW",
+  AGENT_LOOP = "AGENT_LOOP",
+}
+
+export enum AgentCredentialSource {
+  PLATFORM = "PLATFORM",
+  USER = "USER",
+}
+
+export const AGENT_EXECUTION_MODES = Object.values(AgentExecutionMode);
+
+export enum ToolSideEffectClass {
+  READ_PUBLIC = "READ_PUBLIC",
+  READ_PRIVATE = "READ_PRIVATE",
+  WRITE_PRIVATE_REVERSIBLE = "WRITE_PRIVATE_REVERSIBLE",
+  WRITE_FORMAL = "WRITE_FORMAL",
+  EXTERNAL_SIDE_EFFECT = "EXTERNAL_SIDE_EFFECT",
+}
+
+export const TOOL_SIDE_EFFECT_CLASSES = Object.values(ToolSideEffectClass);
+
+export enum AgentToolKey {
+  WEB_SEARCH = "web.search",
+  WEB_PAGE_READ = "web.page.read",
+  LEXICON_SEARCH = "lexicon.search",
+  LEXICON_ENTRY_READ = "lexicon.entry.read",
+  LEARNING_TODAY_READ = "learning.today.read",
+  READING_DOCUMENT_READ = "reading.document.read",
+  NOTEBOOK_LIST = "notebook.list",
+  NOTEBOOK_ITEM_ADD = "notebook.item.add",
+  READING_DOCUMENT_PUBLISH = "reading.document.publish",
+}
+
+export enum AgentProviderToolKind {
+  DOMAIN = "DOMAIN",
+  ARTIFACT = "ARTIFACT",
+  CHILD_RUN = "CHILD_RUN",
+  MEMORY = "MEMORY",
+  PROPOSAL = "PROPOSAL",
+  WAIT = "WAIT",
+}
+
+export enum AgentResourceKind {
+  AGENT_MESSAGE = "AGENT_MESSAGE",
+  AGENT_MEMORY_CARD = "AGENT_MEMORY_CARD",
+  AGENT_ARTIFACT_REVISION = "AGENT_ARTIFACT_REVISION",
+  AGENT_RUN_RESULT = "AGENT_RUN_RESULT",
+  CONTENT_ASSET_REVISION = "CONTENT_ASSET_REVISION",
+  READING_DOCUMENT_REVISION = "READING_DOCUMENT_REVISION",
+  LEXICON_HEADWORD = "LEXICON_HEADWORD",
+  LEXICON_ENTRY = "LEXICON_ENTRY",
+  LEXICON_SENSE = "LEXICON_SENSE",
+  LEARNING_SUMMARY = "LEARNING_SUMMARY",
+  NOTEBOOK = "NOTEBOOK",
+}
+
+export enum AgentArtifactKind {
+  ARTICLE = "ARTICLE",
+  GRAMMAR_ANALYSIS = "GRAMMAR_ANALYSIS",
+  TRANSLATION_ANALYSIS = "TRANSLATION_ANALYSIS",
+  LEXICON_EXPLANATION = "LEXICON_EXPLANATION",
+  PRACTICE_SET = "PRACTICE_SET",
+  STUDY_PLAN = "STUDY_PLAN",
+  OTHER = "OTHER",
+}
+
+export enum AgentArtifactSchemaVersion {
+  ARTICLE_V1 = "sylis.agent.article/1",
+  GRAMMAR_ANALYSIS_V1 = "sylis.agent.grammar-analysis/1",
+  TRANSLATION_ANALYSIS_V1 = "sylis.agent.translation-analysis/1",
+  LEXICON_EXPLANATION_V1 = "sylis.agent.lexicon-explanation/1",
+  PRACTICE_SET_V1 = "sylis.agent.practice-set/1",
+  STUDY_PLAN_V1 = "sylis.agent.study-plan/1",
+}
+
+export enum DiagnosticReferenceKind {
+  AGENT_MESSAGE = "AGENT_MESSAGE",
+  AGENT_RUN = "AGENT_RUN",
+  AGENT_EVENT = "AGENT_EVENT",
+  AGENT_ARTIFACT_REVISION = "AGENT_ARTIFACT_REVISION",
+  CONTENT_ASSET_REVISION = "CONTENT_ASSET_REVISION",
+}
+
+export enum DiagnosticBundleRevisionStatus {
+  DRAFT = "DRAFT",
+  CONFIRMED = "CONFIRMED",
+}
+
+export enum AgentSessionStatus {
+  ACTIVE = "ACTIVE",
+  ARCHIVED = "ARCHIVED",
+  DELETED = "DELETED",
+}
+
+export enum AgentMessageRole {
+  USER = "USER",
+  ASSISTANT = "ASSISTANT",
+  SYSTEM = "SYSTEM",
+}
+
+export enum AgentMessageVisibility {
+  USER = "USER",
+  INTERNAL = "INTERNAL",
+}
+
+export enum AgentEventType {
+  INSTRUCTION_QUEUED = "INSTRUCTION_QUEUED",
+  RUN_STARTED = "RUN_STARTED",
+  CONTEXT_SNAPSHOT_CREATED = "CONTEXT_SNAPSHOT_CREATED",
+  MESSAGE_STARTED = "MESSAGE_STARTED",
+  BLOCK_OPENED = "BLOCK_OPENED",
+  BLOCK_DELTA_APPENDED = "BLOCK_DELTA_APPENDED",
+  BLOCK_SEALED = "BLOCK_SEALED",
+  BLOCK_INTERRUPTED = "BLOCK_INTERRUPTED",
+  MESSAGE_COMPLETED = "MESSAGE_COMPLETED",
+  MESSAGE_INTERRUPTED = "MESSAGE_INTERRUPTED",
+  TOOL_CALL_PROPOSED = "TOOL_CALL_PROPOSED",
+  TOOL_CALL_STARTED = "TOOL_CALL_STARTED",
+  TOOL_CALL_COMPLETED = "TOOL_CALL_COMPLETED",
+  PROPOSAL_SUBMITTED = "PROPOSAL_SUBMITTED",
+  PROPOSAL_DECIDED = "PROPOSAL_DECIDED",
+  PROPOSAL_COMMITTED = "PROPOSAL_COMMITTED",
+  ARTIFACT_REVISION_PROPOSED = "ARTIFACT_REVISION_PROPOSED",
+  MEMORY_CARD_UPDATED = "MEMORY_CARD_UPDATED",
+  CHILD_RUN_STARTED = "CHILD_RUN_STARTED",
+  CHILD_RUN_COMPLETED = "CHILD_RUN_COMPLETED",
+  WAIT_REQUESTED = "WAIT_REQUESTED",
+  RUN_COMPLETED = "RUN_COMPLETED",
+  RUN_FAILED = "RUN_FAILED",
+  RUN_CANCELLED = "RUN_CANCELLED",
+  RUN_PREEMPTED = "RUN_PREEMPTED",
+  RUN_RECONCILED = "RUN_RECONCILED",
+}
+
+export enum AgentMemoryManagementKind {
+  AGENT_MANAGED = "AGENT_MANAGED",
+  USER_MANAGED = "USER_MANAGED",
+}
+
+export const AGENT_EVENT_TYPES = Object.values(AgentEventType);
+
+export enum AgentToolCallStatus {
+  PROPOSED = "PROPOSED",
+  APPROVED = "APPROVED",
+  QUEUED = "QUEUED",
+  RUNNING = "RUNNING",
+  SUCCEEDED = "SUCCEEDED",
+  FAILED = "FAILED",
+  REJECTED = "REJECTED",
+  CANCELLED = "CANCELLED",
+  UNKNOWN_OUTCOME = "UNKNOWN_OUTCOME",
+}
+
+export enum AgentProposalRiskClass {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  PROHIBITED = "PROHIBITED",
+}
+
+export enum AgentProposalStatus {
+  PENDING = "PENDING",
+  COMMITTING = "COMMITTING",
+  REJECTED = "REJECTED",
+  EXPIRED = "EXPIRED",
+  COMMITTED = "COMMITTED",
+  FAILED = "FAILED",
+}
+
+export enum AgentWaitStatus {
+  ACTIVE = "ACTIVE",
+  SATISFIED = "SATISFIED",
+  CANCELLED = "CANCELLED",
+  EXPIRED = "EXPIRED",
+}
+
+export enum AgentReleaseKind {
+  CAPABILITY = "CAPABILITY",
+  TOOL = "TOOL",
+  SKILL = "SKILL",
+  EVAL = "EVAL",
+}
+
+export enum AgentReleaseEnvironment {
+  STAGING = "STAGING",
+  PRODUCTION = "PRODUCTION",
+}
+
+export enum AgentReleaseCommandKind {
+  CANDIDATE = "CANDIDATE",
+  VALIDATE = "VALIDATE",
+  EVALUATE = "EVALUATE",
+  JUDGE = "JUDGE",
+  APPROVE = "APPROVE",
+  PROMOTE = "PROMOTE",
+  ROLLBACK = "ROLLBACK",
+  REVOKE = "REVOKE",
+}
+
+export enum AgentEvaluationKind {
+  EVALUATION = "EVALUATION",
+  JUDGEMENT = "JUDGEMENT",
+}
+
+export enum AgentReleaseStatus {
+  DRAFT = "DRAFT",
+  CANDIDATE = "CANDIDATE",
+  PUBLISHED = "PUBLISHED",
+  REVOKED = "REVOKED",
+}
+
+export enum AdminAgentRunCommandKind {
+  TERMINATE = "TERMINATE",
+}

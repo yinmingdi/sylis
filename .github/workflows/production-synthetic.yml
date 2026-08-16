@@ -1,0 +1,77 @@
+name: Production synthetic
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sylis-production-environment
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24.19.0"
+  PNPM_VERSION: "10.23.0"
+
+jobs:
+  synthetic:
+    name: Authenticated production synthetic
+    runs-on: ubuntu-latest
+    environment: sylis / production-synthetic
+    env:
+      SYLIS_WEB_URL: ${{ vars.SYLIS_WEB_URL }}
+      SYLIS_ADMIN_URL: ${{ vars.SYLIS_ADMIN_URL }}
+      SYLIS_DEPLOYMENT_SCHEDULED: "true"
+      SYLIS_SYNTHETIC_RESOURCE_PREFIX: "[sylis-synthetic]"
+      SYLIS_SYNTHETIC_USER_EMAIL: ${{ secrets.SYLIS_SYNTHETIC_USER_EMAIL }}
+      SYLIS_SYNTHETIC_USER_PASSWORD: ${{ secrets.SYLIS_SYNTHETIC_USER_PASSWORD }}
+      SYLIS_SYNTHETIC_ADMIN_EMAIL: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_EMAIL }}
+      SYLIS_SYNTHETIC_ADMIN_PASSWORD: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_PASSWORD }}
+      SYLIS_SYNTHETIC_ADMIN_TOTP_SECRET: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_TOTP_SECRET }}
+    steps:
+      - name: Resolve the currently deployed frontend identity
+        id: release
+        run: |
+          identity=$(curl --fail --silent --show-error "$SYLIS_WEB_URL/version.json")
+          test "$(printf '%s' "$identity" | jq -r '.status')" = ready
+          test "$(printf '%s' "$identity" | jq -r '.service')" = web
+          commit_sha=$(printf '%s' "$identity" | jq -r '.commitSha')
+          version=$(printf '%s' "$identity" | jq -r '.version')
+          [[ "$commit_sha" =~ ^[0-9a-f]{40}$ ]]
+          test -n "$version"
+          echo "commit_sha=$commit_sha" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ steps.release.outputs.commit_sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run deployed read paths and the reversible Notebook probe
+        env:
+          SYLIS_EXPECTED_VERSION: ${{ steps.release.outputs.version }}
+          SYLIS_EXPECTED_COMMIT_SHA: ${{ steps.release.outputs.commit_sha }}
+        run: pnpm exec playwright test --config tests/deployment/playwright.config.ts
+      - name: Remove every prefix-scoped synthetic Notebook
+        if: ${{ always() }}
+        run: pnpm exec tsx tests/deployment/cleanup.ts
+      - name: Upload synthetic diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: production-synthetic-${{ github.run_id }}
+          path: |
+            tests/deployment/report
+            tests/deployment/test-results
+          retention-days: 14
+          if-no-files-found: warn

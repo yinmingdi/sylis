@@ -1,0 +1,45 @@
+{
+  "name": "@sylis/model-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tools",
+    "test": "vitest run",
+    "provider:smoke:deepseek": "tsx tools/deepseek-provider-smoke.ts",
+    "route:publish:deepseek:local": "tsx tools/publish-deepseek-route-local.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "@sylis/content-crypto": "workspace:*",
+    "@sylis/agent-contracts": "workspace:*",
+    "@sylis/database": "workspace:*",
+    "@sylis/job-contracts": "workspace:*",
+    "@sylis/utils": "workspace:*",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@swc/cli": "^0.6.0",
+    "@swc/core": "^1.10.7",
+    "@types/node": "^24.0.0",
+    "@types/express": "^5.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

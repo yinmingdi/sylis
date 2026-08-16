@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "documents": [
+    {
+      "audience": "USER",
+      "source": "apps/backends/api/openapi/user.openapi.json",
+      "rules": [
+        {
+          "match": "PREFIX",
+          "path": "/api/v1",
+          "authentication": "USER_SESSION"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/v1/auth/registration-challenges",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/v1/auth/password-recovery-challenges",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/v1/auth/password-resets",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/v1/auth/register",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/v1/auth/sessions",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/search",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/headwords/{id}",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/entries/{id}",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/entries/{id}/materials",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/senses/{id}",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "GET",
+          "path": "/api/v1/lexicon/senses/{id}/materials",
+          "authentication": "PUBLIC"
+        }
+      ]
+    },
+    {
+      "audience": "ADMIN",
+      "source": "apps/backends/admin-api/openapi/admin.openapi.json",
+      "rules": [
+        {
+          "match": "PREFIX",
+          "path": "/api/admin/v1",
+          "authentication": "ADMIN_SESSION"
+        },
+        {
+          "match": "PREFIX",
+          "path": "/health",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "PREFIX",
+          "path": "/internal/v1",
+          "authentication": "SERVICE_GRANT"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/admin/v1/auth/challenges",
+          "authentication": "PUBLIC"
+        },
+        {
+          "match": "EXACT",
+          "method": "POST",
+          "path": "/api/admin/v1/auth/sessions",
+          "authentication": "PUBLIC"
+        }
+      ]
+    },
+    {
+      "audience": "AGENT",
+      "source": "apps/backends/agent-api/openapi/agent.openapi.json",
+      "rules": [
+        {
+          "match": "PREFIX",
+          "path": "/api/agent/v1",
+          "authentication": "USER_SESSION"
+        },
+        {
+          "match": "PREFIX",
+          "path": "/internal/v1",
+          "authentication": "SERVICE_GRANT"
+        },
+        {
+          "match": "PREFIX",
+          "path": "/health",
+          "authentication": "PUBLIC"
+        }
+      ]
+    }
+  ]
+}

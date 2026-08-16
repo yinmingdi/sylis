@@ -1,6 +1,6 @@
 import type { Preview } from "@storybook/react-vite";
 
-import "@/apps/web/src/styles/index.less";
+import "@sylis/components/styles.css";
 
 const preview: Preview = {
   parameters: {
@@ -8,13 +8,6 @@ const preview: Preview = {
       matchers: {
         color: /(background|color)$/i,
         date: /Date$/i,
-      },
-    },
-    docs: {
-      toc: {
-        contentsSelector: ".sbdocs-content",
-        headingSelector: "h1, h2, h3",
-        title: "Table of Contents",
       },
     },
   },

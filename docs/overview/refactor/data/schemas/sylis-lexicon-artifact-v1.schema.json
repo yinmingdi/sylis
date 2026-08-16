@@ -1,0 +1,3348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sylis.example/schemas/sylis-lexicon-artifact-v1.schema.json",
+  "title": "Sylis Lexicon Artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifest",
+    "vocabularies",
+    "sources",
+    "provenance",
+    "lexicon",
+    "learning",
+    "quality"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "sylis.lexicon-artifact/1" },
+    "manifest": { "$ref": "#/$defs/ArtifactManifest" },
+    "vocabularies": { "$ref": "#/$defs/VocabularyCatalog" },
+    "sources": { "$ref": "#/$defs/SourceCatalog" },
+    "provenance": { "$ref": "#/$defs/ProvenanceCatalog" },
+    "lexicon": { "$ref": "#/$defs/LexiconGraph" },
+    "learning": { "$ref": "#/$defs/LearningContent" },
+    "quality": { "$ref": "#/$defs/QualityReport" }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "NullableId": {
+      "oneOf": [{ "$ref": "#/$defs/Id" }, { "type": "null" }]
+    },
+    "Code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "LanguageTag": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 35,
+      "pattern": "^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$"
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "NullableHash": {
+      "oneOf": [{ "$ref": "#/$defs/Hash" }, { "type": "null" }]
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "NullableTimestamp": {
+      "oneOf": [{ "$ref": "#/$defs/Timestamp" }, { "type": "null" }]
+    },
+    "NullableString": {
+      "type": ["string", "null"]
+    },
+    "NonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "PositiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "JsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/$defs/JsonValue" } },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+        }
+      ]
+    },
+    "TypedLexicalTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": {
+          "enum": [
+            "HEADWORD",
+            "ENTRY",
+            "FORM",
+            "SENSE",
+            "CONCEPT",
+            "SENSE_EXAMPLE",
+            "COLLOCATION",
+            "FRAME",
+            "MORPHEME"
+          ]
+        },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "LearningObjectiveTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": {
+          "enum": ["SENSE", "FORM", "COLLOCATION", "FRAME", "SENSE_EXAMPLE"]
+        },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMaterialTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": {
+          "enum": [
+            "ENTRY",
+            "SENSE",
+            "FORM",
+            "MORPHEME",
+            "WORD_FORMATION",
+            "COLLOCATION",
+            "LEARNING_OBJECTIVE"
+          ]
+        },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMaterialKind": {
+      "enum": [
+        "LEARNER_EXPLANATION",
+        "MORPHOLOGY_WALKTHROUGH",
+        "CULTURAL_CONTEXT",
+        "MNEMONIC",
+        "MICRO_STORY"
+      ]
+    },
+    "PedagogicalBlockRole": {
+      "enum": [
+        "HEADING",
+        "EXPLANATION",
+        "STORY",
+        "TRANSLATION",
+        "TAKEAWAY",
+        "EXAMPLE",
+        "MEDIA"
+      ]
+    },
+    "AssessmentBlueprintPurpose": {
+      "enum": ["PRACTICE", "BOOK_CHECKPOINT", "DIAGNOSTIC", "PLACEMENT"]
+    },
+    "AssessmentNavigationMode": { "enum": ["LINEAR", "FREE"] },
+    "AssessmentFeedbackMode": { "enum": ["IMMEDIATE", "AFTER_SUBMISSION"] },
+    "ContentProfileTargetKind": {
+      "enum": [
+        "HEADWORD",
+        "ENTRY",
+        "FORM",
+        "SENSE",
+        "CONCEPT",
+        "LEARNING_OBJECTIVE",
+        "PEDAGOGICAL_MATERIAL",
+        "EXERCISE",
+        "BOOK_EDITION"
+      ]
+    },
+    "EtymologyHypothesisStatus": {
+      "enum": ["ACCEPTED", "TENTATIVE", "DISPUTED", "REJECTED"]
+    },
+    "ExerciseDistractorKind": {
+      "enum": [
+        "ANTONYM_CONFUSION",
+        "SEMANTIC_NEIGHBOR",
+        "ORTHOGRAPHIC_NEIGHBOR",
+        "PLAUSIBLE_SAME_DOMAIN",
+        "SOURCE_DISTRACTOR",
+        "SAME_POS"
+      ]
+    },
+    "LearningObjectiveHintKind": {
+      "enum": ["DEFINITION", "GENERATED_RETRIEVAL_CUE"]
+    },
+    "ProficiencyTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": { "enum": ["HEADWORD", "ENTRY", "SENSE"] },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "CorpusTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": { "enum": ["ENTRY", "FORM", "SENSE"] },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "EntryOrMorphemeTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": { "enum": ["ENTRY", "MORPHEME"] },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "EtymologyEndpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": { "enum": ["ENTRY", "ETYMON"] },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExternalIdentifierTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": { "enum": ["ENTRY", "SENSE", "CONCEPT"] },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ProfileTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "targetId"],
+      "properties": {
+        "targetKind": {
+          "enum": [
+            "HEADWORD",
+            "ENTRY",
+            "FORM",
+            "SENSE",
+            "CONCEPT",
+            "LEARNING_OBJECTIVE",
+            "PEDAGOGICAL_MATERIAL",
+            "EXERCISE",
+            "BOOK_EDITION"
+          ]
+        },
+        "targetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ArtifactSourceInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "version", "adapter", "checksum", "materialization"],
+      "properties": {
+        "key": { "$ref": "#/$defs/Code" },
+        "version": { "$ref": "#/$defs/Code" },
+        "adapter": {
+          "enum": ["ECDICT", "WIKTEXTRACT_EN", "WN_LMF", "YOUDAO_NDJSON"]
+        },
+        "checksum": { "$ref": "#/$defs/Hash" },
+        "materialization": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/ArtifactSourceMaterialization" }
+          ]
+        }
+      }
+    },
+    "ArtifactSourceMaterialization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parentUri",
+        "parentChecksum",
+        "selectionChecksum",
+        "materializerVersion",
+        "recordCount"
+      ],
+      "properties": {
+        "parentUri": { "type": "string", "format": "uri" },
+        "parentChecksum": { "$ref": "#/$defs/Hash" },
+        "selectionChecksum": { "$ref": "#/$defs/Hash" },
+        "materializerVersion": { "$ref": "#/$defs/Code" },
+        "recordCount": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "ArtifactHeadwordSetInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "version", "checksum"],
+      "properties": {
+        "schemaVersion": { "const": "sylis.headword-set/1" },
+        "version": { "$ref": "#/$defs/Code" },
+        "checksum": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "ArtifactRichTargetSetInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "version", "checksum"],
+      "properties": {
+        "schemaVersion": { "const": "sylis.rich-target-set/1" },
+        "version": { "$ref": "#/$defs/Code" },
+        "checksum": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "ArtifactAiIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/Code" },
+        "model": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "CandidatePromotionLineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidateRevisionId",
+        "localId",
+        "entityType",
+        "artifactId"
+      ],
+      "properties": {
+        "candidateRevisionId": { "$ref": "#/$defs/Id" },
+        "localId": { "$ref": "#/$defs/Code" },
+        "entityType": {
+          "enum": [
+            "SENSE_ALIGNMENT",
+            "DEFINITION",
+            "TRANSLATION_TEXT",
+            "EXAMPLE",
+            "COLLOCATION",
+            "FRAME",
+            "ENTRY_RELATION",
+            "SENSE_RELATION",
+            "CONCEPT_RELATION"
+          ]
+        },
+        "artifactId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "DisabledArtifactAi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "promptVersion",
+        "candidateSchemaVersion",
+        "modelPolicyVersion",
+        "requestedIdentity",
+        "resolvedIdentity"
+      ],
+      "properties": {
+        "enabled": { "const": false },
+        "promptVersion": { "type": "null" },
+        "candidateSchemaVersion": { "type": "null" },
+        "modelPolicyVersion": { "type": "null" },
+        "requestedIdentity": { "type": "null" },
+        "resolvedIdentity": { "type": "null" }
+      }
+    },
+    "EnabledArtifactAi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "promptVersion",
+        "candidateSchemaVersion",
+        "modelPolicyVersion",
+        "requestedIdentity",
+        "resolvedIdentity"
+      ],
+      "properties": {
+        "enabled": { "const": true },
+        "promptVersion": { "$ref": "#/$defs/Code" },
+        "candidateSchemaVersion": { "$ref": "#/$defs/Code" },
+        "modelPolicyVersion": { "$ref": "#/$defs/Code" },
+        "requestedIdentity": { "$ref": "#/$defs/ArtifactAiIdentity" },
+        "resolvedIdentity": { "$ref": "#/$defs/ArtifactAiIdentity" }
+      }
+    },
+    "ArtifactManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lexiconKey",
+        "releaseVersion",
+        "sourceLanguageTag",
+        "learningLanguageTags",
+        "builder",
+        "build",
+        "inputs",
+        "ai",
+        "candidatePromotionLineage",
+        "textProfile",
+        "canonicalization",
+        "contentHash",
+        "counts"
+      ],
+      "properties": {
+        "lexiconKey": { "$ref": "#/$defs/Code" },
+        "releaseVersion": { "$ref": "#/$defs/Code" },
+        "sourceLanguageTag": { "$ref": "#/$defs/LanguageTag" },
+        "learningLanguageTags": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/LanguageTag" }
+        },
+        "builder": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package", "version", "gitCommit"],
+          "properties": {
+            "package": { "const": "@sylis/lexicon-compiler" },
+            "version": { "$ref": "#/$defs/Code" },
+            "gitCommit": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["compileProfile", "validatorVersion"],
+          "properties": {
+            "compileProfile": {
+              "enum": ["fixture", "pilot-200", "core-20000"]
+            },
+            "validatorVersion": { "$ref": "#/$defs/Code" }
+          }
+        },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceManifestVersion",
+            "sources",
+            "headwordSet",
+            "richTargetSet"
+          ],
+          "properties": {
+            "sourceManifestVersion": {
+              "const": "sylis.source-manifest/1"
+            },
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/ArtifactSourceInput" }
+            },
+            "headwordSet": {
+              "oneOf": [
+                { "type": "null" },
+                { "$ref": "#/$defs/ArtifactHeadwordSetInput" }
+              ]
+            },
+            "richTargetSet": {
+              "oneOf": [
+                { "type": "null" },
+                { "$ref": "#/$defs/ArtifactRichTargetSetInput" }
+              ]
+            }
+          }
+        },
+        "ai": {
+          "oneOf": [
+            { "$ref": "#/$defs/DisabledArtifactAi" },
+            { "$ref": "#/$defs/EnabledArtifactAi" }
+          ]
+        },
+        "candidatePromotionLineage": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/CandidatePromotionLineage" }
+        },
+        "textProfile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "normalization",
+            "unicodeVersion",
+            "segmentation",
+            "cldrVersion",
+            "locale"
+          ],
+          "properties": {
+            "normalization": { "const": "NFC" },
+            "unicodeVersion": { "$ref": "#/$defs/Code" },
+            "segmentation": { "$ref": "#/$defs/Code" },
+            "cldrVersion": { "$ref": "#/$defs/Code" },
+            "locale": { "$ref": "#/$defs/LanguageTag" }
+          }
+        },
+        "canonicalization": {
+          "const": "RFC8785+domain-array-order/1"
+        },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "counts": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^/(lexicon|learning|quality|sources|provenance|vocabularies)/"
+          },
+          "additionalProperties": { "$ref": "#/$defs/NonNegativeInteger" }
+        }
+      }
+    },
+    "StableIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "identityKey", "artifactRole"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "identityKey": { "$ref": "#/$defs/Code" },
+        "artifactRole": { "enum": ["CURRENT", "LINEAGE_ANCHOR"] }
+      }
+    },
+    "VocabularyCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundles", "namespaceVersions", "terms"],
+      "properties": {
+        "bundles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyBundle" }
+        },
+        "namespaceVersions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyNamespaceVersion" }
+        },
+        "terms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyTerm" }
+        }
+      }
+    },
+    "VocabularyBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "contentHash"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "contentHash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "VocabularyNamespaceVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "bundleId",
+        "namespaceUri",
+        "version",
+        "sourceUri",
+        "checksum"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "bundleId": { "$ref": "#/$defs/Id" },
+        "namespaceUri": { "type": "string", "format": "uri" },
+        "version": { "$ref": "#/$defs/Code" },
+        "sourceUri": { "type": "string", "format": "uri" },
+        "checksum": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "VocabularyTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "namespaceVersionId",
+        "code",
+        "uri",
+        "label",
+        "deprecated",
+        "replacedById"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "namespaceVersionId": { "$ref": "#/$defs/Id" },
+        "code": { "$ref": "#/$defs/Code" },
+        "uri": { "type": "string", "format": "uri" },
+        "label": { "type": "string", "minLength": 1 },
+        "deprecated": { "type": "boolean" },
+        "replacedById": { "$ref": "#/$defs/NullableId" }
+      }
+    },
+    "SourceCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "datasets",
+        "datasetVersions",
+        "records",
+        "rightsPolicies",
+        "restrictions"
+      ],
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceDataset" }
+        },
+        "datasetVersions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceDatasetVersion" }
+        },
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceRecord" }
+        },
+        "rightsPolicies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceRightsPolicy" }
+        },
+        "restrictions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceRestriction" }
+        }
+      }
+    },
+    "SourceDataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "name", "homepageUri"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "name": { "type": "string", "minLength": 1 },
+        "homepageUri": { "type": "string", "format": "uri" }
+      }
+    },
+    "SourceDatasetVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetId",
+        "version",
+        "sourceUri",
+        "checksum",
+        "retrievedAt",
+        "adapter",
+        "parserVersion",
+        "schemaVersion",
+        "validationSummary",
+        "status",
+        "rightsPolicyId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetId": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "sourceUri": { "type": "string", "format": "uri" },
+        "checksum": { "$ref": "#/$defs/Hash" },
+        "retrievedAt": { "$ref": "#/$defs/Timestamp" },
+        "adapter": {
+          "enum": ["ECDICT", "WIKTEXTRACT_EN", "WN_LMF", "YOUDAO_NDJSON"]
+        },
+        "parserVersion": { "$ref": "#/$defs/Code" },
+        "schemaVersion": { "const": "sylis.lexicon-candidate/1" },
+        "validationSummary": {
+          "$ref": "#/$defs/SourceDatasetValidationSummary"
+        },
+        "status": { "const": "VALIDATED" },
+        "rightsPolicyId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SourceDatasetValidationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recordCount",
+        "errorCount",
+        "warningCount",
+        "validatorVersion"
+      ],
+      "properties": {
+        "recordCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "errorCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "warningCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "validatorVersion": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "SourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetVersionId",
+        "sourceKey",
+        "languageTag",
+        "rawPayloadHash",
+        "rawPayloadUri",
+        "rawPayload"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetVersionId": { "$ref": "#/$defs/Id" },
+        "sourceKey": { "$ref": "#/$defs/Code" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "rawPayloadHash": { "$ref": "#/$defs/Hash" },
+        "rawPayloadUri": {
+          "type": ["string", "null"],
+          "format": "uri-reference"
+        },
+        "rawPayload": { "$ref": "#/$defs/JsonValue" }
+      }
+    },
+    "SourceRightsPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "key",
+        "version",
+        "mayBuild",
+        "mayServe",
+        "mayExport",
+        "requiresAttribution",
+        "attribution",
+        "effectiveFrom",
+        "effectiveTo"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "version": { "$ref": "#/$defs/Code" },
+        "mayBuild": { "type": "boolean" },
+        "mayServe": { "type": "boolean" },
+        "mayExport": { "type": "boolean" },
+        "requiresAttribution": { "type": "boolean" },
+        "attribution": { "$ref": "#/$defs/NullableString" },
+        "effectiveFrom": { "$ref": "#/$defs/Timestamp" },
+        "effectiveTo": { "$ref": "#/$defs/NullableTimestamp" }
+      }
+    },
+    "SourceRestriction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rightsPolicyId",
+        "datasetVersionId",
+        "restrictionKind",
+        "reason",
+        "effectiveAt"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "rightsPolicyId": { "$ref": "#/$defs/Id" },
+        "datasetVersionId": { "$ref": "#/$defs/NullableId" },
+        "restrictionKind": {
+          "enum": ["BLOCK_BUILD", "BLOCK_SERVE", "BLOCK_EXPORT"]
+        },
+        "reason": { "type": "string", "minLength": 1 },
+        "effectiveAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "ProvenanceCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bundles", "evidence"],
+      "properties": {
+        "bundles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentProvenance" }
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentEvidence" }
+        }
+      }
+    },
+    "ContentProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "contentHash",
+        "resolverVersion",
+        "decisionReason"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "kind": { "enum": ["SOURCE", "DERIVED", "GENERATED", "HUMAN"] },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "resolverVersion": { "$ref": "#/$defs/Code" },
+        "decisionReason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ContentEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "provenanceId",
+        "evidenceKind",
+        "sourceRecordId",
+        "upstreamProvenanceId",
+        "note"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "provenanceId": { "$ref": "#/$defs/Id" },
+        "evidenceKind": {
+          "enum": [
+            "DIRECT",
+            "DERIVED",
+            "SUPPORTING",
+            "CONTRADICTING",
+            "GENERATED"
+          ]
+        },
+        "sourceRecordId": { "$ref": "#/$defs/NullableId" },
+        "upstreamProvenanceId": { "$ref": "#/$defs/NullableId" },
+        "note": { "$ref": "#/$defs/NullableString" }
+      },
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "sourceRecordId": { "$ref": "#/$defs/Id" },
+            "upstreamProvenanceId": { "type": "null" }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "sourceRecordId": { "type": "null" },
+            "upstreamProvenanceId": { "$ref": "#/$defs/Id" }
+          }
+        }
+      ]
+    },
+    "LexiconGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "headwords",
+        "headwordRevisions",
+        "entries",
+        "entryRevisions",
+        "forms",
+        "formRepresentations",
+        "formFeatures",
+        "mediaAssets",
+        "formMedia",
+        "senses",
+        "senseRevisions",
+        "definitions",
+        "translationTexts",
+        "translationRelations",
+        "usages",
+        "concepts",
+        "conceptRevisions",
+        "conceptDefinitions",
+        "senseConceptMemberships",
+        "entryLineages",
+        "senseLineages",
+        "conceptLineages",
+        "entryRelations",
+        "senseRelations",
+        "conceptRelations",
+        "examples",
+        "exampleTranslations",
+        "senseExamples",
+        "citations",
+        "collocations",
+        "senseCollocations",
+        "collocationComponents",
+        "frames",
+        "syntacticArguments",
+        "predicates",
+        "semanticArguments",
+        "senseFrames",
+        "argumentMappings",
+        "morphology",
+        "etymology",
+        "corpora",
+        "externalIdentifiers"
+      ],
+      "properties": {
+        "headwords": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "headwordRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/HeadwordRevision" }
+        },
+        "entries": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "entryRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EntryRevision" }
+        },
+        "forms": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LexicalForm" }
+        },
+        "formRepresentations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FormRepresentation" }
+        },
+        "formFeatures": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FormFeature" }
+        },
+        "mediaAssets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MediaAsset" }
+        },
+        "formMedia": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FormMedia" }
+        },
+        "senses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "senseRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseRevision" }
+        },
+        "definitions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseDefinition" }
+        },
+        "translationTexts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseTranslationText" }
+        },
+        "translationRelations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TranslationRelation" }
+        },
+        "usages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseUsage" }
+        },
+        "concepts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "conceptRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ConceptRevision" }
+        },
+        "conceptDefinitions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ConceptDefinition" }
+        },
+        "senseConceptMemberships": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseConceptMembership" }
+        },
+        "entryLineages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Lineage" }
+        },
+        "senseLineages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Lineage" }
+        },
+        "conceptLineages": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Lineage" }
+        },
+        "entryRelations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EntryRelation" }
+        },
+        "senseRelations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseRelation" }
+        },
+        "conceptRelations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ConceptRelation" }
+        },
+        "examples": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExampleSentence" }
+        },
+        "exampleTranslations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExampleTranslation" }
+        },
+        "senseExamples": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseExample" }
+        },
+        "citations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExampleCitation" }
+        },
+        "collocations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Collocation" }
+        },
+        "senseCollocations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseCollocation" }
+        },
+        "collocationComponents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CollocationComponent" }
+        },
+        "frames": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SyntacticFrame" }
+        },
+        "syntacticArguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SyntacticArgument" }
+        },
+        "predicates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SemanticPredicate" }
+        },
+        "semanticArguments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SemanticArgument" }
+        },
+        "senseFrames": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SenseFrame" }
+        },
+        "argumentMappings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ArgumentMapping" }
+        },
+        "morphology": { "$ref": "#/$defs/Morphology" },
+        "etymology": { "$ref": "#/$defs/Etymology" },
+        "corpora": { "$ref": "#/$defs/Corpora" },
+        "externalIdentifiers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExternalIdentifier" }
+        }
+      }
+    },
+    "HeadwordRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "headwordId",
+        "displayText",
+        "normalizedText",
+        "searchKey",
+        "sortKey"
+      ],
+      "properties": {
+        "headwordId": { "$ref": "#/$defs/Id" },
+        "displayText": { "type": "string", "minLength": 1 },
+        "normalizedText": { "type": "string", "minLength": 1 },
+        "searchKey": { "type": "string", "minLength": 1 },
+        "sortKey": { "type": "string", "minLength": 1 }
+      }
+    },
+    "EntryRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entryId",
+        "headwordId",
+        "entryType",
+        "partOfSpeech",
+        "homographNo",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "entryId": { "$ref": "#/$defs/Id" },
+        "headwordId": { "$ref": "#/$defs/Id" },
+        "entryType": { "enum": ["WORD", "MULTIWORD", "AFFIX"] },
+        "partOfSpeech": { "$ref": "#/$defs/Code" },
+        "homographNo": { "$ref": "#/$defs/PositiveInteger" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "LexicalForm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entryId", "formType", "displayOrder", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "entryId": { "$ref": "#/$defs/Id" },
+        "formType": {
+          "enum": ["CANONICAL", "INFLECTED", "VARIANT", "ABBREVIATED"]
+        },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "FormRepresentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "formId",
+        "representationType",
+        "languageTag",
+        "regionTag",
+        "scriptTag",
+        "text",
+        "normalizedText",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "formId": { "$ref": "#/$defs/Id" },
+        "representationType": { "enum": ["WRITTEN", "PHONETIC", "ROMANIZED"] },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "regionTag": { "$ref": "#/$defs/NullableString" },
+        "scriptTag": { "$ref": "#/$defs/NullableString" },
+        "text": { "type": "string", "minLength": 1 },
+        "normalizedText": { "type": "string", "minLength": 1 },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "FormFeature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formId", "feature", "value"],
+      "properties": {
+        "formId": { "$ref": "#/$defs/Id" },
+        "feature": { "$ref": "#/$defs/Code" },
+        "value": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "MediaAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "mediaType",
+        "mimeType",
+        "contentUri",
+        "contentHash",
+        "byteLength",
+        "durationMs",
+        "rightsPolicyId",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "mediaType": { "enum": ["AUDIO", "IMAGE"] },
+        "mimeType": { "type": "string", "minLength": 1 },
+        "contentUri": { "type": "string", "format": "uri" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "byteLength": { "$ref": "#/$defs/PositiveInteger" },
+        "durationMs": { "type": ["integer", "null"], "minimum": 0 },
+        "rightsPolicyId": { "$ref": "#/$defs/Id" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "FormMedia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formId",
+        "mediaAssetId",
+        "role",
+        "regionTag",
+        "displayOrder"
+      ],
+      "properties": {
+        "formId": { "$ref": "#/$defs/Id" },
+        "mediaAssetId": { "$ref": "#/$defs/Id" },
+        "role": { "$ref": "#/$defs/Code" },
+        "regionTag": { "$ref": "#/$defs/NullableString" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "SenseRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "senseId",
+        "entryId",
+        "parentSenseId",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "senseId": { "$ref": "#/$defs/Id" },
+        "entryId": { "$ref": "#/$defs/Id" },
+        "parentSenseId": { "$ref": "#/$defs/NullableId" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "senseId",
+        "languageTag",
+        "definitionType",
+        "text",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "definitionType": { "$ref": "#/$defs/Code" },
+        "text": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseTranslationText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "senseId",
+        "languageTag",
+        "text",
+        "registerTermId",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "registerTermId": { "$ref": "#/$defs/NullableId" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseUsage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "senseId",
+        "usageTypeTermId",
+        "valueTermId",
+        "text",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "usageTypeTermId": { "$ref": "#/$defs/Id" },
+        "valueTermId": { "$ref": "#/$defs/NullableId" },
+        "text": { "$ref": "#/$defs/NullableString" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": { "valueTermId": { "$ref": "#/$defs/Id" } }
+        },
+        {
+          "type": "object",
+          "properties": { "text": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    },
+    "TranslationRelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceSenseId",
+        "targetSenseId",
+        "translationType",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "sourceSenseId": { "$ref": "#/$defs/Id" },
+        "targetSenseId": { "$ref": "#/$defs/Id" },
+        "translationType": { "$ref": "#/$defs/Code" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ConceptRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conceptId", "conceptType", "provenanceId"],
+      "properties": {
+        "conceptId": { "$ref": "#/$defs/Id" },
+        "conceptType": { "enum": ["LOCAL_SENSE", "SYNSET"] },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ConceptDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "conceptId",
+        "languageTag",
+        "text",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "conceptId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseConceptMembership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "senseId",
+        "conceptId",
+        "membershipType",
+        "canonical",
+        "provenanceId"
+      ],
+      "properties": {
+        "senseId": { "$ref": "#/$defs/Id" },
+        "conceptId": { "$ref": "#/$defs/Id" },
+        "membershipType": { "enum": ["LEXICALIZED_BY"] },
+        "canonical": { "type": "boolean" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "Lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromId", "toId", "lineageType", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "fromId": { "$ref": "#/$defs/Id" },
+        "toId": { "$ref": "#/$defs/Id" },
+        "lineageType": { "enum": ["SPLIT_FROM", "MERGED_FROM", "REPLACES"] },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "Relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "relationType",
+        "direction",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "sourceId": { "$ref": "#/$defs/Id" },
+        "targetId": { "$ref": "#/$defs/Id" },
+        "relationType": { "$ref": "#/$defs/Code" },
+        "direction": { "enum": ["DIRECTED", "SYMMETRIC"] },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "EntryRelation": {
+      "allOf": [
+        { "$ref": "#/$defs/Relation" },
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "relationType": {
+                  "enum": ["ABBREVIATION_OF", "VARIANT_OF"]
+                },
+                "direction": { "const": "DIRECTED" }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "relationType": { "const": "DERIVATIONALLY_RELATED" },
+                "direction": { "const": "SYMMETRIC" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "SenseRelation": {
+      "allOf": [
+        { "$ref": "#/$defs/Relation" },
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "relationType": { "enum": ["SYNONYM", "ANTONYM"] },
+                "direction": { "const": "SYMMETRIC" }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "relationType": { "const": "RELATED" },
+                "direction": { "const": "DIRECTED" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ConceptRelation": {
+      "allOf": [
+        { "$ref": "#/$defs/Relation" },
+        {
+          "type": "object",
+          "properties": {
+            "relationType": { "enum": ["HYPERNYM", "HYPONYM"] },
+            "direction": { "const": "DIRECTED" }
+          }
+        }
+      ]
+    },
+    "ExampleSentence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "languageTag",
+        "text",
+        "normalizedText",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "normalizedText": { "type": "string", "minLength": 1 },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExampleTranslation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "exampleId", "languageTag", "text", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exampleId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseExample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "senseId",
+        "exampleId",
+        "displayOrder",
+        "role",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "exampleId": { "$ref": "#/$defs/Id" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "role": { "$ref": "#/$defs/Code" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExampleCitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "exampleId",
+        "sourceRecordId",
+        "workTitle",
+        "location",
+        "year",
+        "examType",
+        "verified"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exampleId": { "$ref": "#/$defs/Id" },
+        "sourceRecordId": { "$ref": "#/$defs/Id" },
+        "workTitle": { "$ref": "#/$defs/NullableString" },
+        "location": { "$ref": "#/$defs/NullableString" },
+        "year": { "type": ["integer", "null"], "minimum": 1 },
+        "examType": { "$ref": "#/$defs/NullableString" },
+        "verified": { "type": "boolean" }
+      }
+    },
+    "Collocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "languageTag",
+        "canonicalText",
+        "normalizedText",
+        "headEntryId",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "canonicalText": { "type": "string", "minLength": 1 },
+        "normalizedText": { "type": "string", "minLength": 1 },
+        "headEntryId": { "$ref": "#/$defs/NullableId" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SenseCollocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "senseId",
+        "collocationId",
+        "relationType",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "senseId": { "$ref": "#/$defs/Id" },
+        "collocationId": { "$ref": "#/$defs/Id" },
+        "relationType": { "$ref": "#/$defs/Code" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "CollocationComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collocationId",
+        "position",
+        "surfaceText",
+        "roleTermId",
+        "target"
+      ],
+      "properties": {
+        "collocationId": { "$ref": "#/$defs/Id" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "surfaceText": { "type": "string", "minLength": 1 },
+        "roleTermId": { "$ref": "#/$defs/Id" },
+        "target": {
+          "oneOf": [
+            { "$ref": "#/$defs/EntryOrMorphemeTarget" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "SyntacticFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "entryId",
+        "frameKey",
+        "frameTypeTermId",
+        "languageTag",
+        "displayTemplate",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "entryId": { "$ref": "#/$defs/Id" },
+        "frameKey": { "$ref": "#/$defs/Code" },
+        "frameTypeTermId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "displayTemplate": { "type": "string", "minLength": 1 },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SyntacticArgument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "frameId",
+        "position",
+        "functionTermId",
+        "phraseTypeTermId",
+        "marker",
+        "optional"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "frameId": { "$ref": "#/$defs/Id" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "functionTermId": { "$ref": "#/$defs/Id" },
+        "phraseTypeTermId": { "$ref": "#/$defs/Id" },
+        "marker": { "$ref": "#/$defs/NullableString" },
+        "optional": { "type": "boolean" }
+      }
+    },
+    "SemanticPredicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "senseId",
+        "predicateKey",
+        "predicateTypeTermId",
+        "label",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "predicateKey": { "$ref": "#/$defs/Code" },
+        "predicateTypeTermId": { "$ref": "#/$defs/Id" },
+        "label": { "$ref": "#/$defs/NullableString" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "SemanticArgument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "predicateId", "roleTermId", "position"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "predicateId": { "$ref": "#/$defs/Id" },
+        "roleTermId": { "$ref": "#/$defs/Id" },
+        "position": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "SenseFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "senseId", "frameId", "predicateId", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "senseId": { "$ref": "#/$defs/Id" },
+        "frameId": { "$ref": "#/$defs/Id" },
+        "predicateId": { "$ref": "#/$defs/NullableId" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ArgumentMapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["senseFrameId", "syntacticArgumentId", "semanticArgumentId"],
+      "properties": {
+        "senseFrameId": { "$ref": "#/$defs/Id" },
+        "syntacticArgumentId": { "$ref": "#/$defs/Id" },
+        "semanticArgumentId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "Morphology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "morphs",
+        "morphemes",
+        "analyses",
+        "segments",
+        "inflectionRules",
+        "inflectionGenerations",
+        "wordFormations",
+        "wordFormationInputs",
+        "wordFormationRules",
+        "wordFormationApplications"
+      ],
+      "properties": {
+        "morphs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "morphemes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "analyses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MorphologicalAnalysis" }
+        },
+        "segments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MorphologicalSegment" }
+        },
+        "inflectionRules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MorphologicalRule" }
+        },
+        "inflectionGenerations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/InflectionGeneration" }
+        },
+        "wordFormations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/WordFormation" }
+        },
+        "wordFormationInputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/WordFormationInput" }
+        },
+        "wordFormationRules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/MorphologicalRule" }
+        },
+        "wordFormationApplications": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/WordFormationApplication" }
+        }
+      }
+    },
+    "MorphologicalAnalysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "formRepresentationId",
+        "analysisType",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "formRepresentationId": { "$ref": "#/$defs/Id" },
+        "analysisType": { "enum": ["INFLECTION", "DERIVATIONAL"] },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "MorphologicalSegment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "analysisId",
+        "position",
+        "startOffset",
+        "endOffset",
+        "surfaceText",
+        "morphId",
+        "morphemeId",
+        "roleTermId"
+      ],
+      "properties": {
+        "analysisId": { "$ref": "#/$defs/Id" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "startOffset": { "$ref": "#/$defs/NonNegativeInteger" },
+        "endOffset": { "$ref": "#/$defs/PositiveInteger" },
+        "surfaceText": { "type": "string", "minLength": 1 },
+        "morphId": { "$ref": "#/$defs/NullableId" },
+        "morphemeId": { "$ref": "#/$defs/NullableId" },
+        "roleTermId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "MorphologicalRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ruleKey",
+        "version",
+        "ruleType",
+        "inputPattern",
+        "outputPattern",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "ruleKey": { "$ref": "#/$defs/Code" },
+        "version": { "$ref": "#/$defs/Code" },
+        "ruleType": { "$ref": "#/$defs/Code" },
+        "inputPattern": { "type": "string", "minLength": 1 },
+        "outputPattern": { "type": "string", "minLength": 1 },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "InflectionGeneration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "ruleId",
+        "entryId",
+        "baseFormId",
+        "outputFormId",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "ruleId": { "$ref": "#/$defs/Id" },
+        "entryId": { "$ref": "#/$defs/Id" },
+        "baseFormId": { "$ref": "#/$defs/Id" },
+        "outputFormId": { "$ref": "#/$defs/Id" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "WordFormation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "targetEntryId",
+        "formationTypeTermId",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "targetEntryId": { "$ref": "#/$defs/Id" },
+        "formationTypeTermId": { "$ref": "#/$defs/Id" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "WordFormationInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wordFormationId", "position", "roleTermId", "target"],
+      "properties": {
+        "wordFormationId": { "$ref": "#/$defs/Id" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "roleTermId": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/EntryOrMorphemeTarget" }
+      }
+    },
+    "WordFormationApplication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wordFormationId", "ruleId", "stepOrder"],
+      "properties": {
+        "wordFormationId": { "$ref": "#/$defs/Id" },
+        "ruleId": { "$ref": "#/$defs/Id" },
+        "stepOrder": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "Etymology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["etymons", "etymonRevisions", "hypotheses", "links"],
+      "properties": {
+        "etymons": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StableIdentity" }
+        },
+        "etymonRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EtymonRevision" }
+        },
+        "hypotheses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EtymologyHypothesis" }
+        },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EtymologyLink" }
+        }
+      }
+    },
+    "EtymonRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["etymonId", "languageTag", "form", "gloss", "provenanceId"],
+      "properties": {
+        "etymonId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "form": { "type": "string", "minLength": 1 },
+        "gloss": { "$ref": "#/$defs/NullableString" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "EtymologyHypothesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "subjectEntryId",
+        "hypothesisType",
+        "status",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "subjectEntryId": { "$ref": "#/$defs/Id" },
+        "hypothesisType": { "$ref": "#/$defs/Code" },
+        "status": { "$ref": "#/$defs/EtymologyHypothesisStatus" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "EtymologyLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "hypothesisId",
+        "linkType",
+        "source",
+        "target",
+        "position",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "hypothesisId": { "$ref": "#/$defs/Id" },
+        "linkType": { "$ref": "#/$defs/Code" },
+        "source": { "$ref": "#/$defs/EtymologyEndpoint" },
+        "target": { "$ref": "#/$defs/EtymologyEndpoint" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "Corpora": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "datasets",
+        "datasetVersions",
+        "frequencyObservations",
+        "attestations",
+        "collocationObservations"
+      ],
+      "properties": {
+        "datasets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CorpusDataset" }
+        },
+        "datasetVersions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CorpusDatasetVersion" }
+        },
+        "frequencyObservations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/FrequencyObservation" }
+        },
+        "attestations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Attestation" }
+        },
+        "collocationObservations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CollocationObservation" }
+        }
+      }
+    },
+    "CorpusDataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "name", "languageTag"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "name": { "type": "string", "minLength": 1 },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" }
+      }
+    },
+    "CorpusDatasetVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetId",
+        "version",
+        "checksum",
+        "tokenCount",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetId": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "checksum": { "$ref": "#/$defs/Hash" },
+        "tokenCount": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "FrequencyObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetVersionId",
+        "target",
+        "count",
+        "normalizedFrequency",
+        "rank",
+        "unit",
+        "algorithmVersion",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetVersionId": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/CorpusTarget" },
+        "count": { "type": ["integer", "null"], "minimum": 0 },
+        "normalizedFrequency": { "type": ["number", "null"], "minimum": 0 },
+        "rank": { "type": ["integer", "null"], "minimum": 1 },
+        "unit": { "$ref": "#/$defs/Code" },
+        "algorithmVersion": { "$ref": "#/$defs/Code" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": { "count": { "type": "integer" } }
+        },
+        {
+          "type": "object",
+          "properties": { "normalizedFrequency": { "type": "number" } }
+        },
+        {
+          "type": "object",
+          "properties": { "rank": { "type": "integer" } }
+        }
+      ]
+    },
+    "Attestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetVersionId",
+        "target",
+        "documentRef",
+        "offset",
+        "offsetUnit",
+        "surfaceText",
+        "sourceRecordId",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetVersionId": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/CorpusTarget" },
+        "documentRef": { "type": "string", "minLength": 1 },
+        "offset": { "$ref": "#/$defs/NonNegativeInteger" },
+        "offsetUnit": {
+          "enum": ["UTF8_BYTE", "UNICODE_CODE_POINT", "UTF16_CODE_UNIT"]
+        },
+        "surfaceText": { "type": "string", "minLength": 1 },
+        "sourceRecordId": { "$ref": "#/$defs/Id" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "CollocationObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "datasetVersionId",
+        "collocationId",
+        "measureTermId",
+        "score",
+        "window",
+        "algorithmVersion",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "datasetVersionId": { "$ref": "#/$defs/Id" },
+        "collocationId": { "$ref": "#/$defs/Id" },
+        "measureTermId": { "$ref": "#/$defs/Id" },
+        "score": { "type": "number" },
+        "window": { "$ref": "#/$defs/PositiveInteger" },
+        "algorithmVersion": { "$ref": "#/$defs/Code" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExternalIdentifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "target",
+        "namespaceVersionId",
+        "externalId",
+        "uri",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/ExternalIdentifierTarget" },
+        "namespaceVersionId": { "$ref": "#/$defs/Id" },
+        "externalId": { "type": "string", "minLength": 1 },
+        "uri": { "type": ["string", "null"], "format": "uri" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "LearningContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "books",
+        "bookEditions",
+        "bookItems",
+        "proficiencyFrameworks",
+        "proficiencyFrameworkVersions",
+        "proficiencyLevels",
+        "proficiencyClaims",
+        "learningObjectives",
+        "objectiveRevisions",
+        "objectiveSubjects",
+        "objectiveHints",
+        "pedagogicalMaterials",
+        "pedagogicalMaterialRevisions",
+        "pedagogicalMaterialTargets",
+        "pedagogicalMaterialBlocks",
+        "pedagogicalMaterialMentions",
+        "pedagogicalMaterialCitations",
+        "assessmentStimuli",
+        "stimulusRevisions",
+        "stimulusBlocks",
+        "exerciseStimulusRefs",
+        "exerciseItems",
+        "exerciseRevisions",
+        "exerciseResponseConfigs",
+        "exerciseChoices",
+        "exerciseChoiceTargets",
+        "correctResponses",
+        "exerciseFeedback",
+        "exerciseRubrics",
+        "assessmentBlueprints",
+        "assessmentBlueprintRevisions",
+        "assessmentSections",
+        "assessmentSelectionRules"
+      ],
+      "properties": {
+        "books": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyBook" }
+        },
+        "bookEditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyBookEdition" }
+        },
+        "bookItems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/VocabularyBookItem" }
+        },
+        "proficiencyFrameworks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProficiencyFramework" }
+        },
+        "proficiencyFrameworkVersions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProficiencyFrameworkVersion" }
+        },
+        "proficiencyLevels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProficiencyLevel" }
+        },
+        "proficiencyClaims": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProficiencyClaim" }
+        },
+        "learningObjectives": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LearningObjective" }
+        },
+        "objectiveRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LearningObjectiveRevision" }
+        },
+        "objectiveSubjects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LearningObjectiveSubject" }
+        },
+        "objectiveHints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LearningObjectiveHint" }
+        },
+        "pedagogicalMaterials": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterial" }
+        },
+        "pedagogicalMaterialRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterialRevision" }
+        },
+        "pedagogicalMaterialTargets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterialTargetRef" }
+        },
+        "pedagogicalMaterialBlocks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterialBlock" }
+        },
+        "pedagogicalMaterialMentions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterialMention" }
+        },
+        "pedagogicalMaterialCitations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PedagogicalMaterialCitation" }
+        },
+        "assessmentStimuli": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssessmentStimulus" }
+        },
+        "stimulusRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StimulusRevision" }
+        },
+        "stimulusBlocks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StimulusBlock" }
+        },
+        "exerciseStimulusRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseStimulusRef" }
+        },
+        "exerciseItems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseItem" }
+        },
+        "exerciseRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseRevision" }
+        },
+        "exerciseResponseConfigs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseResponseConfig" }
+        },
+        "exerciseChoices": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseChoice" }
+        },
+        "exerciseChoiceTargets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseChoiceTarget" }
+        },
+        "correctResponses": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/CorrectResponse" }
+        },
+        "exerciseFeedback": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseFeedback" }
+        },
+        "exerciseRubrics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ExerciseRubric" }
+        },
+        "assessmentBlueprints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssessmentBlueprint" }
+        },
+        "assessmentBlueprintRevisions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssessmentBlueprintRevision" }
+        },
+        "assessmentSections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssessmentSection" }
+        },
+        "assessmentSelectionRules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AssessmentSelectionRule" }
+        }
+      }
+    },
+    "VocabularyBook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "languageTag", "title", "publisherKey"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "title": { "type": "string", "minLength": 1 },
+        "publisherKey": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "VocabularyBookEdition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "bookId",
+        "editionKey",
+        "version",
+        "sourceDatasetVersionId",
+        "contentHash",
+        "publishedAt"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "bookId": { "$ref": "#/$defs/Id" },
+        "editionKey": { "$ref": "#/$defs/Code" },
+        "version": { "$ref": "#/$defs/Code" },
+        "sourceDatasetVersionId": { "$ref": "#/$defs/Id" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "publishedAt": { "$ref": "#/$defs/Timestamp" }
+      }
+    },
+    "VocabularyBookItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "editionId", "rank", "target", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "editionId": { "$ref": "#/$defs/Id" },
+        "rank": { "$ref": "#/$defs/PositiveInteger" },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["targetKind", "targetId"],
+          "properties": {
+            "targetKind": { "enum": ["HEADWORD", "ENTRY"] },
+            "targetId": { "$ref": "#/$defs/Id" }
+          }
+        },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ProficiencyFramework": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "name", "sourceDatasetId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "name": { "type": "string", "minLength": 1 },
+        "sourceDatasetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ProficiencyFrameworkVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "frameworkId",
+        "version",
+        "namespace",
+        "sourceDatasetVersionId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "frameworkId": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "namespace": { "$ref": "#/$defs/Code" },
+        "sourceDatasetVersionId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ProficiencyLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "frameworkVersionId", "code", "label", "rank"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "frameworkVersionId": { "$ref": "#/$defs/Id" },
+        "code": { "$ref": "#/$defs/Code" },
+        "label": { "type": "string", "minLength": 1 },
+        "rank": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "ProficiencyClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "target", "levelId", "claimType", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/ProficiencyTarget" },
+        "levelId": { "$ref": "#/$defs/Id" },
+        "claimType": { "const": "SOURCE_ASSERTED" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "LearningObjective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "objectiveKey"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "objectiveKey": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "LearningObjectiveRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "objectiveId",
+        "knowledgeFacet",
+        "retrievalDirection",
+        "contentHash",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "objectiveId": { "$ref": "#/$defs/Id" },
+        "knowledgeFacet": { "$ref": "#/$defs/Code" },
+        "retrievalDirection": {
+          "enum": ["RECEPTIVE", "PRODUCTIVE", "BIDIRECTIONAL"]
+        },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "LearningObjectiveSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["learningObjectiveRevisionId", "subjectRole", "target"],
+      "properties": {
+        "learningObjectiveRevisionId": { "$ref": "#/$defs/Id" },
+        "subjectRole": { "enum": ["PRIMARY", "SUPPORTING"] },
+        "target": { "$ref": "#/$defs/LearningObjectiveTarget" }
+      }
+    },
+    "LearningObjectiveHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "learningObjectiveRevisionId",
+        "hintType",
+        "languageTag",
+        "text",
+        "displayOrder",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "learningObjectiveRevisionId": { "$ref": "#/$defs/Id" },
+        "hintType": { "$ref": "#/$defs/LearningObjectiveHintKind" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "materialKey"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialKey": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "PedagogicalMaterialRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "materialId",
+        "materialKind",
+        "learningLanguageTag",
+        "supportLanguageTag",
+        "audienceProfileKey",
+        "contentHash",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialId": { "$ref": "#/$defs/Id" },
+        "materialKind": { "$ref": "#/$defs/PedagogicalMaterialKind" },
+        "learningLanguageTag": { "$ref": "#/$defs/LanguageTag" },
+        "supportLanguageTag": { "$ref": "#/$defs/LanguageTag" },
+        "audienceProfileKey": { "$ref": "#/$defs/Code" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMaterialTargetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["materialRevisionId", "targetRole", "target"],
+      "properties": {
+        "materialRevisionId": { "$ref": "#/$defs/Id" },
+        "targetRole": { "enum": ["PRIMARY", "SUPPORTING"] },
+        "target": { "$ref": "#/$defs/PedagogicalMaterialTarget" }
+      }
+    },
+    "PedagogicalMaterialBlock": {
+      "oneOf": [
+        { "$ref": "#/$defs/PedagogicalTextBlock" },
+        { "$ref": "#/$defs/PedagogicalExampleBlock" },
+        { "$ref": "#/$defs/PedagogicalMediaBlock" }
+      ]
+    },
+    "PedagogicalTextBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "materialRevisionId",
+        "blockKind",
+        "blockRole",
+        "position",
+        "languageTag",
+        "text"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "TEXT" },
+        "blockRole": { "$ref": "#/$defs/PedagogicalBlockRole" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "PedagogicalExampleBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "materialRevisionId",
+        "blockKind",
+        "blockRole",
+        "position",
+        "senseExampleId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "EXAMPLE" },
+        "blockRole": { "$ref": "#/$defs/PedagogicalBlockRole" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "senseExampleId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMediaBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "materialRevisionId",
+        "blockKind",
+        "blockRole",
+        "position",
+        "mediaAssetId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "MEDIA" },
+        "blockRole": { "$ref": "#/$defs/PedagogicalBlockRole" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "mediaAssetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "PedagogicalMaterialMention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "materialBlockId",
+        "startOffset",
+        "endOffset",
+        "target"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialBlockId": { "$ref": "#/$defs/Id" },
+        "startOffset": { "$ref": "#/$defs/NonNegativeInteger" },
+        "endOffset": { "$ref": "#/$defs/PositiveInteger" },
+        "target": { "$ref": "#/$defs/TypedLexicalTarget" }
+      }
+    },
+    "PedagogicalMaterialCitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "materialBlockId", "contentEvidenceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "materialBlockId": { "$ref": "#/$defs/Id" },
+        "contentEvidenceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "AssessmentStimulus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "stimulusKey"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusKey": { "$ref": "#/$defs/Code" }
+      }
+    },
+    "StimulusRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "stimulusId", "contentHash", "provenanceId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusId": { "$ref": "#/$defs/Id" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "StimulusBlock": {
+      "oneOf": [
+        { "$ref": "#/$defs/TextStimulusBlock" },
+        { "$ref": "#/$defs/ExampleStimulusBlock" },
+        { "$ref": "#/$defs/MediaStimulusBlock" },
+        { "$ref": "#/$defs/MaterialStimulusBlock" }
+      ]
+    },
+    "TextStimulusBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stimulusRevisionId",
+        "blockKind",
+        "position",
+        "languageTag",
+        "text"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "TEXT" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ExampleStimulusBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stimulusRevisionId",
+        "blockKind",
+        "position",
+        "senseExampleId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "EXAMPLE" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "senseExampleId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "MediaStimulusBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stimulusRevisionId",
+        "blockKind",
+        "position",
+        "mediaAssetId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "MEDIA" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "mediaAssetId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "MaterialStimulusBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stimulusRevisionId",
+        "blockKind",
+        "position",
+        "pedagogicalMaterialRevisionId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "stimulusRevisionId": { "$ref": "#/$defs/Id" },
+        "blockKind": { "const": "MATERIAL" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "pedagogicalMaterialRevisionId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExerciseStimulusRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exerciseRevisionId",
+        "stimulusRevisionId",
+        "role",
+        "displayOrder"
+      ],
+      "properties": {
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "stimulusRevisionId": { "$ref": "#/$defs/Id" },
+        "role": { "$ref": "#/$defs/Code" },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "ExerciseItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "exerciseKey", "learningObjectiveId"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exerciseKey": { "$ref": "#/$defs/Code" },
+        "learningObjectiveId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "ExerciseRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "exerciseItemId",
+        "learningObjectiveRevisionId",
+        "exerciseTaskKind",
+        "evidenceKind",
+        "responseKind",
+        "responseCardinality",
+        "responsePlacement",
+        "gradingMode",
+        "validationLevel",
+        "prompt",
+        "instructions",
+        "shuffleChoices",
+        "maxScore",
+        "authoredDifficultyTier",
+        "templateVersion",
+        "generatorVersion",
+        "verifierVersion",
+        "contentHash",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exerciseItemId": { "$ref": "#/$defs/Id" },
+        "learningObjectiveRevisionId": { "$ref": "#/$defs/Id" },
+        "exerciseTaskKind": { "$ref": "#/$defs/Code" },
+        "evidenceKind": {
+          "enum": [
+            "RECOGNITION",
+            "CUED_RECALL",
+            "CONTEXTUAL_DISCRIMINATION",
+            "CONSTRAINED_PRODUCTION",
+            "FREE_PRODUCTION"
+          ]
+        },
+        "responseKind": {
+          "enum": ["CHOICE", "SHORT_TEXT", "EXTENDED_TEXT", "NO_CAPTURE"]
+        },
+        "responseCardinality": { "enum": ["SINGLE", "MULTIPLE"] },
+        "responsePlacement": { "enum": ["BLOCK", "INLINE"] },
+        "gradingMode": {
+          "enum": ["EXACT", "WEIGHTED", "SELF_REPORT"]
+        },
+        "validationLevel": {
+          "enum": ["PRACTICE_ONLY", "FORMATIVE_VERIFIED", "SUMMATIVE_VERIFIED"]
+        },
+        "prompt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["languageTag", "text"],
+          "properties": {
+            "languageTag": { "$ref": "#/$defs/LanguageTag" },
+            "text": { "type": "string", "minLength": 1 }
+          }
+        },
+        "instructions": { "$ref": "#/$defs/NullableString" },
+        "shuffleChoices": { "type": "boolean" },
+        "maxScore": { "type": "number", "exclusiveMinimum": 0 },
+        "authoredDifficultyTier": {
+          "enum": ["FOUNDATION", "DEVELOPING", "ADVANCED"]
+        },
+        "templateVersion": { "$ref": "#/$defs/Code" },
+        "generatorVersion": { "$ref": "#/$defs/Code" },
+        "verifierVersion": { "$ref": "#/$defs/Code" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": { "responseKind": { "const": "CHOICE" } },
+            "required": ["responseKind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "responsePlacement": { "const": "BLOCK" } }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "responseKind": { "const": "SHORT_TEXT" } },
+            "required": ["responseKind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "responseCardinality": { "const": "SINGLE" } }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "responseKind": { "const": "EXTENDED_TEXT" } },
+            "required": ["responseKind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "responseCardinality": { "const": "SINGLE" },
+              "responsePlacement": { "const": "BLOCK" },
+              "validationLevel": { "const": "PRACTICE_ONLY" }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "responseKind": { "const": "NO_CAPTURE" } },
+            "required": ["responseKind"]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "responseCardinality": { "const": "SINGLE" },
+              "responsePlacement": { "const": "BLOCK" },
+              "gradingMode": { "const": "SELF_REPORT" },
+              "validationLevel": { "const": "PRACTICE_ONLY" },
+              "shuffleChoices": { "const": false }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "responsePlacement": { "const": "INLINE" } },
+            "required": ["responsePlacement"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "responseKind": { "const": "SHORT_TEXT" } }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "gradingMode": { "const": "SELF_REPORT" }
+            },
+            "required": ["gradingMode"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "validationLevel": { "const": "PRACTICE_ONLY" } }
+          }
+        }
+      ]
+    },
+    "ExerciseResponseConfig": {
+      "oneOf": [
+        { "$ref": "#/$defs/ChoiceResponseConfig" },
+        { "$ref": "#/$defs/ShortTextResponseConfig" },
+        { "$ref": "#/$defs/ExtendedTextResponseConfig" },
+        { "$ref": "#/$defs/NoCaptureResponseConfig" }
+      ]
+    },
+    "ChoiceResponseConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exerciseRevisionId",
+        "responseKind",
+        "minSelections",
+        "maxSelections"
+      ],
+      "properties": {
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "responseKind": { "const": "CHOICE" },
+        "minSelections": { "$ref": "#/$defs/PositiveInteger" },
+        "maxSelections": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "ShortTextResponseConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exerciseRevisionId",
+        "responseKind",
+        "caseSensitive",
+        "diacriticPolicy",
+        "whitespacePolicy",
+        "capturePolicy"
+      ],
+      "properties": {
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "responseKind": { "const": "SHORT_TEXT" },
+        "caseSensitive": { "type": "boolean" },
+        "diacriticPolicy": { "enum": ["PRESERVE", "IGNORE"] },
+        "whitespacePolicy": { "enum": ["PRESERVE", "TRIM", "COLLAPSE"] },
+        "capturePolicy": { "enum": ["REQUIRED", "OPTIONAL"] }
+      }
+    },
+    "ExtendedTextResponseConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exerciseRevisionId",
+        "responseKind",
+        "expectedLanguageTag",
+        "minCharacters",
+        "maxCharacters",
+        "minWords",
+        "maxWords",
+        "capturePolicy"
+      ],
+      "properties": {
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "responseKind": { "const": "EXTENDED_TEXT" },
+        "expectedLanguageTag": { "$ref": "#/$defs/LanguageTag" },
+        "minCharacters": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxCharacters": { "type": ["integer", "null"], "minimum": 1 },
+        "minWords": { "$ref": "#/$defs/NonNegativeInteger" },
+        "maxWords": { "type": ["integer", "null"], "minimum": 1 },
+        "capturePolicy": { "enum": ["REQUIRED", "OPTIONAL"] }
+      }
+    },
+    "NoCaptureResponseConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exerciseRevisionId", "responseKind"],
+      "properties": {
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "responseKind": { "const": "NO_CAPTURE" }
+      }
+    },
+    "ExerciseChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "exerciseRevisionId",
+        "choiceKey",
+        "languageTag",
+        "text",
+        "displayOrder",
+        "distractorKind"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "choiceKey": { "$ref": "#/$defs/Code" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "distractorKind": {
+          "oneOf": [
+            { "$ref": "#/$defs/ExerciseDistractorKind" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "ExerciseChoiceTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choiceId", "target"],
+      "properties": {
+        "choiceId": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/TypedLexicalTarget" }
+      }
+    },
+    "CorrectResponse": {
+      "oneOf": [
+        { "$ref": "#/$defs/CorrectChoiceResponse" },
+        { "$ref": "#/$defs/AcceptedTextResponse" },
+        { "$ref": "#/$defs/RubricResponse" }
+      ]
+    },
+    "CorrectChoiceResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["responseKind", "exerciseRevisionId", "choiceId", "weight"],
+      "properties": {
+        "responseKind": { "const": "CHOICE" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "choiceId": { "$ref": "#/$defs/Id" },
+        "weight": { "type": "number", "minimum": 0 }
+      }
+    },
+    "AcceptedTextResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "responseKind",
+        "exerciseRevisionId",
+        "languageTag",
+        "text",
+        "weight"
+      ],
+      "properties": {
+        "responseKind": { "const": "ACCEPTED_TEXT" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "weight": { "type": "number", "minimum": 0 }
+      }
+    },
+    "RubricResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "responseKind",
+        "exerciseRevisionId",
+        "rubricCriterionId",
+        "weight"
+      ],
+      "properties": {
+        "responseKind": { "const": "RUBRIC" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "rubricCriterionId": { "$ref": "#/$defs/Id" },
+        "weight": { "type": "number", "minimum": 0 }
+      }
+    },
+    "ExerciseFeedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "exerciseRevisionId",
+        "outcome",
+        "choiceId",
+        "languageTag",
+        "text",
+        "displayOrder"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "outcome": { "enum": ["CORRECT", "INCORRECT", "PARTIAL", "ANY"] },
+        "choiceId": { "$ref": "#/$defs/NullableId" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "text": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "ExerciseRubric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "exerciseRevisionId",
+        "criterionKey",
+        "languageTag",
+        "description",
+        "maxScore",
+        "displayOrder"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" },
+        "criterionKey": { "$ref": "#/$defs/Code" },
+        "languageTag": { "$ref": "#/$defs/LanguageTag" },
+        "description": { "type": "string", "minLength": 1 },
+        "maxScore": { "type": "number", "exclusiveMinimum": 0 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "AssessmentBlueprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "blueprintKey", "purpose"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "blueprintKey": { "$ref": "#/$defs/Code" },
+        "purpose": { "$ref": "#/$defs/AssessmentBlueprintPurpose" }
+      }
+    },
+    "AssessmentBlueprintRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "blueprintId",
+        "version",
+        "title",
+        "navigationMode",
+        "feedbackMode",
+        "timeLimitSeconds",
+        "lookbackDays",
+        "contentHash",
+        "provenanceId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "blueprintId": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "title": { "type": "string", "minLength": 1 },
+        "navigationMode": { "$ref": "#/$defs/AssessmentNavigationMode" },
+        "feedbackMode": { "$ref": "#/$defs/AssessmentFeedbackMode" },
+        "timeLimitSeconds": { "type": ["integer", "null"], "minimum": 1 },
+        "lookbackDays": { "$ref": "#/$defs/NonNegativeInteger" },
+        "contentHash": { "$ref": "#/$defs/Hash" },
+        "provenanceId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "AssessmentSection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "blueprintRevisionId",
+        "parentSectionId",
+        "sectionKey",
+        "title",
+        "displayOrder",
+        "questionCount"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "blueprintRevisionId": { "$ref": "#/$defs/Id" },
+        "parentSectionId": { "$ref": "#/$defs/NullableId" },
+        "sectionKey": { "$ref": "#/$defs/Code" },
+        "title": { "type": "string", "minLength": 1 },
+        "displayOrder": { "$ref": "#/$defs/PositiveInteger" },
+        "questionCount": { "$ref": "#/$defs/PositiveInteger" }
+      }
+    },
+    "AssessmentSelectionRule": {
+      "oneOf": [
+        { "$ref": "#/$defs/AssessmentQuotaRule" },
+        { "$ref": "#/$defs/AssessmentScopeRule" },
+        { "$ref": "#/$defs/AssessmentPinnedItemRule" }
+      ]
+    },
+    "AssessmentQuotaRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sectionId",
+        "ruleKind",
+        "position",
+        "dimension",
+        "value",
+        "minCount",
+        "maxCount"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "sectionId": { "$ref": "#/$defs/Id" },
+        "ruleKind": { "const": "QUOTA" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "dimension": { "$ref": "#/$defs/Code" },
+        "value": { "$ref": "#/$defs/Code" },
+        "minCount": { "type": ["integer", "null"], "minimum": 0 },
+        "maxCount": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": { "minCount": { "type": "integer" } }
+        },
+        {
+          "type": "object",
+          "properties": { "maxCount": { "type": "integer" } }
+        }
+      ]
+    },
+    "AssessmentScopeRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sectionId",
+        "ruleKind",
+        "position",
+        "scopeKind",
+        "scopeId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "sectionId": { "$ref": "#/$defs/Id" },
+        "ruleKind": { "const": "SCOPE" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "scopeKind": { "enum": ["BOOK_EDITION", "PROFICIENCY_LEVEL"] },
+        "scopeId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "AssessmentPinnedItemRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sectionId",
+        "ruleKind",
+        "position",
+        "exerciseRevisionId"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "sectionId": { "$ref": "#/$defs/Id" },
+        "ruleKind": { "const": "PINNED_ITEM" },
+        "position": { "$ref": "#/$defs/PositiveInteger" },
+        "exerciseRevisionId": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "QualityReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "profiles",
+        "profileVersions",
+        "profileEvaluations",
+        "profileEvaluationTargets",
+        "coverage",
+        "validationSummary",
+        "sourceStatistics",
+        "exerciseStatistics"
+      ],
+      "properties": {
+        "profiles": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentProfile" }
+        },
+        "profileVersions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentProfileVersion" }
+        },
+        "profileEvaluations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentProfileEvaluation" }
+        },
+        "profileEvaluationTargets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ProfileEvaluationTarget" }
+        },
+        "coverage": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ContentRequirementEvaluation" }
+        },
+        "validationSummary": { "$ref": "#/$defs/ValidationSummary" },
+        "sourceStatistics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NamedCount" }
+        },
+        "exerciseStatistics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/NamedCount" }
+        }
+      }
+    },
+    "ContentProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "key", "targetKind"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "key": { "$ref": "#/$defs/Code" },
+        "targetKind": { "$ref": "#/$defs/ContentProfileTargetKind" }
+      }
+    },
+    "ContentProfileVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "profileId", "version", "requirementsHash"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "profileId": { "$ref": "#/$defs/Id" },
+        "version": { "$ref": "#/$defs/Code" },
+        "requirementsHash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "ContentProfileEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "profileVersionId", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "profileVersionId": { "$ref": "#/$defs/Id" },
+        "status": {
+          "enum": ["PRESENT", "MISSING", "NOT_APPLICABLE", "REJECTED"]
+        }
+      }
+    },
+    "ProfileEvaluationTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evaluationId", "target"],
+      "properties": {
+        "evaluationId": { "$ref": "#/$defs/Id" },
+        "target": { "$ref": "#/$defs/ProfileTarget" }
+      }
+    },
+    "ContentRequirementEvaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "evaluationId",
+        "requirementCode",
+        "status",
+        "reasonCode",
+        "evidenceCount",
+        "detailsHash"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "evaluationId": { "$ref": "#/$defs/Id" },
+        "requirementCode": { "$ref": "#/$defs/Code" },
+        "status": {
+          "enum": ["PRESENT", "MISSING", "NOT_APPLICABLE", "REJECTED"]
+        },
+        "reasonCode": { "$ref": "#/$defs/NullableString" },
+        "evidenceCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "detailsHash": { "$ref": "#/$defs/NullableHash" }
+      }
+    },
+    "ValidationSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validatorVersion",
+        "errorCount",
+        "warningCount",
+        "contentHash"
+      ],
+      "properties": {
+        "validatorVersion": { "$ref": "#/$defs/Code" },
+        "errorCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "warningCount": { "$ref": "#/$defs/NonNegativeInteger" },
+        "contentHash": { "$ref": "#/$defs/Hash" }
+      }
+    },
+    "NamedCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "count"],
+      "properties": {
+        "key": { "$ref": "#/$defs/Code" },
+        "count": { "$ref": "#/$defs/NonNegativeInteger" }
+      }
+    }
+  }
+}

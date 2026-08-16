@@ -1,0 +1,43 @@
+{
+  "name": "@sylis/agent-contracts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./admin-command-digests": {
+      "types": "./dist/admin-command-digests.d.ts",
+      "default": "./dist/admin-command-digests.js"
+    },
+    "./release-fixtures": {
+      "types": "./dist/release-fixtures.d.ts",
+      "default": "./dist/release-fixtures.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sylis/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

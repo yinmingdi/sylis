@@ -1,0 +1,29 @@
+{
+  "name": "@sylis/asset-processor",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sylis/agent-contracts": "workspace:*",
+    "@sylis/content-crypto": "workspace:*",
+    "@sylis/database": "workspace:*",
+    "@sylis/job-contracts": "workspace:*",
+    "@sylis/job-runtime": "workspace:*",
+    "@sylis/utils": "workspace:*",
+    "yauzl": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/yauzl": "^2.10.3",
+    "tsx": "^4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

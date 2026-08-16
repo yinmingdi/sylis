@@ -1,0 +1,471 @@
+model Lexicon {
+  id                String                     @id @default(uuid()) @db.Uuid
+  key               String                     @unique
+  sourceLanguageTag String
+  activeReleaseId   String?                    @unique @db.Uuid
+  activeRelease     LexiconRelease?            @relation("ActiveLexiconRelease", fields: [activeReleaseId], references: [id], onDelete: Restrict)
+  releases          LexiconRelease[]           @relation("LexiconReleases")
+  headwords         Headword[]
+  entries           LexicalEntry[]
+  senses            LexicalSense[]
+  concepts          LexicalConcept[]
+  etymons           Etymon[]
+  morphs            Morph[]
+  morphemes         Morpheme[]
+  activations       LexiconReleaseActivation[]
+  createdAt         DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                   @updatedAt @db.Timestamptz(3)
+}
+
+model TextProcessingProfile {
+  id                    String           @id @default(uuid()) @db.Uuid
+  unicodeVersion        String
+  cldrVersion           String
+  icuVersion            String
+  ucaVersion            String
+  normalizationForm     UnicodeNormalizationForm
+  segmentationAlgorithm String
+  locale                String
+  collation             String
+  contentHash           String           @unique
+  releases              LexiconRelease[]
+  createdAt             DateTime         @default(now()) @db.Timestamptz(3)
+}
+
+model VocabularyBundle {
+  id          String                       @id @default(uuid()) @db.Uuid
+  version     String
+  contentHash String                       @unique
+  namespaces  VocabularyNamespaceVersion[]
+  releases    LexiconRelease[]
+  createdAt   DateTime                     @default(now()) @db.Timestamptz(3)
+}
+
+model VocabularyNamespaceVersion {
+  id                         String                      @id @default(uuid()) @db.Uuid
+  bundleId                   String                      @db.Uuid
+  namespaceUri               String
+  version                    String
+  sourceUri                  String
+  checksum                   String
+  bundle                     VocabularyBundle            @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+  terms                      VocabularyTerm[]            @relation("NamespaceTerms")
+  entryExternalIdentifiers   EntryExternalIdentifier[]
+  senseExternalIdentifiers   SenseExternalIdentifier[]
+  conceptExternalIdentifiers ConceptExternalIdentifier[]
+
+  @@unique([bundleId, namespaceUri])
+}
+
+model VocabularyTerm {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  namespaceVersionId String                     @db.Uuid
+  code               String
+  uri                String
+  label              String
+  deprecated         Boolean                    @default(false)
+  replacedById       String?                    @db.Uuid
+  namespace          VocabularyNamespaceVersion @relation("NamespaceTerms", fields: [namespaceVersionId], references: [id], onDelete: Restrict)
+  replacedBy         VocabularyTerm?            @relation("VocabularyReplacement", fields: [replacedById], references: [id], onDelete: Restrict)
+  replacements       VocabularyTerm[]           @relation("VocabularyReplacement")
+
+  @@unique([namespaceVersionId, code])
+  @@unique([namespaceVersionId, uri])
+}
+
+model LexiconRelease {
+  id                     String                           @id @default(uuid()) @db.Uuid
+  lexiconId              String                           @db.Uuid
+  version                String
+  status                 LexiconReleaseStatus             @default(DRAFT)
+  textProfileId          String                           @db.Uuid
+  vocabularyBundleId     String                           @db.Uuid
+  compressedArtifactHash String                           @unique
+  contentHash            String                           @unique
+  canonicalizerVersion   String
+  validationSummary      Json?
+  lexicon                Lexicon                          @relation("LexiconReleases", fields: [lexiconId], references: [id], onDelete: Restrict)
+  activeFor              Lexicon?                         @relation("ActiveLexiconRelease")
+  textProfile            TextProcessingProfile            @relation(fields: [textProfileId], references: [id], onDelete: Restrict)
+  vocabularyBundle       VocabularyBundle                 @relation(fields: [vocabularyBundleId], references: [id], onDelete: Restrict)
+  buildMetadata          LexiconReleaseBuildMetadata?
+  sourceInputs           LexiconReleaseSourceInput[]
+  learningLanguages      LexiconReleaseLearningLanguage[]
+  assessmentBlueprints   AssessmentBlueprintRevision[]
+  assessmentStimuli      AssessmentStimulusRevision[]
+  contentEvaluations     ContentProfileEvaluation[]
+  examples               ExampleSentence[]
+  headwordRevisions      HeadwordRevision[]
+  entryRevisions         LexicalEntryRevision[]
+  senseRevisions         LexicalSenseRevision[]
+  conceptRevisions       LexicalConceptRevision[]
+  learningObjectives     LearningObjectiveRevision[]
+  mediaAssets            MediaAsset[]
+  pedagogicalMaterials   PedagogicalMaterialRevision[]
+  qualityStatistics      ReleaseQualityStatistic[]
+  etymonRevisions        EtymonRevision[]
+  entryLineages          EntryLineage[]
+  senseLineages          SenseLineage[]
+  conceptLineages        ConceptLineage[]
+  entryExternalIds       EntryExternalIdentifier[]
+  senseExternalIds       SenseExternalIdentifier[]
+  conceptExternalIds     ConceptExternalIdentifier[]
+  studyPlans             DailyStudyPlan[]
+  bookEditions           LexiconReleaseBookEdition[]
+  readingAnnotations     LexicalAnnotation[]
+  publishRuns            PublishRun[]
+  validationIssues       ValidationIssue[]
+  createdAt              DateTime                         @default(now()) @db.Timestamptz(3)
+  validatedAt            DateTime?                        @db.Timestamptz(3)
+  activationsFrom        LexiconReleaseActivation[]       @relation("ActivationFromRelease")
+  activationsTo          LexiconReleaseActivation[]       @relation("ActivationToRelease")
+
+  @@unique([lexiconId, version])
+}
+
+model LexiconReleaseBuildMetadata {
+  releaseId             String         @id @db.Uuid
+  artifactSchemaVersion String
+  compilerVersion       String
+  compilerGitCommit     String
+  compileProfile        LexiconReleaseCompileProfile
+  validatorVersion      String
+  sourceManifestVersion String
+  sourceManifestHash    String
+  headwordSetVersion    String?
+  headwordSetHash       String?
+  richTargetSetVersion  String?
+  richTargetSetHash     String?
+  aiEnabled             Boolean
+  aiPromptVersion       String?
+  aiSchemaVersion       String?
+  aiPolicyVersion       String?
+  requestedProvider     String?
+  requestedModel        String?
+  resolvedProvider      String?
+  resolvedModel         String?
+  release               LexiconRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+}
+
+model LexiconReleaseLearningLanguage {
+  releaseId    String         @db.Uuid
+  languageTag  String
+  displayOrder Int
+  release      LexiconRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, languageTag])
+  @@unique([releaseId, displayOrder])
+}
+
+model Headword {
+  id               String                             @id @default(uuid()) @db.Uuid
+  lexiconId        String                             @db.Uuid
+  identityKey      String
+  artifactRole     LexiconArtifactRole                @default(CURRENT)
+  lexicon          Lexicon                            @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  revisions        HeadwordRevision[]
+  collectedTargets CollectedRevisionHeadwordTarget[]
+  bookItemTargets  VocabularyBookItemHeadwordTarget[]
+  createdAt        DateTime                           @default(now()) @db.Timestamptz(3)
+  retiredAt        DateTime?                          @db.Timestamptz(3)
+
+  @@unique([lexiconId, identityKey])
+}
+
+model HeadwordRevision {
+  id                       String                                     @id @default(uuid()) @db.Uuid
+  releaseId                String                                     @db.Uuid
+  headwordId               String                                     @db.Uuid
+  displayText              String
+  normalizedText           String
+  searchKey                String
+  sortKey                  String
+  release                  LexiconRelease                             @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  headword                 Headword                                   @relation(fields: [headwordId], references: [id], onDelete: Restrict)
+  entries                  LexicalEntryRevision[]
+  proficiencyClaims        ProficiencyHeadwordClaim[]
+  profileTargets           ContentProfileEvaluationHeadwordTarget[]
+  materialMentions         PedagogicalMaterialMentionHeadwordTarget[]
+  exerciseChoiceTargets    ExerciseChoiceHeadwordTarget[]
+  readingAnnotationTargets LexicalAnnotationHeadwordTarget[]
+
+  @@unique([releaseId, headwordId])
+  @@index([releaseId, searchKey])
+}
+
+model LexicalEntry {
+  id                  String                          @id @default(uuid()) @db.Uuid
+  lexiconId           String                          @db.Uuid
+  identityKey         String
+  artifactRole        LexiconArtifactRole             @default(CURRENT)
+  lexicon             Lexicon                         @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  revisions           LexicalEntryRevision[]
+  collectedTargets    CollectedRevisionEntryTarget[]
+  bookItemTargets     VocabularyBookItemEntryTarget[]
+  sourceLineages      EntryLineage[]                  @relation("EntryLineageSource")
+  targetLineages      EntryLineage[]                  @relation("EntryLineageTarget")
+  externalIdentifiers EntryExternalIdentifier[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model LexicalEntryRevision {
+  id                       String                                  @id @default(uuid()) @db.Uuid
+  releaseId                String                                  @db.Uuid
+  entryId                  String                                  @db.Uuid
+  headwordId               String                                  @db.Uuid
+  entryType                LexicalEntryType
+  partOfSpeechCode         String
+  homographNo              Int?
+  displayOrder             Int
+  status                   RevisionStatus                          @default(PUBLISHED)
+  provenanceId             String                                  @db.Uuid
+  release                  LexiconRelease                          @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  entry                    LexicalEntry                            @relation(fields: [entryId], references: [id], onDelete: Restrict)
+  headwordRevision         HeadwordRevision                        @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
+  provenance               Provenance                              @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  forms                    LexicalForm[]
+  senses                   LexicalSenseRevision[]
+  outgoingRelations        EntryRelation[]                         @relation("EntryRelationSource")
+  incomingRelations        EntryRelation[]                         @relation("EntryRelationTarget")
+  frames                   SyntacticFrame[]
+  headedCollocations       Collocation[]
+  collocationComponents    CollocationComponent[]
+  inflectionGenerations    InflectionGeneration[]
+  wordFormations           WordFormation[]
+  wordFormationInputs      WordFormationInput[]
+  etymologyHypotheses      EtymologyHypothesis[]
+  sourceEtymologyLinks     EtymologyLinkSourceEntry[]              @relation("EtymologyLinkSourceEntry")
+  targetEtymologyLinks     EtymologyLinkTargetEntry[]              @relation("EtymologyLinkTargetEntry")
+  frequencyObservations    EntryFrequencyObservation[]
+  attestations             EntryAttestation[]
+  proficiencyClaims        ProficiencyEntryClaim[]
+  pedagogicalTargets       PedagogicalMaterialEntryTarget[]
+  profileTargets           ContentProfileEvaluationEntryTarget[]
+  materialMentions         PedagogicalMaterialMentionEntryTarget[]
+  exerciseChoiceTargets    ExerciseChoiceEntryTarget[]
+  readingAnnotationTargets LexicalAnnotationEntryTarget[]
+
+  @@unique([releaseId, entryId])
+  @@unique([releaseId, headwordId, displayOrder])
+}
+
+model LexicalForm {
+  id                    String                                 @id @default(uuid()) @db.Uuid
+  releaseId             String                                 @db.Uuid
+  entryId               String                                 @db.Uuid
+  formType              LexicalFormType
+  displayOrder          Int
+  provenanceId          String                                 @db.Uuid
+  entryRevision         LexicalEntryRevision                   @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance            Provenance                             @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  representations       FormRepresentation[]
+  features              FormFeature[]
+  media                 FormMedia[]
+  baseInflections       InflectionGeneration[]                 @relation("InflectionBaseForm")
+  outputInflections     InflectionGeneration[]                 @relation("InflectionOutputForm")
+  frequencyObservations FormFrequencyObservation[]
+  attestations          FormAttestation[]
+  objectiveSubjects     LearningObjectiveFormSubject[]
+  pedagogicalTargets    PedagogicalMaterialFormTarget[]
+  profileTargets        ContentProfileEvaluationFormTarget[]
+  materialMentions      PedagogicalMaterialMentionFormTarget[]
+  exerciseChoiceTargets ExerciseChoiceFormTarget[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, entryId, displayOrder])
+}
+
+model FormRepresentation {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  releaseId          String                  @db.Uuid
+  formId             String                  @db.Uuid
+  representationType FormRepresentationType
+  languageTag        String
+  regionTag          String?
+  scriptTag          String?
+  text               String
+  normalizedText     String
+  provenanceId       String                  @db.Uuid
+  form               LexicalForm             @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+  provenance         Provenance              @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  analyses           MorphologicalAnalysis[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, formId, representationType, languageTag, regionTag, normalizedText])
+}
+
+model FormFeature {
+  releaseId   String      @db.Uuid
+  formId      String      @db.Uuid
+  featureCode String
+  valueCode   String
+  form        LexicalForm @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, formId, featureCode])
+}
+
+model LexicalSense {
+  id                  String                         @id @default(uuid()) @db.Uuid
+  lexiconId           String                         @db.Uuid
+  identityKey         String
+  artifactRole        LexiconArtifactRole            @default(CURRENT)
+  lexicon             Lexicon                        @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  revisions           LexicalSenseRevision[]         @relation("SenseIdentityRevisions")
+  collectedTargets    CollectedRevisionSenseTarget[]
+  sourceLineages      SenseLineage[]                 @relation("SenseLineageSource")
+  targetLineages      SenseLineage[]                 @relation("SenseLineageTarget")
+  externalIdentifiers SenseExternalIdentifier[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model LexicalSenseRevision {
+  id                       String                                  @id @default(uuid()) @db.Uuid
+  releaseId                String                                  @db.Uuid
+  senseId                  String                                  @db.Uuid
+  entryId                  String                                  @db.Uuid
+  parentSenseId            String?                                 @db.Uuid
+  displayOrder             Int
+  status                   RevisionStatus                          @default(PUBLISHED)
+  provenanceId             String                                  @db.Uuid
+  release                  LexiconRelease                          @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  sense                    LexicalSense                            @relation("SenseIdentityRevisions", fields: [senseId], references: [id], onDelete: Restrict)
+  entryRevision            LexicalEntryRevision                    @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance               Provenance                              @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  parent                   LexicalSenseRevision?                   @relation("SenseHierarchy", fields: [releaseId, parentSenseId], references: [releaseId, senseId], onDelete: Restrict)
+  children                 LexicalSenseRevision[]                  @relation("SenseHierarchy")
+  definitions              SenseDefinition[]
+  translations             SenseTranslationText[]
+  usages                   SenseUsage[]
+  memberships              SenseConceptMembership[]
+  outgoingRelations        SenseRelation[]                         @relation("SenseRelationSource")
+  incomingRelations        SenseRelation[]                         @relation("SenseRelationTarget")
+  outgoingTranslations     TranslationRelation[]                   @relation("TranslationRelationSource")
+  incomingTranslations     TranslationRelation[]                   @relation("TranslationRelationTarget")
+  frequencyObservations    SenseFrequencyObservation[]
+  attestations             SenseAttestation[]
+  examples                 SenseExample[]
+  collocations             SenseCollocation[]
+  predicates               SemanticPredicate[]
+  frames                   SenseFrame[]
+  proficiencyClaims        ProficiencySenseClaim[]
+  objectiveSubjects        LearningObjectiveSenseSubject[]
+  pedagogicalTargets       PedagogicalMaterialSenseTarget[]
+  profileTargets           ContentProfileEvaluationSenseTarget[]
+  materialMentions         PedagogicalMaterialMentionSenseTarget[]
+  exerciseChoiceTargets    ExerciseChoiceSenseTarget[]
+  readingAnnotationTargets LexicalAnnotationSenseTarget[]
+
+  @@unique([releaseId, senseId])
+  @@unique([releaseId, entryId, displayOrder])
+}
+
+model SenseDefinition {
+  id             String               @id @default(uuid()) @db.Uuid
+  releaseId      String               @db.Uuid
+  senseId        String               @db.Uuid
+  languageTag    String
+  definitionType String
+  text           String
+  displayOrder   Int
+  provenanceId   String               @db.Uuid
+  senseRevision  LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance     Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, languageTag, definitionType, displayOrder])
+}
+
+model SenseTranslationText {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  senseId       String               @db.Uuid
+  languageTag   String
+  text          String
+  registerCode  String?
+  displayOrder  Int
+  provenanceId  String               @db.Uuid
+  senseRevision LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, languageTag, displayOrder])
+}
+
+model SenseUsage {
+  id            String               @id @default(uuid()) @db.Uuid
+  releaseId     String               @db.Uuid
+  senseId       String               @db.Uuid
+  usageTypeCode String
+  valueCode     String?
+  text          String?
+  displayOrder  Int
+  provenanceId  String               @db.Uuid
+  senseRevision LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance    Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, usageTypeCode, displayOrder])
+}
+
+model LexicalConcept {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  lexiconId           String                      @db.Uuid
+  identityKey         String
+  artifactRole        LexiconArtifactRole         @default(CURRENT)
+  lexicon             Lexicon                     @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  revisions           LexicalConceptRevision[]
+  sourceLineages      ConceptLineage[]            @relation("ConceptLineageSource")
+  targetLineages      ConceptLineage[]            @relation("ConceptLineageTarget")
+  externalIdentifiers ConceptExternalIdentifier[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model LexicalConceptRevision {
+  id                    String                                    @id @default(uuid()) @db.Uuid
+  releaseId             String                                    @db.Uuid
+  conceptId             String                                    @db.Uuid
+  conceptType           LexicalConceptType
+  status                RevisionStatus                            @default(PUBLISHED)
+  provenanceId          String                                    @db.Uuid
+  release               LexiconRelease                            @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  concept               LexicalConcept                            @relation(fields: [conceptId], references: [id], onDelete: Restrict)
+  provenance            Provenance                                @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  memberships           SenseConceptMembership[]
+  definitions           ConceptDefinition[]
+  outgoingRelations     ConceptRelation[]                         @relation("ConceptRelationSource")
+  incomingRelations     ConceptRelation[]                         @relation("ConceptRelationTarget")
+  profileTargets        ContentProfileEvaluationConceptTarget[]
+  materialMentions      PedagogicalMaterialMentionConceptTarget[]
+  exerciseChoiceTargets ExerciseChoiceConceptTarget[]
+
+  @@unique([releaseId, conceptId])
+}
+
+model SenseConceptMembership {
+  id              String                     @id @default(uuid()) @db.Uuid
+  releaseId       String                     @db.Uuid
+  senseId         String                     @db.Uuid
+  conceptId       String                     @db.Uuid
+  membershipType  SenseConceptMembershipType
+  canonical       Boolean
+  provenanceId    String                     @db.Uuid
+  senseRevision   LexicalSenseRevision       @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  conceptRevision LexicalConceptRevision     @relation(fields: [releaseId, conceptId], references: [releaseId, conceptId], onDelete: Restrict)
+  provenance      Provenance                 @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, conceptId, membershipType])
+}
+
+model ConceptDefinition {
+  id              String                 @id @default(uuid()) @db.Uuid
+  releaseId       String                 @db.Uuid
+  conceptId       String                 @db.Uuid
+  languageTag     String
+  text            String
+  displayOrder    Int
+  provenanceId    String                 @db.Uuid
+  conceptRevision LexicalConceptRevision @relation(fields: [releaseId, conceptId], references: [releaseId, conceptId], onDelete: Restrict)
+  provenance      Provenance             @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, conceptId, languageTag, displayOrder])
+}

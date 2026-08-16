@@ -1,0 +1,38 @@
+{
+  "name": "@sylis/lexicon-artifact",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": "./schema/sylis-lexicon-artifact-v1.schema.json"
+  },
+  "scripts": {
+    "schema:sync": "node ./scripts/sync-schema.mjs",
+    "types:generate": "node ./scripts/generate-types.mjs",
+    "build": "pnpm schema:sync && pnpm types:generate && tsc -p tsconfig.build.json",
+    "typecheck": "pnpm schema:sync && pnpm types:generate && tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "artifact:validate": "vitest run test/artifact-contract.test.ts"
+  },
+  "dependencies": {
+    "@streamparser/json": "0.0.22",
+    "@sylis/utils": "workspace:*",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "fast-check": "3.23.2",
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

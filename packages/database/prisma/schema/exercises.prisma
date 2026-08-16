@@ -1,0 +1,463 @@
+model AssessmentStimulus {
+  id          String                       @id @default(uuid()) @db.Uuid
+  lexiconId   String                       @db.Uuid
+  identityKey String
+  revisions   AssessmentStimulusRevision[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model AssessmentStimulusRevision {
+  id            String                    @id @default(uuid()) @db.Uuid
+  releaseId     String                    @db.Uuid
+  stimulusId    String                    @db.Uuid
+  status        RevisionStatus            @default(PUBLISHED)
+  contentHash   String
+  provenanceId  String                    @db.Uuid
+  release       LexiconRelease            @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  stimulus      AssessmentStimulus        @relation(fields: [stimulusId], references: [id], onDelete: Restrict)
+  provenance    Provenance                @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  blocks        AssessmentStimulusBlock[]
+  exerciseLinks ExerciseStimulusRef[]
+
+  @@unique([releaseId, stimulusId])
+  @@unique([releaseId, id])
+}
+
+model AssessmentStimulusBlock {
+  id                 String                            @id @default(uuid()) @db.Uuid
+  releaseId          String                            @db.Uuid
+  stimulusRevisionId String                            @db.Uuid
+  position           Int
+  stimulusRevision   AssessmentStimulusRevision        @relation(fields: [releaseId, stimulusRevisionId], references: [releaseId, id], onDelete: Restrict)
+  textBlocks         AssessmentStimulusTextBlock[]
+  exampleBlocks      AssessmentStimulusExampleBlock[]
+  mediaBlocks        AssessmentStimulusMediaBlock[]
+  materialBlocks     AssessmentStimulusMaterialBlock[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, stimulusRevisionId, position])
+}
+
+model AssessmentStimulusTextBlock {
+  releaseId   String                  @db.Uuid
+  blockId     String                  @db.Uuid
+  languageTag String
+  text        String
+  block       AssessmentStimulusBlock @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model AssessmentStimulusExampleBlock {
+  releaseId      String                  @db.Uuid
+  blockId        String                  @db.Uuid
+  senseExampleId String                  @db.Uuid
+  block          AssessmentStimulusBlock @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  senseExample   SenseExample            @relation(fields: [releaseId, senseExampleId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model AssessmentStimulusMediaBlock {
+  releaseId    String                  @db.Uuid
+  blockId      String                  @db.Uuid
+  mediaAssetId String                  @db.Uuid
+  block        AssessmentStimulusBlock @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  media        MediaAsset              @relation(fields: [releaseId, mediaAssetId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model AssessmentStimulusMaterialBlock {
+  releaseId          String                      @db.Uuid
+  blockId            String                      @db.Uuid
+  materialRevisionId String                      @db.Uuid
+  block              AssessmentStimulusBlock     @relation(fields: [releaseId, blockId], references: [releaseId, id], onDelete: Restrict)
+  materialRevision   PedagogicalMaterialRevision @relation(fields: [releaseId, materialRevisionId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, blockId])
+}
+
+model ExerciseItem {
+  id                  String             @id @default(uuid()) @db.Uuid
+  lexiconId           String             @db.Uuid
+  identityKey         String
+  learningObjectiveId String             @db.Uuid
+  learningObjective   LearningObjective  @relation(fields: [learningObjectiveId], references: [id], onDelete: Restrict)
+  revisions           ExerciseRevision[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model ExerciseRevision {
+  id                          String                                   @id @default(uuid()) @db.Uuid
+  releaseId                   String                                   @db.Uuid
+  exerciseItemId              String                                   @db.Uuid
+  learningObjectiveRevisionId String                                   @db.Uuid
+  exerciseTaskKind            ExerciseTaskKind
+  evidenceKind                ExerciseEvidenceKind
+  responseKind                ExerciseResponseKind
+  responseCardinality         ExerciseResponseCardinality
+  responsePlacement           ExerciseResponsePlacement
+  gradingMode                 ExerciseGradingMode
+  validationLevel             ExerciseValidationLevel
+  promptLanguageTag           String
+  promptText                  String
+  instructions                String?
+  shuffleChoices              Boolean
+  maxScore                    Decimal                                  @db.Decimal(8, 3)
+  authoredDifficultyTier      ExerciseDifficultyTier
+  templateVersion             String
+  generatorVersion            String
+  verifierVersion             String
+  contentHash                 String
+  provenanceId                String                                   @db.Uuid
+  status                      RevisionStatus                           @default(PUBLISHED)
+  exerciseItem                ExerciseItem                             @relation(fields: [exerciseItemId], references: [id], onDelete: Restrict)
+  learningObjectiveRevision   LearningObjectiveRevision                @relation(fields: [releaseId, learningObjectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  provenance                  Provenance                               @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  stimuli                     ExerciseStimulusRef[]
+  responseConfig              ExerciseResponseConfig?
+  choices                     ExerciseChoice[]
+  acceptedTexts               ExerciseAcceptedText[]
+  correctChoices              ExerciseCorrectChoice[]
+  feedback                    ExerciseFeedback[]
+  rubrics                     ExerciseRubricCriterion[]
+  attempts                    ExerciseAttempt[]
+  selectionRules              AssessmentPinnedItemSelectionRule[]
+  assessmentSessionItems      AssessmentSessionItem[]
+  profileTargets              ContentProfileEvaluationExerciseTarget[]
+
+  @@unique([releaseId, exerciseItemId])
+  @@unique([releaseId, id])
+}
+
+model ExerciseStimulusRef {
+  releaseId          String                     @db.Uuid
+  exerciseRevisionId String                     @db.Uuid
+  stimulusRevisionId String                     @db.Uuid
+  position           Int
+  roleCode           String
+  exerciseRevision   ExerciseRevision           @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  stimulusRevision   AssessmentStimulusRevision @relation(fields: [releaseId, stimulusRevisionId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId, stimulusRevisionId, position])
+}
+
+model ExerciseResponseConfig {
+  releaseId          String                              @db.Uuid
+  exerciseRevisionId String                              @db.Uuid
+  exerciseRevision   ExerciseRevision                    @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  choice             ExerciseChoiceResponseConfig?
+  shortText          ExerciseShortTextResponseConfig?
+  extendedText       ExerciseExtendedTextResponseConfig?
+  noCapture          ExerciseNoCaptureResponseConfig?
+
+  @@id([releaseId, exerciseRevisionId])
+}
+
+model ExerciseChoiceResponseConfig {
+  releaseId          String                 @db.Uuid
+  exerciseRevisionId String                 @db.Uuid
+  minSelections      Int
+  maxSelections      Int
+  responseConfig     ExerciseResponseConfig @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, exerciseRevisionId], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId])
+}
+
+model ExerciseShortTextResponseConfig {
+  releaseId          String                   @db.Uuid
+  exerciseRevisionId String                   @db.Uuid
+  caseSensitive      Boolean
+  diacriticPolicy    ExerciseDiacriticPolicy
+  whitespacePolicy   ExerciseWhitespacePolicy
+  capturePolicy      ExerciseCapturePolicy
+  responseConfig     ExerciseResponseConfig   @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, exerciseRevisionId], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId])
+}
+
+model ExerciseExtendedTextResponseConfig {
+  releaseId           String                 @db.Uuid
+  exerciseRevisionId  String                 @db.Uuid
+  expectedLanguageTag String
+  minCharacters       Int
+  maxCharacters       Int?
+  minWords            Int
+  maxWords            Int?
+  capturePolicy       ExerciseCapturePolicy
+  responseConfig      ExerciseResponseConfig @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, exerciseRevisionId], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId])
+}
+
+model ExerciseNoCaptureResponseConfig {
+  releaseId          String                 @db.Uuid
+  exerciseRevisionId String                 @db.Uuid
+  responseConfig     ExerciseResponseConfig @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, exerciseRevisionId], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId])
+}
+
+model ExerciseChoice {
+  id                  String                             @id @default(uuid()) @db.Uuid
+  releaseId           String                             @db.Uuid
+  exerciseRevisionId  String                             @db.Uuid
+  choiceKey           String
+  languageTag         String
+  text                String
+  normalizedText      String
+  displayOrder        Int
+  distractorKind      ExerciseDistractorKind?
+  exerciseRevision    ExerciseRevision                   @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  presented           AttemptPresentedChoice[]
+  selected            AttemptSelectedChoice[]
+  headwordTargets     ExerciseChoiceHeadwordTarget[]
+  entryTargets        ExerciseChoiceEntryTarget[]
+  formTargets         ExerciseChoiceFormTarget[]
+  senseTargets        ExerciseChoiceSenseTarget[]
+  conceptTargets      ExerciseChoiceConceptTarget[]
+  senseExampleTargets ExerciseChoiceSenseExampleTarget[]
+  collocationTargets  ExerciseChoiceCollocationTarget[]
+  frameTargets        ExerciseChoiceFrameTarget[]
+  morphemeTargets     ExerciseChoiceMorphemeTarget[]
+  correctResponse     ExerciseCorrectChoice?
+  feedback            ExerciseFeedback[]
+
+  @@unique([releaseId, id])
+  @@unique([releaseId, id, exerciseRevisionId])
+  @@unique([releaseId, exerciseRevisionId, choiceKey])
+  @@unique([releaseId, exerciseRevisionId, normalizedText])
+}
+
+model ExerciseChoiceHeadwordTarget {
+  releaseId  String           @db.Uuid
+  choiceId   String           @db.Uuid
+  headwordId String           @db.Uuid
+  choice     ExerciseChoice   @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  headword   HeadwordRevision @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, headwordId])
+}
+
+model ExerciseChoiceEntryTarget {
+  releaseId String               @db.Uuid
+  choiceId  String               @db.Uuid
+  entryId   String               @db.Uuid
+  choice    ExerciseChoice       @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  entry     LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, entryId])
+}
+
+model ExerciseChoiceFormTarget {
+  releaseId String         @db.Uuid
+  choiceId  String         @db.Uuid
+  formId    String         @db.Uuid
+  choice    ExerciseChoice @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  form      LexicalForm    @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, formId])
+}
+
+model ExerciseChoiceSenseTarget {
+  releaseId String               @db.Uuid
+  choiceId  String               @db.Uuid
+  senseId   String               @db.Uuid
+  choice    ExerciseChoice       @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  sense     LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, senseId])
+}
+
+model ExerciseChoiceConceptTarget {
+  releaseId String                 @db.Uuid
+  choiceId  String                 @db.Uuid
+  conceptId String                 @db.Uuid
+  choice    ExerciseChoice         @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  concept   LexicalConceptRevision @relation(fields: [releaseId, conceptId], references: [releaseId, conceptId], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, conceptId])
+}
+
+model ExerciseChoiceSenseExampleTarget {
+  releaseId      String         @db.Uuid
+  choiceId       String         @db.Uuid
+  senseExampleId String         @db.Uuid
+  choice         ExerciseChoice @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  senseExample   SenseExample   @relation(fields: [releaseId, senseExampleId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, senseExampleId])
+}
+
+model ExerciseChoiceCollocationTarget {
+  releaseId     String         @db.Uuid
+  choiceId      String         @db.Uuid
+  collocationId String         @db.Uuid
+  choice        ExerciseChoice @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  collocation   Collocation    @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, collocationId])
+}
+
+model ExerciseChoiceFrameTarget {
+  releaseId String         @db.Uuid
+  choiceId  String         @db.Uuid
+  frameId   String         @db.Uuid
+  choice    ExerciseChoice @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  frame     SyntacticFrame @relation(fields: [releaseId, frameId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, frameId])
+}
+
+model ExerciseChoiceMorphemeTarget {
+  releaseId  String         @db.Uuid
+  choiceId   String         @db.Uuid
+  morphemeId String         @db.Uuid
+  choice     ExerciseChoice @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+  morpheme   Morpheme       @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, choiceId, morphemeId])
+}
+
+model ExerciseCorrectChoice {
+  releaseId          String           @db.Uuid
+  exerciseRevisionId String           @db.Uuid
+  choiceId           String           @db.Uuid
+  weight             Decimal          @db.Decimal(8, 3)
+  exerciseRevision   ExerciseRevision @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  choice             ExerciseChoice   @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, exerciseRevisionId, choiceId])
+  @@unique([releaseId, choiceId])
+}
+
+model ExerciseAcceptedText {
+  id                 String           @id @default(uuid()) @db.Uuid
+  releaseId          String           @db.Uuid
+  exerciseRevisionId String           @db.Uuid
+  languageTag        String
+  text               String
+  normalizedText     String
+  weight             Decimal          @default(1) @db.Decimal(8, 3)
+  exerciseRevision   ExerciseRevision @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+
+  @@unique([releaseId, exerciseRevisionId, languageTag, normalizedText])
+}
+
+model ExerciseFeedback {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  releaseId          String                  @db.Uuid
+  exerciseRevisionId String                  @db.Uuid
+  outcome            ExerciseFeedbackOutcome
+  choiceId           String?                 @db.Uuid
+  languageTag        String
+  text               String
+  displayOrder       Int
+  exerciseRevision   ExerciseRevision        @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  choice             ExerciseChoice?         @relation(fields: [releaseId, choiceId], references: [releaseId, id], onDelete: Restrict)
+
+  @@unique([releaseId, exerciseRevisionId, outcome, choiceId, languageTag])
+}
+
+model ExerciseRubricCriterion {
+  id                 String           @id @default(uuid()) @db.Uuid
+  releaseId          String           @db.Uuid
+  exerciseRevisionId String           @db.Uuid
+  position           Int
+  criterionKey       String
+  languageTag        String
+  description        String
+  maxScore           Decimal          @db.Decimal(8, 3)
+  exerciseRevision   ExerciseRevision @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+
+  @@unique([releaseId, exerciseRevisionId, position])
+}
+
+model ExerciseAttempt {
+  id                      String                     @id @default(uuid()) @db.Uuid
+  userId                  String                     @db.Uuid
+  releaseId               String                     @db.Uuid
+  exerciseRevisionId      String                     @db.Uuid
+  dailyStudyPlanItemId    String?                    @db.Uuid
+  assessmentSessionItemId String?                    @db.Uuid
+  contextKind             ExerciseAttemptContextKind
+  attemptNo               Int
+  status                  AttemptStatus              @default(PRESENTED)
+  score                   Decimal?                   @db.Decimal(8, 3)
+  maxScore                Decimal                    @db.Decimal(8, 3)
+  correct                 Boolean?
+  idempotencyKey          String
+  presentedAt             DateTime                   @default(now()) @db.Timestamptz(3)
+  submittedAt             DateTime?                  @db.Timestamptz(3)
+  user                    User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseRevision        ExerciseRevision           @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+  dailyStudyPlanItem      DailyStudyPlanItem?        @relation(fields: [releaseId, dailyStudyPlanItemId], references: [releaseId, id], onDelete: Restrict)
+  assessmentSessionItem   AssessmentSessionItem?     @relation(fields: [releaseId, assessmentSessionItemId], references: [releaseId, id], onDelete: Restrict)
+  presentedChoices        AttemptPresentedChoice[]
+  selectedChoices         AttemptSelectedChoice[]
+  textResponse            AttemptTextResponse?
+  selfReport              AttemptSelfReport?
+  reviewEvent             ReviewEvent?
+
+  @@unique([userId, idempotencyKey])
+  @@unique([userId, exerciseRevisionId, contextKind, attemptNo])
+  @@unique([releaseId, id])
+  @@unique([releaseId, id, exerciseRevisionId])
+}
+
+model AttemptPresentedChoice {
+  releaseId          String                 @db.Uuid
+  attemptId          String                 @db.Uuid
+  exerciseRevisionId String                 @db.Uuid
+  choiceId           String                 @db.Uuid
+  position           Int
+  attempt            ExerciseAttempt        @relation(fields: [releaseId, attemptId, exerciseRevisionId], references: [releaseId, id, exerciseRevisionId], onDelete: Restrict)
+  choice             ExerciseChoice         @relation(fields: [releaseId, choiceId, exerciseRevisionId], references: [releaseId, id, exerciseRevisionId], onDelete: Restrict)
+  selection          AttemptSelectedChoice? @relation("PresentedAttemptSelection")
+
+  @@id([releaseId, attemptId, choiceId])
+  @@unique([releaseId, attemptId, position])
+}
+
+model AttemptSelectedChoice {
+  releaseId          String                 @db.Uuid
+  attemptId          String                 @db.Uuid
+  exerciseRevisionId String                 @db.Uuid
+  choiceId           String                 @db.Uuid
+  attempt            ExerciseAttempt        @relation(fields: [releaseId, attemptId, exerciseRevisionId], references: [releaseId, id, exerciseRevisionId], onDelete: Restrict)
+  choice             ExerciseChoice         @relation(fields: [releaseId, choiceId, exerciseRevisionId], references: [releaseId, id, exerciseRevisionId], onDelete: Restrict)
+  presentedChoice    AttemptPresentedChoice @relation("PresentedAttemptSelection", fields: [releaseId, attemptId, choiceId], references: [releaseId, attemptId, choiceId], onDelete: Restrict)
+
+  @@id([releaseId, attemptId, choiceId])
+}
+
+model AttemptTextResponse {
+  releaseId           String                                  @db.Uuid
+  attemptId           String                                  @db.Uuid
+  retentionMode       AttemptTextRetentionMode
+  ciphertext          Bytes?
+  keyVersion          String?
+  purpose             AttemptTextResponsePurpose
+  consentRecordId     String?                                 @db.Uuid
+  normalizedHash      String
+  attempt             ExerciseAttempt                         @relation(fields: [releaseId, attemptId], references: [releaseId, id], onDelete: Restrict)
+  consentRecord       ConsentRecord?                          @relation(fields: [consentRecordId], references: [id], onDelete: Restrict)
+  supportGrantTargets SupportGrantExerciseAttemptTextTarget[]
+
+  @@id([releaseId, attemptId])
+  @@unique([attemptId])
+}
+
+model AttemptSelfReport {
+  releaseId            String          @db.Uuid
+  attemptId            String          @db.Uuid
+  reportedCorrect      Boolean
+  revealAcknowledgedAt DateTime        @default(now()) @db.Timestamptz(3)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  attempt              ExerciseAttempt @relation(fields: [releaseId, attemptId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, attemptId])
+}

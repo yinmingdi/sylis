@@ -1,0 +1,37 @@
+:{$PORT:8080} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	handle /health {
+		root * /srv
+		rewrite * /version.json
+		header Cache-Control "no-store"
+		file_server
+	}
+
+	handle /version.json {
+		root * /srv
+		header Cache-Control "no-store"
+		file_server
+	}
+
+	handle /api/agent/* {
+		reverse_proxy {$AGENT_API_UPSTREAM:http://agent-api.railway.internal:3200}
+	}
+
+	handle /api/* {
+		reverse_proxy {$API_UPSTREAM:http://api.railway.internal:3000}
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

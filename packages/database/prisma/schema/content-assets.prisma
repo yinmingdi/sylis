@@ -1,0 +1,152 @@
+model ContentAsset {
+  id                String                      @id @default(uuid()) @db.Uuid
+  ownerUserId       String                      @db.Uuid
+  purpose           ContentAssetPurpose
+  status            ContentAssetStatus          @default(QUARANTINED)
+  currentRevisionId String?                     @unique @db.Uuid
+  createdAt         DateTime                    @default(now()) @db.Timestamptz(3)
+  hiddenAt          DateTime?                   @db.Timestamptz(3)
+  deletedAt         DateTime?                   @db.Timestamptz(3)
+  owner             User                        @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  revisions         ContentAssetRevision[]      @relation("ContentAssetRevisions")
+  currentRevision   ContentAssetRevision?       @relation("CurrentContentAssetRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+  uploadIntents     UploadIntent[]
+  deletionTarget    ContentDeletionAssetTarget?
+
+  @@index([ownerUserId, status, createdAt])
+}
+
+model UploadIntent {
+  id                  String              @id @default(uuid()) @db.Uuid
+  assetId             String              @db.Uuid
+  ownerUserId         String              @db.Uuid
+  purpose             ContentAssetPurpose
+  filename            String
+  expectedByteSize    BigInt
+  expectedContentHash String
+  expectedMimeType    String
+  quarantineObjectRef String              @unique
+  status              UploadIntentStatus  @default(ISSUED)
+  expiresAt           DateTime            @db.Timestamptz(3)
+  finalizedAt         DateTime?           @db.Timestamptz(3)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  asset               ContentAsset        @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  owner               User                @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@index([ownerUserId, status, expiresAt])
+}
+
+model ContentAssetRevision {
+  id                          String                                    @id @default(uuid()) @db.Uuid
+  assetId                     String                                    @db.Uuid
+  revisionNo                  Int
+  filename                    String
+  declaredMimeType            String
+  detectedMimeType            String?
+  byteSize                    BigInt
+  contentHash                 String
+  objectRef                   String
+  objectVersion               String
+  scannerVersion              String?
+  parserVersion               String?
+  validatorVersion            String?
+  sourceArtifactRevisionId    String?                                   @unique @db.Uuid
+  status                      ContentAssetRevisionStatus                @default(QUARANTINED)
+  createdAt                   DateTime                                  @default(now()) @db.Timestamptz(3)
+  asset                       ContentAsset                              @relation("ContentAssetRevisions", fields: [assetId], references: [id], onDelete: Restrict)
+  currentFor                  ContentAsset?                             @relation("CurrentContentAssetRevision")
+  processingRuns              AssetProcessingRun[]
+  derivatives                 ContentAssetDerivative[]
+  exchangeParts               ModelExchangePart[]
+  modelExecutionPermitTargets ModelExecutionPermitAssetRevisionTarget[]
+  supportGrantTargets         SupportGrantContentAssetRevisionTarget[]
+  sourceArtifactRevision      AgentArtifactRevision?                    @relation(fields: [sourceArtifactRevisionId], references: [id], onDelete: Restrict)
+  messageBlockRefs            AgentMessageBlockReference[]
+
+  @@unique([assetId, revisionNo])
+  @@unique([assetId, id])
+  @@index([objectRef, objectVersion])
+  @@index([status, createdAt])
+}
+
+model AssetProcessingRun {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  revisionId         String                   @db.Uuid
+  jobId              String                   @unique @db.Uuid
+  kind               JobKind
+  status             AssetProcessingStatus
+  inputHash          String
+  outputHash         String?
+  toolVersion        String
+  modelPolicyVersion String?
+  chunkPolicyVersion String?
+  createdAt          DateTime                 @default(now()) @db.Timestamptz(3)
+  completedAt        DateTime?                @db.Timestamptz(3)
+  revision           ContentAssetRevision     @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  job                Job                      @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  derivatives        ContentAssetDerivative[]
+
+  @@unique([revisionId, kind, inputHash, toolVersion, modelPolicyVersion, chunkPolicyVersion])
+}
+
+model ContentAssetDerivative {
+  id              String                     @id @default(uuid()) @db.Uuid
+  revisionId      String                     @db.Uuid
+  processingRunId String                     @db.Uuid
+  kind            ContentAssetDerivativeKind
+  outputHash      String
+  objectRef       String?
+  contentBodyId   String?                    @db.Uuid
+  vectorRef       String?
+  createdAt       DateTime                   @default(now()) @db.Timestamptz(3)
+  revision        ContentAssetRevision       @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  processingRun   AssetProcessingRun         @relation(fields: [processingRunId], references: [id], onDelete: Restrict)
+
+  @@unique([revisionId, kind, outputHash])
+}
+
+model ContentDeletionRequest {
+  id                  String                              @id @default(uuid()) @db.Uuid
+  targetKind          ContentDeletionTargetKind
+  requestedByUserId   String                              @db.Uuid
+  hiddenAt            DateTime                            @db.Timestamptz(3)
+  purgeAfter          DateTime                            @db.Timestamptz(3)
+  status              ContentDeletionStatus
+  attemptEvidence     Json?
+  createdAt           DateTime                            @default(now()) @db.Timestamptz(3)
+  requestedByUser     User                                @relation("ContentDeletionRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  assetTarget         ContentDeletionAssetTarget?
+  modelExchangeTarget ContentDeletionModelExchangeTarget?
+  sessionTarget       ContentDeletionSessionTarget?
+  userTarget          ContentDeletionUserTarget?
+
+  @@index([status, purgeAfter])
+}
+
+model ContentDeletionAssetTarget {
+  requestId String                 @id @db.Uuid
+  assetId   String                 @unique @db.Uuid
+  request   ContentDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  asset     ContentAsset           @relation(fields: [assetId], references: [id], onDelete: Restrict)
+}
+
+model ContentDeletionModelExchangeTarget {
+  requestId       String                 @id @db.Uuid
+  modelExchangeId String                 @unique @db.Uuid
+  request         ContentDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  modelExchange   ModelExchange          @relation(fields: [modelExchangeId], references: [id], onDelete: Restrict)
+}
+
+model ContentDeletionSessionTarget {
+  requestId String                 @id @db.Uuid
+  sessionId String                 @unique @db.Uuid
+  request   ContentDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  session   AgentSession           @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+}
+
+model ContentDeletionUserTarget {
+  requestId String                 @id @db.Uuid
+  userId    String                 @unique @db.Uuid
+  request   ContentDeletionRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+}

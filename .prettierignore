@@ -1,0 +1,16 @@
+# Byte-stable files owned by the agent harness generator.
+docs/overview/generated/command-registry.md
+docs/overview/generated/harness-migration-map.md
+docs/overview/generated/harnessability-report.md
+docs/overview/generated/project-profile.md
+docs/overview/generated/test-coverage.md
+docs/overview/generated/tool-capabilities.md
+
+# Canonically sorted files owned by the OpenAPI authentication coverage generator.
+apps/backends/*/openapi/*.openapi.json
+
+# Intentionally malformed input used to test parse-error handling.
+packages/test-support/test/fixtures/coverage.invalid.json
+
+# Byte-stable legacy learner styles restored from the accepted UI baseline.
+apps/frontends/web/src/**/*.less

@@ -1,0 +1,3122 @@
+{
+  "components": {
+    "schemas": {
+      "AddNotebookItemDto": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "target": {
+            "$ref": "#/components/schemas/LexicalTargetDto"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "ChangePasswordDto": {
+        "properties": {
+          "newPassword": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          }
+        },
+        "required": [
+          "newPassword"
+        ],
+        "type": "object"
+      },
+      "ConsentRecordDto": {
+        "properties": {
+          "categories": {
+            "items": {
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "decision": {
+            "type": "object"
+          },
+          "policyVersion": {
+            "maxLength": 64,
+            "type": "string"
+          },
+          "purpose": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "purpose",
+          "categories",
+          "policyVersion",
+          "decision"
+        ],
+        "type": "object"
+      },
+      "CreateAssessmentSessionDto": {
+        "properties": {
+          "blueprintRevisionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "blueprintRevisionId"
+        ],
+        "type": "object"
+      },
+      "CreateEnrollmentDto": {
+        "properties": {
+          "bookId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "dailyNewLimit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          },
+          "editionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookId",
+          "editionId",
+          "dailyNewLimit"
+        ],
+        "type": "object"
+      },
+      "CreateNotebookDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "/\\S/u",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreateStudyAttemptDto": {
+        "properties": {
+          "planItemId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "planItemId"
+        ],
+        "type": "object"
+      },
+      "DataExportDto": {
+        "properties": {
+          "scope": {
+            "items": {
+              "enum": [
+                "EXERCISE_ATTEMPTS",
+                "NOTEBOOKS",
+                "PROFILE"
+              ],
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "type": "object"
+      },
+      "LexicalTargetDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LexicalTargetKind"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "id"
+        ],
+        "type": "object"
+      },
+      "LexicalTargetKind": {
+        "enum": [
+          "HEADWORD",
+          "ENTRY",
+          "SENSE",
+          "COLLOCATION"
+        ],
+        "type": "string"
+      },
+      "LoginDto": {
+        "properties": {
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "MigrateEnrollmentDto": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "type": "object"
+          },
+          "editionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "editionId",
+          "confirm"
+        ],
+        "type": "object"
+      },
+      "Object": {
+        "properties": {},
+        "type": "object"
+      },
+      "PasswordRecoveryChallengeDto": {
+        "properties": {
+          "email": {
+            "example": "learner@example.com",
+            "format": "email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "RecordReadingActivityDto": {
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "object"
+          },
+          "learnedWordCount": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "progress": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "revisionId": {
+            "type": "string"
+          },
+          "totalReadSeconds": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "documentId",
+          "revisionId",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "RegisterDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 2048,
+            "minLength": 40,
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password",
+          "displayName",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "RegistrationChallengeDto": {
+        "properties": {
+          "email": {
+            "example": "learner@example.com",
+            "format": "email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "ResetPasswordDto": {
+        "properties": {
+          "password": {
+            "maxLength": 128,
+            "minLength": 12,
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 2048,
+            "minLength": 40,
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ],
+        "type": "object"
+      },
+      "ResolveSelectionDto": {
+        "properties": {
+          "endOffset": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "offsetUnit": {
+            "type": "object"
+          },
+          "revisionContentHash": {
+            "pattern": "/^sha256:[a-f0-9]{64}$/",
+            "type": "string"
+          },
+          "startOffset": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "revisionContentHash",
+          "offsetUnit",
+          "startOffset",
+          "endOffset"
+        ],
+        "type": "object"
+      },
+      "SaveReadingCollectionItemDto": {
+        "properties": {
+          "documentId": {
+            "type": "string"
+          },
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 40,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "thumbnailUrl": {
+            "maxLength": 4096,
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ],
+        "type": "object"
+      },
+      "SubmitAssessmentResponseDto": {
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/SubmitExerciseResponseDto"
+          }
+        },
+        "required": [
+          "attemptId",
+          "response"
+        ],
+        "type": "object"
+      },
+      "SubmitExerciseResponseDto": {
+        "properties": {
+          "choiceIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 16,
+            "type": "array"
+          },
+          "consentRecordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "responseKind": {
+            "type": "object"
+          },
+          "revealAcknowledged": {
+            "type": "boolean"
+          },
+          "selfReported": {
+            "type": "boolean"
+          },
+          "text": {
+            "maxLength": 10000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "responseKind"
+        ],
+        "type": "object"
+      },
+      "SubmitReviewDto": {
+        "properties": {
+          "attemptId": {
+            "type": "string"
+          },
+          "rating": {
+            "maximum": 4,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "attemptId",
+          "rating"
+        ],
+        "type": "object"
+      },
+      "TotpCodeDto": {
+        "properties": {
+          "code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "UpdateEnrollmentDto": {
+        "properties": {
+          "dailyNewLimit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateNotebookDto": {
+        "properties": {
+          "description": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "/\\S/u",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "UpdateNotebookItemDto": {
+        "properties": {
+          "note": {
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "position": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "UpdateStudyProgressDto": {
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "eventKind": {
+            "enum": [
+              "RECOGNITION",
+              "ANSWER"
+            ],
+            "type": "string"
+          },
+          "recognitionDecision": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "eventKind"
+        ],
+        "type": "object"
+      },
+      "UpdateUserDto": {
+        "properties": {
+          "avatarUrl": {
+            "maxLength": 7000000,
+            "type": "string"
+          },
+          "displayName": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "type": "string"
+          },
+          "locale": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          },
+          "timezone": {
+            "maxLength": 35,
+            "minLength": 2,
+            "type": "string"
+          }
+        },
+        "required": [
+          "timezone",
+          "locale"
+        ],
+        "type": "object"
+      },
+      "UserReauthenticationDto": {
+        "properties": {
+          "password": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "type": "object"
+      },
+      "WebAuthnEnrollmentDto": {
+        "properties": {
+          "challengeId": {
+            "maxLength": 36,
+            "minLength": 36,
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "response": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "challengeId",
+          "label",
+          "response"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "sylis_session": {
+        "in": "cookie",
+        "name": "sylis_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "Sylis user HTTP API",
+    "title": "Sylis User API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/assessments/blueprints": {
+      "get": {
+        "operationId": "AssessmentsController_blueprints",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/history": {
+      "get": {
+        "operationId": "AssessmentsController_history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/sessions": {
+      "post": {
+        "operationId": "AssessmentsController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssessmentSessionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}": {
+      "get": {
+        "operationId": "AssessmentsController_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/responses": {
+      "post": {
+        "operationId": "AssessmentsController_respond",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAssessmentResponseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/result": {
+      "get": {
+        "operationId": "AssessmentsController_result",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/assessments/sessions/{sessionId}/submit": {
+      "post": {
+        "operationId": "AssessmentsController_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/mfa/totp/enrollments": {
+      "post": {
+        "operationId": "IdentityController_beginTotp",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/mfa/totp/enrollments/{credentialId}/verify": {
+      "post": {
+        "operationId": "IdentityController_verifyTotp",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credentialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpCodeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/mfa/webauthn/enrollments": {
+      "post": {
+        "operationId": "IdentityController_beginWebAuthn",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/mfa/webauthn/enrollments/verify": {
+      "post": {
+        "operationId": "IdentityController_verifyWebAuthn",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAuthnEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/password-recovery-challenges": {
+      "post": {
+        "operationId": "IdentityController_passwordRecoveryChallenge",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordRecoveryChallengeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/auth/password-resets": {
+      "post": {
+        "operationId": "IdentityController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "IdentityController_register",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/auth/registration-challenges": {
+      "post": {
+        "operationId": "IdentityController_registrationChallenge",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrationChallengeDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/auth/session": {
+      "delete": {
+        "operationId": "IdentityController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "get": {
+        "operationId": "IdentityController_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/session/re-authentication": {
+      "post": {
+        "operationId": "IdentityController_reauthenticate",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserReauthenticationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "post": {
+        "operationId": "IdentityController_login",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/explore/reddit/feed": {
+      "get": {
+        "operationId": "RedditController_feed",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "subreddit",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reddit"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/explore/reddit/posts/{externalId}": {
+      "get": {
+        "operationId": "RedditController_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "externalId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reddit"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "delete": {
+        "operationId": "JobsController_cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Jobs"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "get": {
+        "operationId": "JobsController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Jobs"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/jobs/{jobId}/events": {
+      "get": {
+        "operationId": "JobsController_events",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "last-event-id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Jobs"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/lexicon/entries/{id}": {
+      "get": {
+        "operationId": "LexiconController_entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/entries/{id}/materials": {
+      "get": {
+        "operationId": "LexiconController_entryMaterials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "LEARNER_EXPLANATION",
+                "MORPHOLOGY_WALKTHROUGH",
+                "CULTURAL_CONTEXT",
+                "MNEMONIC",
+                "MICRO_STORY"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/headwords/{id}": {
+      "get": {
+        "operationId": "LexiconController_headword",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/search": {
+      "get": {
+        "operationId": "LexiconController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/senses/{id}": {
+      "get": {
+        "operationId": "LexiconController_sense",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/senses/{id}/materials": {
+      "get": {
+        "operationId": "LexiconController_senseMaterials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "enum": [
+                "LEARNER_EXPLANATION",
+                "MORPHOLOGY_WALKTHROUGH",
+                "CULTURAL_CONTEXT",
+                "MNEMONIC",
+                "MICRO_STORY"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/v1/lexicon/translate": {
+      "post": {
+        "operationId": "LexiconController_translate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Lexicon"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/notebooks": {
+      "get": {
+        "operationId": "NotebooksController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "NotebooksController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotebookDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/notebooks/{id}": {
+      "delete": {
+        "operationId": "NotebooksController_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "get": {
+        "operationId": "NotebooksController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "patch": {
+        "operationId": "NotebooksController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/notebooks/{id}/items": {
+      "get": {
+        "operationId": "NotebooksController_items",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "NotebooksController_add",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNotebookItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/notebooks/{id}/items/{itemId}": {
+      "delete": {
+        "operationId": "NotebooksController_removeItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "patch": {
+        "operationId": "NotebooksController_updateItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Notebooks"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/activities": {
+      "post": {
+        "operationId": "ReadingController_activity",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordReadingActivityDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/collections/library/items": {
+      "get": {
+        "operationId": "ReadingController_library",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "ReadingController_save",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveReadingCollectionItemDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/collections/library/items/{id}": {
+      "delete": {
+        "operationId": "ReadingController_unsave",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/documents/{id}": {
+      "get": {
+        "operationId": "ReadingController_document",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/history": {
+      "get": {
+        "operationId": "ReadingController_history",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/revisions/{id}/annotations": {
+      "get": {
+        "operationId": "ReadingController_annotations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/revisions/{id}/resolve-selection": {
+      "post": {
+        "operationId": "ReadingController_resolve",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSelectionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/revisions/{id}/targets": {
+      "get": {
+        "operationId": "ReadingController_targets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/reading/revisions/{id}/targets/select": {
+      "post": {
+        "operationId": "ReadingController_selectTargets",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Reading"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/attempts": {
+      "post": {
+        "operationId": "ExercisesController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudyAttemptDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Exercises"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/attempts/{attemptId}/responses": {
+      "post": {
+        "operationId": "ExercisesController_respond",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "attemptId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitExerciseResponseDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Exercises"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/enrollments": {
+      "get": {
+        "operationId": "BooksController_enrollments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "BooksController_enroll",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/enrollments/{id}": {
+      "patch": {
+        "operationId": "BooksController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/enrollments/{id}/migrate": {
+      "post": {
+        "operationId": "BooksController_migrate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateEnrollmentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/objectives/{objectiveId}": {
+      "get": {
+        "operationId": "StudyController_objective",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "objectiveId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Study"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/plan-items/{planItemId}/progress": {
+      "patch": {
+        "operationId": "StudyController_progress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "planItemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudyProgressDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Study"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/reviews": {
+      "post": {
+        "operationId": "StudyController_review",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitReviewDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Study"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/stats": {
+      "get": {
+        "operationId": "StudyController_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Study"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/study/today": {
+      "get": {
+        "operationId": "StudyController_today",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Study"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "operationId": "IdentityController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "patch": {
+        "operationId": "IdentityController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/consent-records": {
+      "post": {
+        "operationId": "IdentityController_createConsent",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentRecordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/consents": {
+      "get": {
+        "operationId": "IdentityController_consents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/data-exports": {
+      "post": {
+        "operationId": "IdentityController_requestDataExport",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DataExportDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/data-exports/{requestId}": {
+      "get": {
+        "operationId": "IdentityController_dataExport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "requestId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/deletion-requests": {
+      "post": {
+        "operationId": "IdentityController_requestAccountDeletion",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/model-credentials": {
+      "get": {
+        "operationId": "ModelCredentialsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "ModelCredentials"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "ModelCredentialsController_create",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "ModelCredentials"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/model-credentials/{profileId}": {
+      "delete": {
+        "operationId": "ModelCredentialsController_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "ModelCredentials"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/model-credentials/{profileId}/rotations": {
+      "post": {
+        "operationId": "ModelCredentialsController_rotate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "profileId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "ModelCredentials"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/password": {
+      "patch": {
+        "operationId": "IdentityController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/sessions": {
+      "get": {
+        "operationId": "IdentityController_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/sessions/{sessionId}": {
+      "delete": {
+        "operationId": "IdentityController_revokeSession",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Identity"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/support-grants": {
+      "get": {
+        "operationId": "SupportGrantsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "SupportGrants"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "SupportGrantsController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "SupportGrants"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/support-grants/{grantId}": {
+      "delete": {
+        "operationId": "SupportGrantsController_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "grantId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "SupportGrants"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/users/me/support-grants/previews": {
+      "post": {
+        "operationId": "SupportGrantsController_preview",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "SupportGrants"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/vocabulary-books": {
+      "get": {
+        "operationId": "BooksController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/v1/vocabulary-books/{bookId}/editions/{editionId}": {
+      "get": {
+        "operationId": "BooksController_edition",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "editionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Object"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "Books"
+        ],
+        "x-sylis-audience": "USER",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

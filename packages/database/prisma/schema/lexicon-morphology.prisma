@@ -1,0 +1,144 @@
+model Morph {
+  id           String                 @id @default(uuid()) @db.Uuid
+  lexiconId    String                 @db.Uuid
+  identityKey  String
+  artifactRole LexiconArtifactRole    @default(CURRENT)
+  morphemeId   String?                @db.Uuid
+  lexicon      Lexicon                @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  morpheme     Morpheme?              @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+  segments     MorphologicalSegment[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model Morpheme {
+  id                    String                                     @id @default(uuid()) @db.Uuid
+  lexiconId             String                                     @db.Uuid
+  identityKey           String
+  artifactRole          LexiconArtifactRole                        @default(CURRENT)
+  lexicon               Lexicon                                    @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  morphs                Morph[]
+  segments              MorphologicalSegment[]
+  formationInputs       WordFormationInput[]
+  collocationComponents CollocationComponent[]
+  pedagogicalTargets    PedagogicalMaterialMorphemeTarget[]
+  materialMentions      PedagogicalMaterialMentionMorphemeTarget[]
+  exerciseChoiceTargets ExerciseChoiceMorphemeTarget[]
+
+  @@unique([lexiconId, identityKey])
+}
+
+model MorphologicalAnalysis {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  releaseId            String                 @db.Uuid
+  formRepresentationId String                 @db.Uuid
+  analysisType         MorphologicalAnalysisType
+  provenanceId         String                 @db.Uuid
+  formRepresentation   FormRepresentation     @relation(fields: [releaseId, formRepresentationId], references: [releaseId, id], onDelete: Restrict)
+  provenance           Provenance             @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  segments             MorphologicalSegment[]
+
+  @@unique([releaseId, id])
+}
+
+model MorphologicalSegment {
+  releaseId   String                @db.Uuid
+  analysisId  String                @db.Uuid
+  position    Int
+  startOffset Int
+  endOffset   Int
+  surfaceText String
+  morphId     String?               @db.Uuid
+  morphemeId  String?               @db.Uuid
+  roleCode    String
+  analysis    MorphologicalAnalysis @relation(fields: [releaseId, analysisId], references: [releaseId, id], onDelete: Restrict)
+  morph       Morph?                @relation(fields: [morphId], references: [id], onDelete: Restrict)
+  morpheme    Morpheme?             @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, analysisId, position])
+}
+
+model InflectionRule {
+  id            String                 @id @default(uuid()) @db.Uuid
+  ruleKey       String
+  version       String
+  ruleType      String
+  inputPattern  String
+  outputPattern String
+  provenanceId  String                 @db.Uuid
+  provenance    Provenance             @relation("InflectionRuleProvenance", fields: [provenanceId], references: [id], onDelete: Restrict)
+  generations   InflectionGeneration[]
+
+  @@unique([ruleKey, version])
+}
+
+model InflectionGeneration {
+  id           String               @id @default(uuid()) @db.Uuid
+  releaseId    String               @db.Uuid
+  entryId      String               @db.Uuid
+  baseFormId   String               @db.Uuid
+  outputFormId String               @db.Uuid
+  ruleId       String               @db.Uuid
+  provenanceId String               @db.Uuid
+  entry        LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  baseForm     LexicalForm          @relation("InflectionBaseForm", fields: [releaseId, baseFormId], references: [releaseId, id], onDelete: Restrict)
+  outputForm   LexicalForm          @relation("InflectionOutputForm", fields: [releaseId, outputFormId], references: [releaseId, id], onDelete: Restrict)
+  rule         InflectionRule       @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  provenance   Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, entryId, outputFormId, ruleId])
+}
+
+model WordFormation {
+  id                 String                                   @id @default(uuid()) @db.Uuid
+  releaseId          String                                   @db.Uuid
+  targetEntryId      String                                   @db.Uuid
+  formationTypeCode  String
+  provenanceId       String                                   @db.Uuid
+  targetEntry        LexicalEntryRevision                     @relation(fields: [releaseId, targetEntryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance         Provenance                               @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  inputs             WordFormationInput[]
+  applications       WordFormationApplication[]
+  pedagogicalTargets PedagogicalMaterialWordFormationTarget[]
+
+  @@unique([releaseId, id])
+}
+
+model WordFormationInput {
+  releaseId    String                @db.Uuid
+  formationId  String                @db.Uuid
+  position     Int
+  inputEntryId String?               @db.Uuid
+  morphemeId   String?               @db.Uuid
+  roleCode     String
+  formation    WordFormation         @relation(fields: [releaseId, formationId], references: [releaseId, id], onDelete: Restrict)
+  inputEntry   LexicalEntryRevision? @relation(fields: [releaseId, inputEntryId], references: [releaseId, entryId], onDelete: Restrict)
+  morpheme     Morpheme?             @relation(fields: [morphemeId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, formationId, position])
+}
+
+model WordFormationRule {
+  id            String                     @id @default(uuid()) @db.Uuid
+  ruleKey       String
+  version       String
+  ruleType      String
+  inputPattern  String
+  outputPattern String
+  provenanceId  String                     @db.Uuid
+  provenance    Provenance                 @relation("WordFormationRuleProvenance", fields: [provenanceId], references: [id], onDelete: Restrict)
+  applications  WordFormationApplication[]
+
+  @@unique([ruleKey, version])
+}
+
+model WordFormationApplication {
+  releaseId   String            @db.Uuid
+  formationId String            @db.Uuid
+  ruleId      String            @db.Uuid
+  stepOrder   Int
+  formation   WordFormation     @relation(fields: [releaseId, formationId], references: [releaseId, id], onDelete: Restrict)
+  rule        WordFormationRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@id([releaseId, formationId, stepOrder])
+}

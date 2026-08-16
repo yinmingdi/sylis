@@ -1,0 +1,1700 @@
+{
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "sylis_admin_session": {
+        "in": "cookie",
+        "name": "sylis_admin_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "",
+    "title": "Sylis Admin API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/admin/v1/agents/releases": {
+      "get": {
+        "operationId": "AdminAgentsController_releases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/action-previews": {
+      "post": {
+        "operationId": "AdminAgentsController_releasePreview",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/approvals": {
+      "post": {
+        "operationId": "AdminAgentsController_approve",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/candidates": {
+      "post": {
+        "operationId": "AdminAgentsController_candidate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/evaluations": {
+      "post": {
+        "operationId": "AdminAgentsController_evaluate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/promotions": {
+      "post": {
+        "operationId": "AdminAgentsController_promote",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/revocations": {
+      "post": {
+        "operationId": "AdminAgentsController_revoke",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/rollbacks": {
+      "post": {
+        "operationId": "AdminAgentsController_rollback",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/validations": {
+      "post": {
+        "operationId": "AdminAgentsController_validate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/runs": {
+      "get": {
+        "operationId": "AdminAgentsController_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/runs/{runId}/termination-previews": {
+      "post": {
+        "operationId": "AdminAgentsController_terminationPreview",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/agents/runs/{runId}/terminations": {
+      "post": {
+        "operationId": "AdminAgentsController_terminate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminAgents"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/assets": {
+      "get": {
+        "operationId": "AssetsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Assets"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/assets/{assetId}": {
+      "get": {
+        "operationId": "AssetsController_detail",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Assets"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/archives": {
+      "post": {
+        "operationId": "AuditController_createArchive",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/archives/{archiveId}/purges": {
+      "post": {
+        "operationId": "AuditController_purgeArchive",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/data-access-events": {
+      "get": {
+        "operationId": "AuditController_dataAccessEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/exports": {
+      "get": {
+        "operationId": "AuditController_exports",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "AuditController_createExport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/exports/{exportId}": {
+      "get": {
+        "operationId": "AuditController_exportArtifact",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/legal-holds": {
+      "get": {
+        "operationId": "AuditController_legalHolds",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "AuditController_createLegalHold",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/legal-holds/{holdId}/releases": {
+      "post": {
+        "operationId": "AuditController_releaseLegalHold",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/retention": {
+      "get": {
+        "operationId": "AuditController_retention",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/retention-policies": {
+      "post": {
+        "operationId": "AuditController_createRetentionPolicy",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/audit/security-events": {
+      "get": {
+        "operationId": "AuditController_securityEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Audit"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/auth/challenges": {
+      "post": {
+        "operationId": "AdminIdentityController_challenge",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/admin/v1/auth/session": {
+      "delete": {
+        "operationId": "AdminIdentityController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "get": {
+        "operationId": "AdminIdentityController_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/auth/session/reauthentication": {
+      "post": {
+        "operationId": "AdminIdentityController_reauthenticate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/auth/session/reauthentication/challenges": {
+      "post": {
+        "operationId": "AdminIdentityController_beginReauthentication",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/auth/sessions": {
+      "post": {
+        "operationId": "AdminIdentityController_login",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [],
+        "tags": [
+          "AdminIdentity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "PUBLIC"
+      }
+    },
+    "/api/admin/v1/deployment-releases": {
+      "get": {
+        "operationId": "DeploymentController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Deployment"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/jobs": {
+      "get": {
+        "operationId": "AdminJobsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminJobs"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/jobs/{jobId}": {
+      "get": {
+        "operationId": "AdminJobsController_detail",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminJobs"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/jobs/{jobId}/cancel": {
+      "post": {
+        "operationId": "AdminJobsController_cancel",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminJobs"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/jobs/{jobId}/retry": {
+      "post": {
+        "operationId": "AdminJobsController_retry",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminJobs"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/activation-requests/{approvalId}/decisions": {
+      "post": {
+        "operationId": "LexiconOperationsController_decide",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/build-runs": {
+      "get": {
+        "operationId": "LexiconOperationsController_builds",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "LexiconOperationsController_createBuild",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/build-runs/{runId}/budget-approval-previews": {
+      "post": {
+        "operationId": "LexiconOperationsController_previewBuildBudget",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/build-runs/{runId}/budget-approvals": {
+      "post": {
+        "operationId": "LexiconOperationsController_approveBuildBudget",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/publish-runs": {
+      "get": {
+        "operationId": "LexiconOperationsController_publishRuns",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "LexiconOperationsController_createPublish",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/releases": {
+      "get": {
+        "operationId": "LexiconOperationsController_releases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/releases/{releaseId}/activate": {
+      "post": {
+        "operationId": "LexiconOperationsController_activate",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/releases/{releaseId}/activation-preview": {
+      "get": {
+        "operationId": "LexiconOperationsController_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/releases/{releaseId}/activation-requests": {
+      "post": {
+        "operationId": "LexiconOperationsController_requestActivation",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/lexicon/releases/{releaseId}/validations": {
+      "post": {
+        "operationId": "LexiconOperationsController_validateRelease",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "LexiconOperations"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/budget-policies": {
+      "post": {
+        "operationId": "AdminModelsController_createBudget",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credential-revisions/{revisionId}/validations": {
+      "post": {
+        "operationId": "AdminModelsController_validateCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credentials": {
+      "get": {
+        "operationId": "AdminModelsController_credentials",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "AdminModelsController_createCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credentials/{profileId}/quarantines": {
+      "post": {
+        "operationId": "AdminModelsController_quarantineCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credentials/{profileId}/restorations": {
+      "post": {
+        "operationId": "AdminModelsController_restoreCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credentials/{profileId}/revocations": {
+      "post": {
+        "operationId": "AdminModelsController_revokeCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/credentials/{profileId}/rotations": {
+      "post": {
+        "operationId": "AdminModelsController_rotateCredential",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/quota-policies": {
+      "post": {
+        "operationId": "AdminModelsController_createQuota",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/routes": {
+      "get": {
+        "operationId": "AdminModelsController_routes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/routes/{routeReleaseId}/health-probes": {
+      "post": {
+        "operationId": "AdminModelsController_probeRoute",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/routes/{routeReleaseId}/restorations": {
+      "post": {
+        "operationId": "AdminModelsController_restoreRoute",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/routes/{routeReleaseId}/security-revocations": {
+      "post": {
+        "operationId": "AdminModelsController_revokeRoute",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/models/usage": {
+      "get": {
+        "operationId": "AdminModelsController_usage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminModels"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/operator-roles": {
+      "get": {
+        "operationId": "AdminOperatorRolesController_operators",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminOperatorRoles"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "AdminOperatorRolesController_grant",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminOperatorRoles"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/operator-roles/{assignmentId}/revocations": {
+      "post": {
+        "operationId": "AdminOperatorRolesController_revoke",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminOperatorRoles"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/overview": {
+      "get": {
+        "operationId": "OverviewController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Overview"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/reviews/batches": {
+      "get": {
+        "operationId": "ReviewController_batches",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Review"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/reviews/batches/{batchId}": {
+      "get": {
+        "operationId": "ReviewController_batch",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Review"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/reviews/batches/{batchId}/decisions": {
+      "post": {
+        "operationId": "ReviewController_decide",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Review"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/reviews/candidates/{candidateId}": {
+      "patch": {
+        "operationId": "ReviewController_revise",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "Review"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/source-datasets": {
+      "get": {
+        "operationId": "SourceRegistryController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/source-datasets/rights-policies": {
+      "get": {
+        "operationId": "SourceRegistryController_policies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/source-datasets/versions": {
+      "post": {
+        "operationId": "SourceRegistryController_register",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/source-datasets/versions/{versionId}/rights-decisions": {
+      "post": {
+        "operationId": "SourceRegistryController_rights",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/source-datasets/versions/{versionId}/synchronizations": {
+      "get": {
+        "operationId": "SourceRegistryController_synchronizations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      },
+      "post": {
+        "operationId": "SourceRegistryController_synchronize",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "SourceRegistry"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/user-security-locks/{userId}": {
+      "post": {
+        "operationId": "AdminUserSecurityController_lock",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminUserSecurity"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/user-support/support-grants/{grantId}/access": {
+      "post": {
+        "operationId": "AdminUserSupportController_accessGrant",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminUserSupport"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/user-support/users": {
+      "get": {
+        "operationId": "AdminUserSupportController_users",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminUserSupport"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    },
+    "/api/admin/v1/user-support/users/{userId}/session-revocations": {
+      "post": {
+        "operationId": "AdminUserSupportController_revokeSessions",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_admin_session": []
+          }
+        ],
+        "tags": [
+          "AdminUserSupport"
+        ],
+        "x-sylis-audience": "ADMIN",
+        "x-sylis-authentication": "ADMIN_SESSION"
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

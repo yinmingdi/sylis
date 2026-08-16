@@ -1,52 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
+    "moduleResolution": "Bundler",
     "jsx": "react-jsx",
-    /* Linting */
     "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    /* Path mapping */
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "../../*"
-      ],
-      "@sylis/shared": [
-        "../../packages/shared"
-      ],
-      "@sylis/utils": [
-        "../../packages/utils/src"
-      ]
-    }
+    "noUnusedParameters": true
   },
-  "include": [
-    ".storybook/**/*",
-    "../../apps/*/src/**/*.ts",
-    "../../apps/*/src/**/*.tsx",
-    "../../packages/*/src/**/*.ts",
-    "../../packages/*/src/**/*.tsx",
-    "../../packages/shared/**/*.ts",
-    "../../packages/shared/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/preview.ts"]
 }

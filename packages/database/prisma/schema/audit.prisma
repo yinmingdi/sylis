@@ -1,0 +1,142 @@
+model SecurityAuditEvent {
+  id               String                @id @default(uuid()) @db.Uuid
+  actorUserId      String?               @db.Uuid
+  sessionId        String?               @db.Uuid
+  category         SecurityAuditCategory
+  action           String
+  actorRole        OperatorRole?
+  targetType       String?
+  targetId         String?               @db.Uuid
+  targetRevisionId String?               @db.Uuid
+  actionDigest     String?
+  policyVersion    String?
+  result           SecurityAuditResult
+  reason           String?
+  reasonCode       String?
+  requestId        String?
+  correlationId    String?
+  deploymentId     String?
+  beforeDigest     String?
+  afterDigest      String?
+  ipHash           String?
+  userAgentHash    String?
+  metadata         Json
+  occurredAt       DateTime              @default(now()) @db.Timestamptz(3)
+  actor            User?                 @relation("SecurityAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, occurredAt])
+  @@index([targetType, targetId, occurredAt])
+}
+
+model DataAccessAuditEvent {
+  id                 String              @id @default(uuid()) @db.Uuid
+  actorUserId        String              @db.Uuid
+  ownerUserId        String              @db.Uuid
+  supportGrantId     String              @db.Uuid
+  purpose            SupportGrantPurpose
+  resourceKind       SupportResourceKind
+  resourceId         String              @db.Uuid
+  resourceRevisionId String              @db.Uuid
+  result             SecurityAuditResult
+  requestId          String
+  occurredAt         DateTime            @default(now()) @db.Timestamptz(3)
+  actor              User                @relation("DataAccessActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  owner              User                @relation("DataAccessOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@unique([supportGrantId, requestId])
+  @@index([ownerUserId, occurredAt])
+  @@index([actorUserId, occurredAt])
+}
+
+model AuditRetentionPolicy {
+  id              String                @id @default(uuid()) @db.Uuid
+  category        SecurityAuditCategory
+  onlineDays      Int
+  archiveDays     Int
+  policyVersion   String
+  effectiveAt     DateTime              @db.Timestamptz(3)
+  createdByUserId String                @db.Uuid
+  actionDigest    String
+  createdBy       User                  @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  archives        AuditArchive[]
+
+  @@unique([category, policyVersion])
+  @@unique([category, effectiveAt])
+}
+
+model AuditArchive {
+  id                String                @id @default(uuid()) @db.Uuid
+  category          SecurityAuditCategory
+  rangeStart        DateTime              @db.Timestamptz(3)
+  rangeEnd          DateTime              @db.Timestamptz(3)
+  policyVersion     String
+  status            AuditArchiveStatus    @default(PENDING)
+  objectRef         String?
+  eventCount        BigInt
+  contentHash       String?               @unique
+  encryptionVersion String?
+  archiveJobId      String                @unique @db.Uuid
+  createdAt         DateTime              @default(now()) @db.Timestamptz(3)
+  purgedAt          DateTime?             @db.Timestamptz(3)
+  policy            AuditRetentionPolicy  @relation(fields: [category, policyVersion], references: [category, policyVersion], onDelete: Restrict)
+  archiveJob        Job                   @relation("AuditArchiveCreationJob", fields: [archiveJobId], references: [id], onDelete: Restrict)
+  securityEvents    AuditArchiveSecurityEvent[]
+  dataAccessEvents  AuditArchiveDataAccessEvent[]
+
+  @@index([category, rangeStart, rangeEnd, purgedAt])
+}
+
+model AuditArchiveSecurityEvent {
+  archiveId String             @db.Uuid
+  eventId   String             @unique @db.Uuid
+  position  BigInt
+  archive   AuditArchive       @relation(fields: [archiveId], references: [id], onDelete: Restrict)
+
+  @@id([archiveId, eventId])
+  @@unique([archiveId, position])
+}
+
+model AuditArchiveDataAccessEvent {
+  archiveId String               @db.Uuid
+  eventId   String               @unique @db.Uuid
+  position  BigInt
+  archive   AuditArchive         @relation(fields: [archiveId], references: [id], onDelete: Restrict)
+
+  @@id([archiveId, eventId])
+  @@unique([archiveId, position])
+}
+
+model LegalHold {
+  id                  String             @id @default(uuid()) @db.Uuid
+  scopeKind           LegalHoldScopeKind
+  scopeRef            String?
+  reason              String
+  externalReference   String?
+  createdByUserId     String             @db.Uuid
+  createdAt           DateTime           @default(now()) @db.Timestamptz(3)
+  reviewAt            DateTime           @db.Timestamptz(3)
+  releasedByUserId    String?            @db.Uuid
+  releasedAt          DateTime?          @db.Timestamptz(3)
+  releaseReason       String?
+  actionDigest        String
+  releaseActionDigest String?
+  createdBy           User               @relation("LegalHoldCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  releasedBy          User?              @relation("LegalHoldReleaser", fields: [releasedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([scopeKind, scopeRef, releasedAt])
+}
+
+model AuditExport {
+  id                String    @id @default(uuid()) @db.Uuid
+  querySnapshot     Json
+  requestedByUserId String    @db.Uuid
+  reason            String
+  jobId             String    @unique @db.Uuid
+  artifactRef       String?
+  eventCount        BigInt?
+  contentHash       String?
+  expiresAt         DateTime? @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  requestedBy       User      @relation(fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  job               Job       @relation(fields: [jobId], references: [id], onDelete: Restrict)
+}

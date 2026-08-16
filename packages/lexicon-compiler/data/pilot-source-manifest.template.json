@@ -1,0 +1,90 @@
+{
+  "manifestVersion": "sylis.source-manifest/1",
+  "release": {
+    "lexiconKey": "sylis-en-zh",
+    "releaseVersion": "2026.08.05.1",
+    "sourceLanguageTag": "en",
+    "learningLanguageTags": ["zh-CN"],
+    "compilerVersion": "1.0.0",
+    "gitCommit": "0000000000000000000000000000000000000000"
+  },
+  "selection": {
+    "headwordSet": {
+      "version": "pilot-en-v1",
+      "path": "./pilot-headwords-v1.json",
+      "sha256": "b9c0935fa2190cb0a230215daeea274045cd29d1e9eb62bb404fdbd917c3dd8b"
+    }
+  },
+  "sources": [
+    {
+      "key": "ecdict",
+      "version": "git-bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b",
+      "retrievedAt": "2026-08-02T00:00:00.000Z",
+      "uri": "https://raw.githubusercontent.com/skywind3000/ECDICT/bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b/ecdict.csv",
+      "sha256": "1a6947e04785db63613a92e14903cdae7954f7e84860b10e68e5c7cbb3f9c3cf",
+      "homepageUri": "https://github.com/skywind3000/ECDICT",
+      "adapter": "ECDICT",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": false,
+        "effectiveFrom": "2026-08-02T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    },
+    {
+      "key": "kaikki-en",
+      "version": "enwiktionary-2026-07-06-extracted-2026-08-02",
+      "retrievedAt": "2026-08-02T00:00:00.000Z",
+      "pathEnv": "KAIKKI_PILOT_SLICE_PATH",
+      "sha256": "58192293df5401a76de930aa0616456abe052c8a9c88e8a2e2a2f490cf530989",
+      "homepageUri": "https://kaikki.org/dictionary/English/",
+      "adapter": "WIKTEXTRACT_EN",
+      "materialization": {
+        "parentUri": "s3://lexicon-artifacts-f-0j5ng/sha256/0071ccc21e6b35bcb0d57a742eac5868e5b21b7bf7ec99b1755982ca28dbed94/raw-wiktextract-data.jsonl.gz",
+        "parentSha256": "0071ccc21e6b35bcb0d57a742eac5868e5b21b7bf7ec99b1755982ca28dbed94",
+        "selectionSha256": "b9c0935fa2190cb0a230215daeea274045cd29d1e9eb62bb404fdbd917c3dd8b",
+        "materializerVersion": "wiktextract-headword-slice/v2",
+        "recordCount": 543
+      },
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": true,
+        "attribution": "English Wiktionary contributors, CC BY-SA 4.0; structured extraction by Wiktextract and Kaikki.org.",
+        "effectiveFrom": "2026-08-02T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    },
+    {
+      "key": "oewn",
+      "version": "2025-edition",
+      "retrievedAt": "2026-08-02T00:00:00.000Z",
+      "uri": "https://github.com/globalwordnet/english-wordnet/releases/download/2025-edition/english-wordnet-2025.xml.gz",
+      "sha256": "9ca6d1dcb75f822fdd66617f7d9da48142ace38dd544d6ad5e2feca1674ad3fe",
+      "homepageUri": "https://en-word.net/",
+      "adapter": "WN_LMF",
+      "rights": {
+        "mayBuild": true,
+        "mayServe": true,
+        "mayExport": true,
+        "requiresAttribution": true,
+        "attribution": "Open English WordNet 2025, Global Wordnet Association, CC BY 4.0.",
+        "effectiveFrom": "2026-08-02T00:00:00.000Z",
+        "effectiveTo": null
+      }
+    }
+  ],
+  "pedagogy": {
+    "audienceProfileKey": "zh-general-adult-en-v1",
+    "learningLanguageTag": "en",
+    "supportLanguageTag": "zh-CN",
+    "richTargetSet": {
+      "version": "pilot-rich-en-v1",
+      "path": "./pilot-rich-targets-v1.json",
+      "sha256": "2284d4da116ca78c955ef34d61c08c5af3d74e5cdb96ecdc23240287f1ac24d3"
+    }
+  }
+}

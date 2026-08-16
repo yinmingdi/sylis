@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "sylis.lexicon-artifact/1",
+  "manifest": {
+    "lexiconKey": "example",
+    "releaseVersion": "example",
+    "sourceLanguageTag": "en",
+    "learningLanguageTags": ["en"],
+    "builder": {
+      "package": "@sylis/lexicon-compiler",
+      "version": "example",
+      "gitCommit": "0000000000000000000000000000000000000000"
+    },
+    "build": {
+      "compileProfile": "fixture",
+      "validatorVersion": "example"
+    },
+    "inputs": {
+      "sourceManifestVersion": "sylis.source-manifest/1",
+      "sources": [
+        {
+          "key": "example",
+          "version": "example",
+          "adapter": "ECDICT",
+          "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+          "materialization": null
+        }
+      ],
+      "headwordSet": null,
+      "richTargetSet": null
+    },
+    "ai": {
+      "enabled": false,
+      "promptVersion": null,
+      "candidateSchemaVersion": null,
+      "modelPolicyVersion": null,
+      "requestedIdentity": null,
+      "resolvedIdentity": null
+    },
+    "candidatePromotionLineage": [],
+    "textProfile": {
+      "normalization": "NFC",
+      "unicodeVersion": "example",
+      "segmentation": "example",
+      "cldrVersion": "example",
+      "locale": "en"
+    },
+    "canonicalization": "RFC8785+domain-array-order/1",
+    "contentHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "counts": {
+      "/lexicon/headwords": 0
+    }
+  },
+  "vocabularies": {
+    "bundles": [],
+    "namespaceVersions": [],
+    "terms": []
+  },
+  "sources": {
+    "datasets": [],
+    "datasetVersions": [],
+    "records": [],
+    "rightsPolicies": [],
+    "restrictions": []
+  },
+  "provenance": {
+    "bundles": [],
+    "evidence": []
+  },
+  "lexicon": {
+    "headwords": [],
+    "headwordRevisions": [],
+    "entries": [],
+    "entryRevisions": [],
+    "forms": [],
+    "formRepresentations": [],
+    "formFeatures": [],
+    "mediaAssets": [],
+    "formMedia": [],
+    "senses": [],
+    "senseRevisions": [],
+    "definitions": [],
+    "translationTexts": [],
+    "translationRelations": [],
+    "usages": [],
+    "concepts": [],
+    "conceptRevisions": [],
+    "conceptDefinitions": [],
+    "senseConceptMemberships": [],
+    "entryLineages": [],
+    "senseLineages": [],
+    "conceptLineages": [],
+    "entryRelations": [],
+    "senseRelations": [],
+    "conceptRelations": [],
+    "examples": [],
+    "exampleTranslations": [],
+    "senseExamples": [],
+    "citations": [],
+    "collocations": [],
+    "senseCollocations": [],
+    "collocationComponents": [],
+    "frames": [],
+    "syntacticArguments": [],
+    "predicates": [],
+    "semanticArguments": [],
+    "senseFrames": [],
+    "argumentMappings": [],
+    "morphology": {
+      "morphs": [],
+      "morphemes": [],
+      "analyses": [],
+      "segments": [],
+      "inflectionRules": [],
+      "inflectionGenerations": [],
+      "wordFormations": [],
+      "wordFormationInputs": [],
+      "wordFormationRules": [],
+      "wordFormationApplications": []
+    },
+    "etymology": {
+      "etymons": [],
+      "etymonRevisions": [],
+      "hypotheses": [],
+      "links": []
+    },
+    "corpora": {
+      "datasets": [],
+      "datasetVersions": [],
+      "frequencyObservations": [],
+      "attestations": [],
+      "collocationObservations": []
+    },
+    "externalIdentifiers": []
+  },
+  "learning": {
+    "books": [],
+    "bookEditions": [],
+    "bookItems": [],
+    "proficiencyFrameworks": [],
+    "proficiencyFrameworkVersions": [],
+    "proficiencyLevels": [],
+    "proficiencyClaims": [],
+    "learningObjectives": [],
+    "objectiveRevisions": [],
+    "objectiveSubjects": [],
+    "objectiveHints": [],
+    "pedagogicalMaterials": [],
+    "pedagogicalMaterialRevisions": [],
+    "pedagogicalMaterialTargets": [],
+    "pedagogicalMaterialBlocks": [],
+    "pedagogicalMaterialMentions": [],
+    "pedagogicalMaterialCitations": [],
+    "assessmentStimuli": [],
+    "stimulusRevisions": [],
+    "stimulusBlocks": [],
+    "exerciseStimulusRefs": [],
+    "exerciseItems": [],
+    "exerciseRevisions": [],
+    "exerciseResponseConfigs": [],
+    "exerciseChoices": [],
+    "exerciseChoiceTargets": [],
+    "correctResponses": [],
+    "exerciseFeedback": [],
+    "exerciseRubrics": [],
+    "assessmentBlueprints": [],
+    "assessmentBlueprintRevisions": [],
+    "assessmentSections": [],
+    "assessmentSelectionRules": []
+  },
+  "quality": {
+    "profiles": [],
+    "profileVersions": [],
+    "profileEvaluations": [],
+    "profileEvaluationTargets": [],
+    "coverage": [],
+    "validationSummary": {
+      "validatorVersion": "example",
+      "errorCount": 0,
+      "warningCount": 0,
+      "contentHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "sourceStatistics": [],
+    "exerciseStatistics": []
+  }
+}

@@ -1,0 +1,106 @@
+model TranslationRelation {
+  id              String               @id @default(uuid()) @db.Uuid
+  releaseId       String               @db.Uuid
+  sourceSenseId   String               @db.Uuid
+  targetSenseId   String               @db.Uuid
+  translationType String
+  provenanceId    String               @db.Uuid
+  source          LexicalSenseRevision @relation("TranslationRelationSource", fields: [releaseId, sourceSenseId], references: [releaseId, senseId], onDelete: Restrict)
+  target          LexicalSenseRevision @relation("TranslationRelationTarget", fields: [releaseId, targetSenseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance      Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceSenseId, targetSenseId, translationType])
+}
+
+model EntryLineage {
+  id            String             @id @default(uuid()) @db.Uuid
+  releaseId     String             @db.Uuid
+  sourceEntryId String             @db.Uuid
+  targetEntryId String             @db.Uuid
+  lineageType   LexicalLineageType
+  provenanceId  String             @db.Uuid
+  release       LexiconRelease     @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  source        LexicalEntry       @relation("EntryLineageSource", fields: [sourceEntryId], references: [id], onDelete: Restrict)
+  target        LexicalEntry       @relation("EntryLineageTarget", fields: [targetEntryId], references: [id], onDelete: Restrict)
+  provenance    Provenance         @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceEntryId, targetEntryId, lineageType])
+}
+
+model SenseLineage {
+  id            String             @id @default(uuid()) @db.Uuid
+  releaseId     String             @db.Uuid
+  sourceSenseId String             @db.Uuid
+  targetSenseId String             @db.Uuid
+  lineageType   LexicalLineageType
+  provenanceId  String             @db.Uuid
+  release       LexiconRelease     @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  source        LexicalSense       @relation("SenseLineageSource", fields: [sourceSenseId], references: [id], onDelete: Restrict)
+  target        LexicalSense       @relation("SenseLineageTarget", fields: [targetSenseId], references: [id], onDelete: Restrict)
+  provenance    Provenance         @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceSenseId, targetSenseId, lineageType])
+}
+
+model ConceptLineage {
+  id              String             @id @default(uuid()) @db.Uuid
+  releaseId       String             @db.Uuid
+  sourceConceptId String             @db.Uuid
+  targetConceptId String             @db.Uuid
+  lineageType     LexicalLineageType
+  provenanceId    String             @db.Uuid
+  release         LexiconRelease     @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  source          LexicalConcept     @relation("ConceptLineageSource", fields: [sourceConceptId], references: [id], onDelete: Restrict)
+  target          LexicalConcept     @relation("ConceptLineageTarget", fields: [targetConceptId], references: [id], onDelete: Restrict)
+  provenance      Provenance         @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, sourceConceptId, targetConceptId, lineageType])
+}
+
+model EntryExternalIdentifier {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  releaseId          String                     @db.Uuid
+  entryId            String                     @db.Uuid
+  namespaceVersionId String                     @db.Uuid
+  externalId         String
+  uri                String?
+  provenanceId       String                     @db.Uuid
+  release            LexiconRelease             @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  entry              LexicalEntry               @relation(fields: [entryId], references: [id], onDelete: Restrict)
+  namespace          VocabularyNamespaceVersion @relation(fields: [namespaceVersionId], references: [id], onDelete: Restrict)
+  provenance         Provenance                 @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, entryId, namespaceVersionId, externalId])
+}
+
+model SenseExternalIdentifier {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  releaseId          String                     @db.Uuid
+  senseId            String                     @db.Uuid
+  namespaceVersionId String                     @db.Uuid
+  externalId         String
+  uri                String?
+  provenanceId       String                     @db.Uuid
+  release            LexiconRelease             @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  sense              LexicalSense               @relation(fields: [senseId], references: [id], onDelete: Restrict)
+  namespace          VocabularyNamespaceVersion @relation(fields: [namespaceVersionId], references: [id], onDelete: Restrict)
+  provenance         Provenance                 @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, senseId, namespaceVersionId, externalId])
+}
+
+model ConceptExternalIdentifier {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  releaseId          String                     @db.Uuid
+  conceptId          String                     @db.Uuid
+  namespaceVersionId String                     @db.Uuid
+  externalId         String
+  uri                String?
+  provenanceId       String                     @db.Uuid
+  release            LexiconRelease             @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  concept            LexicalConcept             @relation(fields: [conceptId], references: [id], onDelete: Restrict)
+  namespace          VocabularyNamespaceVersion @relation(fields: [namespaceVersionId], references: [id], onDelete: Restrict)
+  provenance         Provenance                 @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, conceptId, namespaceVersionId, externalId])
+}

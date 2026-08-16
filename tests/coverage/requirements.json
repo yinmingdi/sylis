@@ -1,0 +1,1836 @@
+{
+  "schemaVersion": 2,
+  "requirements": [
+    {
+      "id": "TEST_GOVERNANCE-001",
+      "owner": "DELIVERY",
+      "risk": "HIGH",
+      "requiredLayers": ["UNIT"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-001",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Accepts independently evidenced critical behavior"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-002",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Checks declared evidence against repository source files"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-003",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Checks persisted coverage manifests through the public entrypoint"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-004",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Renders deterministic human-readable coverage metadata"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-005",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects missing or manually edited generated coverage reports"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-010",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects incomplete execution metadata and mismatched semantic tags"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-manifest.test.ts",
+          "testId": "TEST-GOVERNANCE-011",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects evidence assigned outside requirement CI lanes"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-012",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Creates and merges deterministic collected and execution manifests"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-013",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Proves declared collected executed and first-pass evidence"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-014",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects missing collection and project browser or lane mismatches"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-015",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects failures unexpected skips and retry flakes"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-016",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Accepts only active explicit skip waivers and rejects expired ones"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-017",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects SYSTEM evidence that bypasses services through Prisma"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/coverage-execution.test.ts",
+          "testId": "TEST-GOVERNANCE-018",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Normalizes Vitest collection and execution JSON into common evidence records"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/agent-contracts/test/deterministic-provider.test.ts",
+          "testId": "TEST-GOVERNANCE-006",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Publishes the complete deterministic Provider scenario vocabulary"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/agent-contracts/test/deterministic-provider.test.ts",
+          "testId": "TEST-GOVERNANCE-007",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Serializes deterministic Provider instructions independently"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/agent-contracts/test/deterministic-provider.test.ts",
+          "testId": "TEST-GOVERNANCE-008",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Parses deterministic Provider instructions independently"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/agent-contracts/test/deterministic-provider.test.ts",
+          "testId": "TEST-GOVERNANCE-009",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects malformed deterministic Provider fixture input"
+        }
+      ]
+    },
+    {
+      "id": "TEST_INFRA-001",
+      "owner": "PLATFORM",
+      "risk": "HIGH",
+      "requiredLayers": ["UNIT", "INTEGRATION"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "packages/test-support/test/integration-dependencies.test.ts",
+          "testId": "TEST-INFRA-001",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Derives portable isolated integration resource names"
+        },
+        {
+          "layer": "INTEGRATION",
+          "path": "packages/test-support/test/integration-dependencies.integration.test.ts",
+          "testId": "TEST-INFRA-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Isolates PostgreSQL Redis and object storage state"
+        }
+      ]
+    },
+    {
+      "id": "IDENTITY-001",
+      "owner": "IDENTITY",
+      "risk": "HIGH",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/registration.spec.ts",
+          "testId": "IDENTITY-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Registers a learner through the delivered email challenge"
+        }
+      ]
+    },
+    {
+      "id": "IDENTITY-002",
+      "owner": "IDENTITY",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/user/account-security.spec.ts",
+          "testId": "IDENTITY-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Controls profile consent and multiple client sessions through public APIs"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/account-security.spec.ts",
+          "testId": "IDENTITY-005-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Updates profile and consent revokes another session and logs out through the UI"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-011-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Exports learner data and deletes the account through the UI"
+        }
+      ]
+    },
+    {
+      "id": "IDENTITY-003",
+      "owner": "IDENTITY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/account-security.spec.ts",
+          "testId": "IDENTITY-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Prevents a new login from rendering the previous user's Agent cache"
+        },
+        {
+          "layer": "UNIT",
+          "path": "apps/frontends/web/src/modules/identity/index.test.ts",
+          "testId": "IDENTITY-003-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/web"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Removes only the previous user's query scope while retaining current-user and public data"
+        }
+      ]
+    },
+    {
+      "id": "IDENTITY-004",
+      "owner": "IDENTITY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/account-security.spec.ts",
+          "testId": "IDENTITY-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Recovers an account and invalidates every old session through the UI"
+        },
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/api/src/modules/identity/services/identity-session-isolation.spec.ts",
+          "testId": "IDENTITY-004-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/api"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Atomically rotates the password credential and revokes every active user session"
+        }
+      ]
+    },
+    {
+      "id": "IDENTITY-005",
+      "owner": "IDENTITY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/account-security.spec.ts",
+          "testId": "IDENTITY-006-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Adds rotates masks and revokes a user-owned model credential through the UI"
+        },
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/model-gateway/test/credential-redaction.test.ts",
+          "testId": "IDENTITY-005-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Builds credential responses from a public whitelist that excludes ciphertext and private fingerprints"
+        }
+      ]
+    },
+    {
+      "id": "API_CONTRACT-001",
+      "owner": "PLATFORM",
+      "risk": "CRITICAL",
+      "requiredLayers": ["CONTRACT", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "CONTRACT",
+          "path": "packages/test-support/test/openapi-coverage.test.ts",
+          "testId": "API-CONTRACT-001",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Compiles every OpenAPI operation into an authentication contract"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/openapi-authorization.spec.ts",
+          "testId": "API-CONTRACT-001-SYSTEM",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects unauthenticated callers for every protected OpenAPI operation"
+        }
+      ]
+    },
+    {
+      "id": "LEXICON-001",
+      "owner": "LEXICON",
+      "risk": "CRITICAL",
+      "requiredLayers": ["INTEGRATION", "SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "INTEGRATION",
+          "path": "packages/lexicon-compiler/test/compiler.test.ts",
+          "testId": "LEXICON-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/lexicon-compiler"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Compiles all source adapters into a deterministic validated artifact"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "LEXICON-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Exposes structured senses forms relations and collocations through the API"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/lexicon-build-publish.spec.ts",
+          "testId": "LEXICON-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Builds and publishes a checksum-pinned 200-headword artifact from ECDICT Kaikki OEWN and Youdao"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "LEXICON-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Discovers senses forms relations and collocations through the visible lexicon hierarchy"
+        }
+      ]
+    },
+    {
+      "id": "LEARNING-001",
+      "owner": "LEARNING",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/api/src/modules/exercises/services/exercise-delivery.service.spec.ts",
+          "testId": "LEARNING-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/api"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Scores an exact choice response and persists idempotency"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "LEARNING-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Enrolls in a vocabulary book and completes a scored review through APIs"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "LEARNING-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Browses a complete book enrolls studies scores and observes progress through the UI"
+        }
+      ]
+    },
+    {
+      "id": "EXERCISE-001",
+      "owner": "LEARNING",
+      "risk": "CRITICAL",
+      "requiredLayers": ["PROPERTY", "COMPONENT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "PROPERTY",
+          "path": "packages/lexicon-artifact/test/exercise-matrix.property.test.ts",
+          "testId": "EXERCISE-001-PROPERTY",
+          "runner": "VITEST",
+          "projects": ["@sylis/lexicon-artifact"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Provides every exercise task kind with a valid response profile"
+        },
+        {
+          "layer": "COMPONENT",
+          "path": "apps/frontends/web/src/modules/exercises/components/exercise-player.test.tsx",
+          "testId": "EXERCISE-001-COMPONENT",
+          "runner": "VITEST",
+          "projects": ["@sylis/web"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Submits a choice response with a stable request key"
+        },
+        {
+          "layer": "COMPONENT",
+          "path": "apps/frontends/web/src/modules/exercises/components/exercise-player.test.tsx",
+          "testId": "EXERCISE-001-A11Y",
+          "runner": "VITEST",
+          "projects": ["@sylis/web"],
+          "tags": ["CORE", "ACCESSIBILITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Exposes accessible response controls for every response kind"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "LEARNING-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Completes every exercise response kind through the visible player"
+        }
+      ]
+    },
+    {
+      "id": "NOTEBOOK-001",
+      "owner": "LEARNING",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/api/src/modules/notebooks/services/notebooks.service.spec.ts",
+          "testId": "NOTEBOOK-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/api"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects notebook item mutation outside the actor ownership boundary"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/user/notebook.spec.ts",
+          "testId": "NOTEBOOK-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Creates revises retires and deletes typed notebook data through APIs"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/learning-journey.spec.ts",
+          "testId": "NOTEBOOK-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Creates filters revises and deletes saved lexical targets through the notebook UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-001",
+      "owner": "AGENT",
+      "risk": "CRITICAL",
+      "requiredLayers": ["CONTRACT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/fake-provider.test.ts",
+          "testId": "AGENT-001-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Returns deterministic structured Provider data without a network call"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Completes a deterministic streamed Agent conversation through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-002",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Keeps duplicate instructions idempotent and resumes SSE from Last-Event-ID"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-003",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Cancels a queued or running Agent run without duplicate effects"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-003-BROWSER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Cancels an active Agent response and exposes the terminal state through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-004",
+      "owner": "MODEL_EXECUTION",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Ends Provider failure timeout and invalid output runs in a failed state"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-005",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-005-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Resumes a waiting Agent run after a user response"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-005-BROWSER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Supplies clarification and observes a waiting Agent run resume through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-006",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/agent-tool-matrix.spec.ts",
+          "testId": "AGENT-006-TOOL-SUCCESS-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Executes every released read Tool through the Agent event stream"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/agent-tool-matrix.spec.ts",
+          "testId": "AGENT-006-TOOL-SCHEMA-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects invalid input for every released read Tool before execution"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-006-BROWSER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Shows the lexicon Tool lifecycle and successful Agent completion through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-007",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-007-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Commits an approved notebook Proposal exactly once before Agent resume"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-007-OWNER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects a Proposal that targets another learner's Notebook"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-007-BROWSER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects and approves Notebook Proposals and observes the committed item through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-008",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-008-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Generates revises pins and accepts an immutable Agent Artifact through the UI"
+        }
+      ]
+    },
+    {
+      "id": "AGENT-009",
+      "owner": "AGENT",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/agent-executor/test/reconciliation-loop.test.ts",
+          "testId": "AGENT-009-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-executor"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Polls reconciliation independently and stops with the executor lifecycle"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/agent-executor-reconciliation.spec.ts",
+          "testId": "AGENT-009-BEFORE-TOOL-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Requires an explicit user retry after an interrupted unknown model outcome"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/agent-executor-reconciliation.spec.ts",
+          "testId": "AGENT-009-AFTER-TOOL-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Preserves one persisted Tool result without automatic replay after executor interruption"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/agent-executor-reconciliation.spec.ts",
+          "testId": "AGENT-009-PROPOSAL-COMMIT-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Keeps an approved Proposal commit exactly-once when its continuation is interrupted"
+        }
+      ]
+    },
+    {
+      "id": "READING-001",
+      "owner": "LEARNING",
+      "risk": "HIGH",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "READING-001-BROWSER-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects cross-owner publication, persists only an approved exact ARTICLE revision, replays approval idempotently, opens the private Reading document, and resolves a DOM selection with UTF-16 offsets"
+        }
+      ]
+    },
+    {
+      "id": "PROVIDER-001",
+      "owner": "MODEL_EXECUTION",
+      "risk": "CRITICAL",
+      "requiredLayers": ["CONTRACT", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-http.contract.test.ts",
+          "testId": "PROVIDER-001-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Classifies Provider 429 5xx and rejected requests with stable retry policy"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-http.contract.test.ts",
+          "testId": "PROVIDER-002-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Distinguishes caller cancellation from retryable Provider timeout"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-http.contract.test.ts",
+          "testId": "PROVIDER-003-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects oversized unterminated Provider stream frames"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-004-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects unauthorized tool names across all streamed Provider adapters"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-005-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects tool arguments outside the released schema across Provider adapters"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-006-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects malformed truncated and duplicate DeepSeek stream frames"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-007-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Deduplicates repeated OpenAI tool completion frames"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-008-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Keeps the DeepSeek API key out of structured request bodies"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-009-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects truncated structured output across all released Provider adapters"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-010-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects malformed streamed JSON across all released Provider adapters"
+        },
+        {
+          "layer": "CONTRACT",
+          "path": "apps/backends/model-gateway/test/provider-adapters.contract.test.ts",
+          "testId": "PROVIDER-011-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/model-gateway"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Merges the DeepSeek usage trailer into exactly one final stream chunk"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Drives deterministic Provider timeout rate-limit and malformed-stream failures through the complete Agent runtime"
+        }
+      ]
+    },
+    {
+      "id": "AGENT_EVAL-001",
+      "owner": "AGENT",
+      "risk": "CRITICAL",
+      "requiredLayers": ["AI_EVAL", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "AI_EVAL",
+          "path": "packages/agent-contracts/test/agent-evaluation.test.ts",
+          "testId": "AGENT-EVAL-001-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["AI_EVAL"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Resolves a versioned suite with typical boundary and adversarial cases"
+        },
+        {
+          "layer": "AI_EVAL",
+          "path": "packages/agent-contracts/test/agent-evaluation.test.ts",
+          "testId": "AGENT-EVAL-002-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["AI_EVAL"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Computes a weighted score independently from Provider summary claims"
+        },
+        {
+          "layer": "AI_EVAL",
+          "path": "packages/agent-contracts/test/agent-evaluation.test.ts",
+          "testId": "AGENT-EVAL-003-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["AI_EVAL", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Fails the release gate when a mandatory adversarial case misses threshold"
+        },
+        {
+          "layer": "AI_EVAL",
+          "path": "packages/agent-contracts/test/agent-evaluation.test.ts",
+          "testId": "AGENT-EVAL-004-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/agent-contracts"],
+          "tags": ["AI_EVAL", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects incomplete unknown or out-of-range evaluation metrics"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/admin/agent-release-evaluation.spec.ts",
+          "testId": "AGENT-RELEASE-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Evaluates a validated Agent capability through the real evaluator before release"
+        }
+      ]
+    },
+    {
+      "id": "AI_SAFETY-001",
+      "owner": "AGENT",
+      "risk": "CRITICAL",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-010-UNAUTHORIZED-TOOL-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects an unauthorized Provider tool name before execution"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/runtime-resilience.spec.ts",
+          "testId": "AGENT-010-INVALID-TOOL-ARGUMENTS-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Rejects malformed Provider tool arguments before execution"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/agent-tool-matrix.spec.ts",
+          "testId": "AGENT-010-INDIRECT-INJECTION-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Treats malicious webpage instructions as inert evidence without a second Tool or Proposal"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/conversation.spec.ts",
+          "testId": "AGENT-010-OUTPUT-INJECTION-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Renders direct injection and model HTML output as inert text"
+        }
+      ]
+    },
+    {
+      "id": "CONTENT-001",
+      "owner": "CONTENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/agent/asset-lifecycle.spec.ts",
+          "testId": "CONTENT-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans indexes readies and hides a quarantined uploaded asset through APIs"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/asset-browser.spec.ts",
+          "testId": "CONTENT-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Uploads uses as context and deletes a scanned text asset through the UI"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/agent/asset-browser.spec.ts",
+          "testId": "CONTENT-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["agent:desktop"],
+          "tags": ["BROWSER", "NIGHTLY"],
+          "ciLanes": ["MAIN", "NIGHTLY"],
+          "behavior": "Processes representative PDF and image assets through the browser upload lifecycle"
+        }
+      ]
+    },
+    {
+      "id": "ADMIN-001",
+      "owner": "ADMIN",
+      "risk": "HIGH",
+      "requiredLayers": ["COMPONENT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "COMPONENT",
+          "path": "apps/frontends/admin/src/app/layout/admin-shell.test.tsx",
+          "testId": "ADMIN-001-COMPONENT",
+          "runner": "VITEST",
+          "projects": ["@sylis/admin"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Exposes only Admin navigation allowed by the operator role"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/authorization.spec.ts",
+          "testId": "ADMIN-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Redirects an unauthenticated operator to the visible Admin login surface"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-006-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Completes MFA and renders role-specific navigation for every OperatorRole"
+        }
+      ]
+    },
+    {
+      "id": "ADMIN-002",
+      "owner": "ADMIN",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/admin/operator-authentication.spec.ts",
+          "testId": "ADMIN-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["api:system"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Returns seeded enum roles for an MFA-authenticated operator through APIs"
+        }
+      ]
+    },
+    {
+      "id": "ADMIN-003",
+      "owner": "ADMIN",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/admin.accessibility.spec.ts",
+          "testId": "ADMIN-003-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans operator authentication for WCAG A and AA violations"
+        }
+      ]
+    },
+    {
+      "id": "ADMIN-004",
+      "owner": "ADMIN",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/admin.accessibility.spec.ts",
+          "testId": "ADMIN-004-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans the authenticated Admin shell for WCAG A and AA violations"
+        }
+      ]
+    },
+    {
+      "id": "ADMIN-005",
+      "owner": "ADMIN",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/smoke/browser.smoke.spec.ts",
+          "testId": "ADMIN-005-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["browser:firefox:smoke", "browser:webkit:smoke"],
+          "tags": ["BROWSER", "CROSS_BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Loads the Admin JavaScript shell in supported cross-browser smoke projects"
+        }
+      ]
+    },
+    {
+      "id": "MODEL_GOVERNANCE-001",
+      "owner": "ADMIN",
+      "risk": "CRITICAL",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-007-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Creates and rotates a redacted platform credential and scopes budget and quota policies"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/admin-security-controls.spec.ts",
+          "testId": "ADMIN-SECURITY-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Reauthenticates an operator and enforces credential quarantine budget quota and legal-hold controls"
+        }
+      ]
+    },
+    {
+      "id": "SUPPORT_GRANT-001",
+      "owner": "IDENTITY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-010-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Confirms a diagnostic revision grants exact Support access revokes it and denies reuse"
+        },
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/api/src/modules/identity/services/support-grant.service.spec.ts",
+          "testId": "SUPPORT-GRANT-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/api"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Requires recent reauthentication before resolving an exact immutable Support target"
+        }
+      ]
+    },
+    {
+      "id": "AGENT_RELEASE-001",
+      "owner": "AGENT",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/admin/agent-release-evaluation.spec.ts",
+          "testId": "AGENT-RELEASE-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Evaluates a validated Agent capability through the Admin API and evaluator"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-008-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Previews and schedules an Agent release evaluation through the Admin UI"
+        }
+      ]
+    },
+    {
+      "id": "AUDIT-001",
+      "owner": "ADMIN",
+      "risk": "CRITICAL",
+      "requiredLayers": ["INTEGRATION", "SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "INTEGRATION",
+          "path": "apps/backends/automation-executor/test/audit-export.test.ts",
+          "testId": "AUDIT-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/automation-executor"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Writes versioned compressed audit exports with redaction and a recorded hash"
+        },
+        {
+          "layer": "INTEGRATION",
+          "path": "apps/backends/automation-executor/test/audit-archive.test.ts",
+          "testId": "AUDIT-002-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/automation-executor"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Freezes exact event membership before writing deterministic encrypted content-addressed archives"
+        },
+        {
+          "layer": "INTEGRATION",
+          "path": "packages/database/test/audit-retention-invariants.integration.test.ts",
+          "testId": "AUDIT-003-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/database"],
+          "tags": ["CORE", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects stale policy bindings, unarchived deletion, LegalHold bypass and Admin archive mutation"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/audit-export.spec.ts",
+          "testId": "AUDIT-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Preserves audit query snapshots and exposes verified redacted artifacts"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/audit-export.spec.ts",
+          "testId": "AUDIT-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Runs policy-pinned encrypted audit archiving through the Automation Executor and records an ACTIVE archive"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-011-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Finds immutable account-deletion evidence through the Admin Audit UI"
+        }
+      ]
+    },
+    {
+      "id": "DATA_EXPORT-001",
+      "owner": "IDENTITY",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/automation-job-lifecycle.spec.ts",
+          "testId": "DATA_EXPORT-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Executes a user export and observes it through the Admin job API"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-011-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Requests an export and observes its downloadable JSON artifact through the learner UI"
+        }
+      ]
+    },
+    {
+      "id": "JOB-001",
+      "owner": "PLATFORM",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "SYSTEM", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "packages/job-runtime/test/job-runtime.test.ts",
+          "testId": "JOB-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/job-runtime"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects a late write after a newer fencing token claims a job"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/job-fencing-recovery.spec.ts",
+          "testId": "JOB-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Recovers an expired worker lease with a higher fencing token"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/admin/control-plane-ui.spec.ts",
+          "testId": "ADMIN-009-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["admin:desktop"],
+          "tags": ["BROWSER", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Cancels running work and retries a failed job through high-risk Admin controls"
+        }
+      ]
+    },
+    {
+      "id": "PLATFORM_RESILIENCE-001",
+      "owner": "PLATFORM",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/dependency-resilience.spec.ts",
+          "testId": "RESILIENCE-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Continues queued work through polling while Redis is unavailable and after recovery"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/dependency-resilience.spec.ts",
+          "testId": "RESILIENCE-002-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Retries an interrupted MinIO upload without publishing a partial asset"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/dependency-resilience.spec.ts",
+          "testId": "RESILIENCE-003-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Fails readiness closed during PostgreSQL loss and reports ready after restart"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/dependency-resilience.spec.ts",
+          "testId": "RESILIENCE-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "NIGHTLY", "SECURITY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Keeps assets quarantined through ClamAV loss and completes the transient retry after recovery"
+        },
+        {
+          "layer": "UNIT",
+          "path": "packages/job-runtime/test/worker.test.ts",
+          "testId": "PLATFORM-RESILIENCE-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/job-runtime"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Recovers from a transient claim failure without terminating the worker process"
+        }
+      ]
+    },
+    {
+      "id": "SOURCE-001",
+      "owner": "LEXICON",
+      "risk": "CRITICAL",
+      "requiredLayers": ["INTEGRATION", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "INTEGRATION",
+          "path": "apps/backends/automation-executor/test/source-sync.test.ts",
+          "testId": "SOURCE-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/automation-executor"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Streams verifies and records source synchronization progress"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/source-synchronization.spec.ts",
+          "testId": "SOURCE-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Synchronizes an HTTPS source through the real job boundary"
+        }
+      ]
+    },
+    {
+      "id": "RELEASE-001",
+      "owner": "LEXICON",
+      "risk": "CRITICAL",
+      "requiredLayers": ["CONTRACT", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "CONTRACT",
+          "path": "packages/database/test/install-database.test.ts",
+          "testId": "RELEASE-001-CONTRACT",
+          "runner": "VITEST",
+          "projects": ["@sylis/database"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Declares database invariants that keep activation source and target releases within one Lexicon"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/lexicon-release-lifecycle.spec.ts",
+          "testId": "RELEASE-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Activates and rolls back a validated Lexicon release"
+        }
+      ]
+    },
+    {
+      "id": "DELIVERY-001",
+      "owner": "DELIVERY",
+      "risk": "HIGH",
+      "requiredLayers": ["SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "STAGING", "PRODUCTION"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/health.spec.ts",
+          "testId": "DELIVERY-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "DEPLOYMENT"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "STAGING", "PRODUCTION"],
+          "behavior": "Reports ready on every public deployment edge"
+        }
+      ]
+    },
+    {
+      "id": "DELIVERY-002",
+      "owner": "DELIVERY",
+      "risk": "HIGH",
+      "requiredLayers": ["SYNTHETIC"],
+      "ciLanes": ["STAGING", "PRODUCTION"],
+      "evidence": [
+        {
+          "layer": "SYNTHETIC",
+          "path": "tests/deployment/shell.smoke.spec.ts",
+          "testId": "DELIVERY-002-SYNTHETIC",
+          "runner": "PLAYWRIGHT",
+          "projects": ["deployment:web", "deployment:admin"],
+          "tags": ["DEPLOYMENT", "BROWSER"],
+          "ciLanes": ["STAGING", "PRODUCTION"],
+          "behavior": "Loads deployed browser shells and their critical static assets"
+        }
+      ]
+    },
+    {
+      "id": "DELIVERY-003",
+      "owner": "DELIVERY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["SYSTEM", "SYNTHETIC"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "STAGING", "PRODUCTION"],
+      "evidence": [
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/health.spec.ts",
+          "testId": "DELIVERY-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "DEPLOYMENT"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Verifies every public deployment edge reports ready in the isolated release topology"
+        },
+        {
+          "layer": "SYNTHETIC",
+          "path": "tests/deployment/web-authenticated.smoke.spec.ts",
+          "testId": "DELIVERY-003-WEB-SYNTHETIC",
+          "runner": "PLAYWRIGHT",
+          "projects": ["deployment:web-authenticated"],
+          "tags": ["DEPLOYMENT", "BROWSER"],
+          "ciLanes": ["STAGING", "PRODUCTION"],
+          "behavior": "Authenticates a dedicated learner through the deployed UI and reads Study plus a Lexicon detail"
+        },
+        {
+          "layer": "SYNTHETIC",
+          "path": "tests/deployment/admin-authenticated.smoke.spec.ts",
+          "testId": "DELIVERY-003-ADMIN-SYNTHETIC",
+          "runner": "PLAYWRIGHT",
+          "projects": ["deployment:admin-authenticated"],
+          "tags": ["DEPLOYMENT", "BROWSER"],
+          "ciLanes": ["STAGING", "PRODUCTION"],
+          "behavior": "Authenticates a dedicated MFA Operator through the deployed UI and reads the control-plane overview"
+        }
+      ]
+    },
+    {
+      "id": "DELIVERY-004",
+      "owner": "DELIVERY",
+      "risk": "HIGH",
+      "requiredLayers": ["SYNTHETIC"],
+      "ciLanes": ["PRODUCTION"],
+      "evidence": [
+        {
+          "layer": "SYNTHETIC",
+          "path": "tests/deployment/notebook.synthetic.spec.ts",
+          "testId": "DELIVERY-004-SYNTHETIC",
+          "runner": "PLAYWRIGHT",
+          "projects": ["deployment:notebook-scheduled"],
+          "tags": ["DEPLOYMENT", "BROWSER", "NIGHTLY"],
+          "ciLanes": ["PRODUCTION"],
+          "behavior": "Creates a prefix-scoped Notebook through the deployed UI, observes it, and removes it with an always-run cleanup fallback"
+        }
+      ]
+    },
+    {
+      "id": "DELIVERY-005",
+      "owner": "DELIVERY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["UNIT", "INTEGRATION", "SYSTEM"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "UNIT",
+          "path": "apps/backends/admin-api/test/deployment-release.test.ts",
+          "testId": "DEPLOYMENT-001-UNIT",
+          "runner": "VITEST",
+          "projects": ["@sylis/admin-api"],
+          "tags": ["CORE", "SECURITY", "DEPLOYMENT"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Keeps browser reads on the Admin role and release ingestion on the dedicated CI database client"
+        },
+        {
+          "layer": "INTEGRATION",
+          "path": "packages/database/test/pipeline-invariants.test.ts",
+          "testId": "DEPLOYMENT-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/database"],
+          "tags": ["CORE", "SECURITY", "DEPLOYMENT"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Proves Admin cannot write releases while the CI role can only insert an audited append-only release"
+        },
+        {
+          "layer": "SYSTEM",
+          "path": "tests/e2e/specs/system/deployment-release-ingestion.spec.ts",
+          "testId": "DEPLOYMENT-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["system:exclusive"],
+          "tags": ["SYSTEM", "SECURITY", "DEPLOYMENT"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Rejects non-CI callers, accepts exact replay, rejects conflicting replay, and exposes only the Admin read projection"
+        }
+      ]
+    },
+    {
+      "id": "UX-001",
+      "owner": "LEARNING",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/user/login.mobile.spec.ts",
+          "testId": "UX-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:mobile"],
+          "tags": ["BROWSER", "MOBILE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Completes mobile UI login, Study to Agent navigation, session creation and deterministic messaging without horizontal overflow"
+        }
+      ]
+    },
+    {
+      "id": "UX-002",
+      "owner": "LEARNING",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/web.accessibility.spec.ts",
+          "testId": "UX-002-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans public authentication routes and the failed-login alert/focus state for WCAG A and AA violations"
+        }
+      ]
+    },
+    {
+      "id": "UX-003",
+      "owner": "LEARNING",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/web.accessibility.spec.ts",
+          "testId": "UX-003-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans authenticated learning and Agent shells for WCAG violations"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/web.accessibility.spec.ts",
+          "testId": "UX-003-DYNAMIC-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans deterministic Agent running and user-waiting states with live timeline semantics"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/web.accessibility.spec.ts",
+          "testId": "UX-003-PROPOSAL-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans the Agent proposal dialog and verifies Escape closure plus trigger focus restoration"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/accessibility/web.accessibility.spec.ts",
+          "testId": "UX-003-UPLOAD-A11Y",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:accessibility"],
+          "tags": ["BROWSER", "ACCESSIBILITY", "NIGHTLY"],
+          "ciLanes": ["PULL_REQUEST", "MAIN", "NIGHTLY"],
+          "behavior": "Scans announced Agent upload progress and the resulting asset state"
+        }
+      ]
+    },
+    {
+      "id": "UX-004",
+      "owner": "LEARNING",
+      "risk": "STANDARD",
+      "requiredLayers": ["BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "BROWSER_E2E",
+          "path": "tests/e2e/specs/smoke/browser.smoke.spec.ts",
+          "testId": "UX-004-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["browser:firefox:smoke", "browser:webkit:smoke"],
+          "tags": ["BROWSER", "CROSS_BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Completes UI login and authenticated Study to Agent navigation in supported Firefox and WebKit smoke projects"
+        }
+      ]
+    }
+  ]
+}

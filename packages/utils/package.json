@@ -1,23 +1,35 @@
 {
   "name": "@sylis/utils",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
+  "type": "commonjs",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./stable-uuid": {
+      "types": "./dist/stable-uuid.d.ts",
+      "default": "./dist/stable-uuid.js"
+    },
+    "./release-identity": {
+      "types": "./dist/release-identity.d.ts",
+      "default": "./dist/release-identity.js"
+    }
   },
   "scripts": {
-    "build": "tsup",
-    "build:watch": "WATCH=true tsup",
-    "dev": "tsup src/index.ts --dts --format cjs,esm --out-dir dist --watch"
+    "build": "tsc -p tsconfig.build.json",
+    "build:watch": "tsc -p tsconfig.build.json --watch",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "tsup": "^8.5.0"
+    "typescript": "5.9.3"
   }
 }

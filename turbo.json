@@ -1,0 +1,143 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "stream",
+  "globalDependencies": [
+    "pnpm-lock.yaml",
+    "tsconfig.base.json",
+    "eslint.config.js"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "schema/**"]
+    },
+    "docs:build": {
+      "dependsOn": ["^build"],
+      "outputs": [".vitepress/dist/**", "dist/**"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@sylis/database#typecheck": {
+      "dependsOn": ["^build", "build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "env": [
+        "NODE_ENV",
+        "PORT",
+        "DATABASE_URL",
+        "DEPLOYMENT_INGEST_DATABASE_URL",
+        "DEPLOYMENT_INGEST_TOKEN",
+        "TEST_DATABASE_URL",
+        "REDIS_URL",
+        "PUBLIC_ORIGIN",
+        "ADMIN_ORIGIN",
+        "WEBAUTHN_RP_ID",
+        "WEBAUTHN_RP_NAME",
+        "SESSION_HASH_KEY",
+        "SESSION_TTL_SECONDS",
+        "CSRF_SIGNING_KEY",
+        "REGISTRATION_SIGNING_KEY",
+        "CONTENT_ENCRYPTION_KEYS_JSON",
+        "CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION",
+        "COOKIE_SECURE",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "SMTP_FROM",
+        "JOB_CHECKPOINT_KEY_BASE64",
+        "JOB_POLL_INTERVAL_MS",
+        "JOB_LEASE_DURATION_MS",
+        "RAILWAY_REPLICA_ID",
+        "LEXICON_BUILDER_WORK_ROOT",
+        "LEXICON_PUBLISHER_WORK_ROOT",
+        "LEXICON_ARTIFACT_ROOT",
+        "LEXICON_ARTIFACT_ALLOW_FILE",
+        "AWS_ENDPOINT_URL",
+        "AWS_ENDPOINT_IP",
+        "AWS_DEFAULT_REGION",
+        "AWS_S3_BUCKET_NAME",
+        "AWS_S3_URL_STYLE",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "OBJECT_STORAGE_ENDPOINT",
+        "OBJECT_STORAGE_REGION",
+        "OBJECT_STORAGE_BUCKET",
+        "OBJECT_STORAGE_ACCESS_KEY_ID",
+        "OBJECT_STORAGE_SECRET_ACCESS_KEY",
+        "OBJECT_STORAGE_PREFIX",
+        "REDDIT_CLIENT_ID",
+        "REDDIT_CLIENT_SECRET",
+        "REDDIT_USER_AGENT",
+        "REDDIT_SUBREDDITS",
+        "REDDIT_RETENTION_DAYS"
+      ],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "docs:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "preview": {
+      "cache": false,
+      "persistent": true
+    },
+    "start": {
+      "cache": false,
+      "persistent": true
+    },
+    "test:e2e": {
+      "cache": false
+    },
+    "//#e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": false
+    },
+    "test:integration": {
+      "cache": false
+    },
+    "prisma:generate": {
+      "cache": false
+    },
+    "prisma:push": {
+      "cache": false
+    },
+    "prisma:reset": {
+      "cache": false
+    },
+    "database:install": {
+      "cache": false
+    },
+    "compile": {
+      "cache": false
+    },
+    "sources:fetch": {
+      "cache": false
+    },
+    "pilot": {
+      "cache": false
+    },
+    "deploy": {
+      "cache": false
+    },
+    "publish": {
+      "cache": false
+    }
+  }
+}

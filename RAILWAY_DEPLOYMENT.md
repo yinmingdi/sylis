@@ -1,157 +1,90 @@
 # Railway deployment
 
-## 1. Create the production environment and services
+Sylis deploys twelve independently built application images:
 
-Create a `sylis` project in the Pro workspace and keep its default `production`
-environment. Create these services in the Singapore region
-(`asia-southeast1-eqsg3a`):
+- frontends: `web`, `admin`;
+- synchronous backends: `api`, `admin-api`, `agent-api`, `model-gateway`;
+- executors: `agent-executor`, `agent-evaluator`, `asset-processor`,
+  `automation-executor`;
+- lexicon data plane: `lexicon-builder`, `lexicon-publisher`.
 
-| Service               | Source                                     | Config file              | Public domain |
-| --------------------- | ------------------------------------------ | ------------------------ | ------------- |
-| `web`                 | This GitHub repository, root directory `/` | `/railway.web.json`      | Yes           |
-| `api`                 | This GitHub repository, root directory `/` | `/railway.api.json`      | No            |
-| `vocabulary-importer` | This GitHub repository, root directory `/` | `/railway.importer.json` | No            |
-| `vocabulary-enricher` | This GitHub repository, root directory `/` | `/railway.enricher.json` | No            |
-| `Postgres`            | Railway PostgreSQL 18 service              | Managed                  | No            |
-| `Redis`               | Railway Redis 7 service                    | Managed                  | No            |
+GitHub Actions builds each image once from the exact protected `main` commit,
+runs the same image set in E2E, pushes immutable GHCR digests, and deploys those
+digests to staging. Railway does not rebuild the Git repository. A protected
+manual `v0.0.1` release promotes the already validated digests to production;
+production never rebuilds an application image.
 
-The API service must be named `api`; Caddy resolves it through
-`api.railway.internal`. Keep importer and enricher autodeploy disabled and their
-restart policies set to `Never`.
+Each image embeds the release version and exact commit SHA. Post-deploy checks
+compare all twelve readiness identities with the immutable manifest. Web and
+Admin expose `/version.json`; the public API reads private backend readiness
+over Railway internal DNS, so executors and data-plane services do not need
+public domains.
 
-## 2. Configure variables
+PostgreSQL, Redis, private object storage, ClamAV, and service-specific volumes
+are managed runtime dependencies. Only `api` installs the database, using the
+privileged `DATABASE_OWNER_URL` in Railway's pre-deploy command. Prisma
+`db push --force-reset` creates the complete `0.0.1` schema; the installer then
+applies `prisma/invariants.sql` for PostgreSQL constraints, triggers, functions,
+roles, and grants that Prisma Schema cannot express. Neither step creates or
+reads migration history.
 
-Set this reference variable on `web`. Do not add any other application variable
-to that service:
+Both `api` and `agent-api` receive Railway's private `REDIS_URL`. The API
+outbox dispatcher publishes `AGENT_EVENT_AVAILABLE` wakeups, while Agent API
+subscribes and drains the authoritative `AgentEvent` rows into Session SSE.
+Redis never stores the event cursor, message delta, Run result, or Artifact;
+losing a Pub/Sub notification is recovered from PostgreSQL, and losing the
+Redis connection closes SSE so the browser reconnects with `Last-Event-ID`.
 
-```text
-API_UPSTREAM=http://${{api.RAILWAY_PRIVATE_DOMAIN}}:${{api.PORT}}
+When all five `SYLIS_SYNTHETIC_*` values are configured, the installer also
+creates the dedicated Learner/Support Operator and a static `sylis-en-zh`
+deployment canary release containing the two standard senses of `bank`. The
+canary is owned by the deployment test contract, uses no external provider or
+AI, and exists only so a freshly reset environment can prove authenticated
+Study and Lexicon reads. A real immutable lexicon artifact published and
+activated through Builder -> Publisher replaces the canary active pointer.
+
+There are no production users, so every `0.0.1` API deployment is intentionally
+a destructive greenfield installation. It discards existing application data.
+This deployment policy must be replaced before accepting persistent production
+data; application services must never silently switch it to an incremental
+schema workflow.
+
+The authoritative setup, variable ownership, volume layout, release flow,
+rollback procedure, and secret policy are maintained in:
+
+- [CI/CD, Railway and secrets](docs/overview/refactor/delivery/cicd-security.md)
+- [Runtime configuration](docs/overview/guide/configuration.md)
+- [Operations CLI](tools/operations/README.md)
+
+Application deployment never starts paid AI or a lexicon build. Lexicon JSON
+generation, publication, validation, and activation are a separate protected
+content-release flow initiated by an operator.
+
+On the API service, configure each `DEPLOYMENT_*_READINESS_URL` with Railway
+reference variables, for example:
+
+```env
+DEPLOYMENT_ADMIN_API_READINESS_URL=http://${{admin-api.RAILWAY_PRIVATE_DOMAIN}}:${{admin-api.PORT}}/health/ready
+DEPLOYMENT_AGENT_EXECUTOR_READINESS_URL=http://${{agent-executor.RAILWAY_PRIVATE_DOMAIN}}:${{agent-executor.PORT}}/ready
 ```
 
-Set these variables on `api`:
+Set `PORT` explicitly on every referenced service. Railway private networking
+requires the target service's actual listening port; the application does not
+fall back to hard-coded Railway ports. The complete nine-variable list is in
+`apps/backends/api/.env.example`.
 
-```text
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-REDIS_URL=${{Redis.REDIS_URL}}
-JWT_SECRET=<unique random value of at least 32 characters>
-JWT_EXPIRES_IN=30d
-AI_API_KEY=<fresh DeepSeek runtime key>
-AI_BASE_URL=https://api.deepseek.com
-AI_MODEL=deepseek-v4-flash
-AI_ENRICHMENT_ENABLED=true
-MAILER_HOST=<SMTP host>
-MAILER_PORT=<SMTP port>
-MAILER_SECURE=<true for implicit TLS, otherwise false>
-MAILER_USER=<SMTP user>
-MAILER_PASS=<SMTP app password>
-MAILER_FROM=<verified sender>
-REDDIT_CLIENT_ID=<optional Reddit client ID>
-REDDIT_CLIENT_SECRET=<optional Reddit client secret>
-```
+Configure `SYLIS_WEB_URL`, `SYLIS_ADMIN_URL`, and `SYLIS_API_URL` in both GitHub
+deployment environments. Configure the five `SYLIS_SYNTHETIC_*` values as API
+service sealed variables and matching GitHub environment secrets. The dedicated
+`sylis / production-synthetic` environment runs hourly authenticated probes;
+its Notebook write is prefix-scoped and removed both in-test and by an
+always-run fallback cleanup.
 
-Seal JWT, AI, SMTP and optional Reddit credentials in Railway. Pass secret values
-to the Railway CLI over standard input so they do not appear in shell history or
-process arguments. Never place these values in GitHub Actions or `VITE_*`
-variables. SMTP requires the Pro plan and a deployment created after the upgrade.
-
-Set only the following on `vocabulary-importer`:
-
-```text
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-ECDICT_DRY_RUN=true
-ECDICT_SCOPE=all
-ECDICT_EXPECTED_SELECTED=770611
-```
-
-The source URL, pinned commit and checksum have safe defaults in the importer.
-It must not receive Redis, AI, SMTP, JWT or Reddit credentials.
-
-Set only the following on `vocabulary-enricher`:
-
-```text
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-AI_ENRICHMENT_API_KEY=<fresh key used only by this job>
-AI_BASE_URL=https://api.deepseek.com
-AI_MODEL=deepseek-v4-flash
-ENRICHMENT_MODE=pilot
-ENRICHMENT_PILOT_SIZE=1000
-```
-
-Do not copy `AI_API_KEY` to the enricher or `AI_ENRICHMENT_API_KEY` to the API.
-Any key pasted into chat, committed, logged, or passed as a CLI argument must be
-revoked and replaced before deployment.
-
-## 3. Connect the production branch and CI
-
-- Connect `web` and `api` to `main`.
-- Enable GitHub autodeploy and `Wait for CI` for both services.
-- Leave importer and enricher autodeploy disabled.
-- Deploy the importer only through the manual `Deploy vocabulary importer`
-  GitHub Actions workflow. The workflow checks out the dispatched `main` commit;
-  do not run `railway up` from a developer workstation.
-- Protect `develop` and `main`; require `CI / Build and test`, `CI / Secret scan`
-  and `GitFlow Compliance Check`. Keep required approvals at zero for a
-  single-maintainer repository.
-
-Create or reuse the `sylis / production` GitHub deployment environment. Store a
-Railway project token scoped only to the `production` environment as the
-`RAILWAY_TOKEN` environment secret. Add these non-secret environment variables:
-
-```text
-RAILWAY_PROJECT_ID=<sylis project ID>
-RAILWAY_ENVIRONMENT_ID=<production environment ID>
-RAILWAY_IMPORTER_SERVICE_ID=<vocabulary-importer service ID>
-```
-
-In the GitHub environment settings, set `Deployment branches and tags` to
-`Selected branches and tags` and allow only the `main` branch. This prevents a
-workflow modified on another branch from reading the production Railway token.
-
-Do not put `DATABASE_URL`, AI, SMTP, JWT or Reddit credentials in GitHub. The
-workflow receives those values only indirectly through the Railway service at
-runtime.
-
-Feature and bugfix branches merge into `develop`. Create `release/*` from
-`develop` and merge it into `main`. Create `hotfix/*` from `main`, then merge it
-back into both `main` and `develop`.
-
-## 4. First rollout
-
-1. Push the implementation to a feature branch and merge it into `develop`.
-2. Create `release/v0.1.0` from `develop` and validate its CI result.
-3. Merge `release/v0.1.0` into `main`; CI completion releases production.
-4. Confirm `/health`, login, email, AI chat, Redis-backed operations and
-   same-origin `/api` requests.
-5. From the `main` branch, manually run `Deploy vocabulary importer` in
-   `dry-run` mode and inspect its JSON count.
-6. Run the same workflow in `import` mode with confirmation value `IMPORT`. It
-   starts one deployment that validates the pinned checksum and all 770,611 rows
-   against the same downloaded file before writing, validates 24 books after the
-   import, and restores `ECDICT_DRY_RUN=true`.
-7. Run the enricher with `ENRICHMENT_MODE=pilot`. Review the recorded token cost,
-   projected cost and its automatic 125% cap in `VocabularyEnrichmentRun`.
-8. Only after accepting that estimate, set `ENRICHMENT_MODE=full` and run the
-   enricher again. It selects the unique union of the 24 books and stops at the
-   stored cap. Long-tail words remain eligible for authenticated on-demand
-   enrichment.
-
-Do not run `prisma seed` or the removed Youdao book seed in Railway. API pre-deploy executes only
-`prisma migrate deploy`.
-
-## 5. Secret rotation and rollback
-
-For AI and SMTP, create a replacement credential, update Railway, verify a new
-deployment, then revoke the old credential. Rotating `JWT_SECRET` deliberately
-invalidates existing sessions. Rotate immediately after suspected exposure or
-access changes, and configure provider quota and billing alerts.
-
-Use Railway's previous deployment rollback for application failures. Database
-migrations must remain forward-compatible; do not automatically reverse schema
-changes during rollback. Removing a secret from Git history does not revoke it:
-always rotate at the provider first.
-
-Enable daily, weekly and monthly backups on the PostgreSQL volume. Configure a
-$20 compute-usage email alert on the workspace and leave the compute hard limit
-unset so a billing threshold cannot stop production.
+For production release evidence, configure the same independent
+`DEPLOYMENT_INGEST_TOKEN` in the protected GitHub production environment and as
+a sealed Admin API Railway variable. The Admin API also needs
+`DEPLOYMENT_INGEST_DATABASE_URL` selecting the `sylis_ci_ingestor` PostgreSQL
+role; its ordinary `DATABASE_URL` continues to select `sylis_admin_api`.
+After production smoke succeeds, GitHub Actions calls the exact Admin ingress
+`/internal/v1/deployment-releases`; the workflow does not receive a database
+credential, and the Admin browser has no write route or table privilege.

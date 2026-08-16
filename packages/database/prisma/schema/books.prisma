@@ -1,0 +1,71 @@
+model VocabularyBook {
+  id           String                  @id @default(uuid()) @db.Uuid
+  key          String                  @unique
+  title        String
+  description  String?
+  languageTag  String
+  publisherKey String
+  editions     VocabularyBookEdition[]
+  enrollments  UserBookEnrollment[]
+}
+
+model VocabularyBookEdition {
+  id                     String                      @id @default(uuid()) @db.Uuid
+  bookId                 String                      @db.Uuid
+  editionKey             String
+  version                String
+  sourceDatasetVersionId String                      @db.Uuid
+  contentHash            String
+  publishedAt            DateTime                    @db.Timestamptz(3)
+  book                   VocabularyBook              @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  items                  VocabularyBookItem[]
+  enrollments            UserBookEnrollment[]
+  releases               LexiconReleaseBookEdition[]
+  sourceDatasetVersion   SourceDatasetVersion        @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+
+  @@unique([bookId, editionKey])
+  @@unique([bookId, version])
+  @@unique([bookId, contentHash])
+}
+
+model LexiconReleaseBookEdition {
+  releaseId            String                                      @db.Uuid
+  editionId            String                                      @db.Uuid
+  release              LexiconRelease                              @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  edition              VocabularyBookEdition                       @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  profileTargets       ContentProfileEvaluationBookEditionTarget[]
+  assessmentScopeRules AssessmentBookEditionScopeRule[]
+
+  @@id([releaseId, editionId])
+}
+
+model VocabularyBookItem {
+  id             String                            @id @default(uuid()) @db.Uuid
+  editionId      String                            @db.Uuid
+  position       Int
+  provenanceId   String?                           @db.Uuid
+  edition        VocabularyBookEdition             @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  provenance     Provenance?                       @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  headwordTarget VocabularyBookItemHeadwordTarget?
+  entryTarget    VocabularyBookItemEntryTarget?
+
+  @@unique([editionId, position])
+}
+
+model VocabularyBookItemHeadwordTarget {
+  itemId     String             @id @db.Uuid
+  headwordId String             @db.Uuid
+  item       VocabularyBookItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  headword   Headword           @relation(fields: [headwordId], references: [id], onDelete: Restrict)
+
+  @@unique([headwordId, itemId])
+}
+
+model VocabularyBookItemEntryTarget {
+  itemId  String             @id @db.Uuid
+  entryId String             @db.Uuid
+  item    VocabularyBookItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  entry   LexicalEntry       @relation(fields: [entryId], references: [id], onDelete: Restrict)
+
+  @@unique([entryId, itemId])
+}

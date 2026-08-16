@@ -1,0 +1,48 @@
+{
+  "name": "@sylis/database",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist",
+    "prisma"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/test-database.d.ts",
+      "default": "./dist/testing/test-database.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm prisma:generate && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests",
+    "prisma:format": "prisma format --schema prisma/schema",
+    "prisma:validate": "prisma validate --schema prisma/schema",
+    "prisma:generate": "prisma generate --schema prisma/schema",
+    "invariants:check": "node tools/check-invariants.mjs",
+    "security:audit": "node tools/audit-user-security.mjs",
+    "database:install": "node dist/operations/install-database.js",
+    "prisma:push": "prisma db push --schema prisma/schema",
+    "prisma:reset": "prisma db push --force-reset --schema prisma/schema",
+    "prisma:studio": "prisma studio --schema prisma/schema"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.9.0",
+    "@sylis/agent-contracts": "workspace:*",
+    "@sylis/content-crypto": "workspace:*",
+    "@sylis/job-contracts": "workspace:*",
+    "argon2": "^0.44.0",
+    "prisma": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

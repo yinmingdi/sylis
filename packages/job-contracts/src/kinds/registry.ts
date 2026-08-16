@@ -137,7 +137,7 @@ export const JOB_KIND_REGISTRY = {
     JobKind.ASSET_SCAN,
     JobOwnerContext.CONTENT_ASSET,
     ExecutorKind.ASSET_PROCESSOR,
-    3,
+    8,
     300_000,
     {
       retryPolicy: JobRetryPolicy.TRANSIENT_ONLY,

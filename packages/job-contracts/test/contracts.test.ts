@@ -54,6 +54,12 @@ describe("background job registry", () => {
       JOB_KIND_REGISTRY[JobKind.ASSET_IMAGE_ANALYSIS].sideEffectPolicy,
     ).toBe(JobSideEffectPolicy.RECONCILIATION_REQUIRED);
   });
+
+  it("keeps idempotent asset scans retryable across a dependency restart", () => {
+    expect(
+      JOB_KIND_REGISTRY[JobKind.ASSET_SCAN].maxAttempts,
+    ).toBeGreaterThanOrEqual(8);
+  });
 });
 
 describe("background job wire contracts", () => {

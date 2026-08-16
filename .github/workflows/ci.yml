@@ -199,7 +199,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Build only the runtime packages imported by the E2E harness
+      - name: Build the shared E2E runtime and evidence packages
         run: pnpm e2e:prepare
       - name: Archive the immutable E2E harness
         run: |

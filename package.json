@@ -55,7 +55,7 @@
     "ai:deepseek:route:publish-local": "pnpm --filter @sylis/model-gateway route:publish:deepseek:local",
     "ai:deepseek:activate-local": "pnpm --filter @sylis/agent-api runtime:activate:deepseek:local",
     "e2e": "pnpm e2e:full",
-    "e2e:prepare": "turbo run build --filter=@sylis/api-client --filter=@sylis/database --filter=@sylis/job-runtime --filter=@sylis/test-support",
+    "e2e:prepare": "turbo run build --filter=@sylis/agent-runtime --filter=@sylis/api-client --filter=@sylis/components --filter=@sylis/database --filter=@sylis/job-runtime --filter=@sylis/lexicon-artifact --filter=@sylis/test-support",
     "e2e:core": "tsx tests/e2e/run.ts --run=core",
     "e2e:api": "tsx tests/e2e/run.ts --run=api",
     "e2e:system": "tsx tests/e2e/run.ts --run=system",

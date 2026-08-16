@@ -2,6 +2,7 @@ import {
   assertValidArtifact,
   canonicalContentHash,
   canonicalJsonChunks,
+  createSingleFrameZstdCompress,
   sortArtifactArrays,
   type SylisLexiconArtifactV1,
   validateArtifactStream,
@@ -15,10 +16,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createZstdDecompress } from "node:zlib";
 
-import {
-  createSingleFrameZstdCompress,
-  inspectSingleZstdFrame,
-} from "./zstd-envelope";
+import { inspectSingleZstdFrame } from "./zstd-envelope";
 
 export interface ArtifactWriteResult {
   path: string;

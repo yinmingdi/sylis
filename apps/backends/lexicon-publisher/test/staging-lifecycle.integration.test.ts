@@ -12,6 +12,7 @@ import {
   canonicalContentHash,
   canonicalJsonChunks,
   createEmptyArtifact,
+  createSingleFrameZstdCompress,
   sortArtifactArrays,
   updateManifestCounts,
   type SylisLexiconArtifactV1,
@@ -23,11 +24,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { createZstdCompress } from "node:zlib";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 import { purgeExpiredStaging } from "../src/handlers/publish-lexicon";
 import { stageArtifact } from "../src/staging/staging-writer";
+import { createPublishedArtifactFixture } from "./published-artifact-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 const database = databaseUrl
@@ -221,7 +222,7 @@ async function createArtifactFixture(): Promise<{
   const path = join(root, "fixture.json.zst");
   await pipeline(
     Readable.from(canonicalJsonChunks(artifact)),
-    createZstdCompress(),
+    createSingleFrameZstdCompress(),
     createWriteStream(path),
   );
   return {
@@ -290,10 +291,21 @@ function addStagingEntities(
 
 async function createPublishRun(
   target: SylisDatabase,
-  status: PublishRunStatus = PublishRunStatus.QUEUED,
+  status:
+    | typeof PublishRunStatus.QUEUED
+    | typeof PublishRunStatus.RUNNING
+    | typeof PublishRunStatus.FAILED
+    | typeof PublishRunStatus.CANCELLED = PublishRunStatus.QUEUED,
 ): Promise<string> {
   const publishRunId = randomUUID();
   const jobId = randomUUID();
+  const artifactUri = `file:///staging-lifecycle/${publishRunId}.json.zst`;
+  const artifactHash = digest(`artifact:${publishRunId}`);
+  await createPublishedArtifactFixture(target, {
+    artifactUri,
+    artifactHash,
+    schemaVersion: "sylis.lexicon-artifact/1",
+  });
   await target.$transaction(async (transaction) => {
     await transaction.job.create({
       data: {
@@ -310,11 +322,16 @@ async function createPublishRun(
       data: {
         id: publishRunId,
         jobId,
-        artifactUri: `file:///staging-lifecycle/${publishRunId}.json.zst`,
-        artifactHash: digest(`artifact:${publishRunId}`),
+        artifactUri,
+        artifactHash,
         expectedSchema: "sylis.lexicon-artifact/1",
         mode: PublishRunMode.PUBLISH,
         status,
+        completedAt:
+          status === PublishRunStatus.FAILED ||
+          status === PublishRunStatus.CANCELLED
+            ? new Date()
+            : undefined,
       },
     });
   });

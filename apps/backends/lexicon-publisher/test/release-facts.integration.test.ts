@@ -17,6 +17,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 
 import { buildDraftRelease } from "../src/release/release-facts";
+import { createPublishedArtifactFixture } from "./published-artifact-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 const database = databaseUrl
@@ -26,13 +27,16 @@ const describeDatabase = database ? describe : describe.skip;
 
 interface FixtureIds {
   bundle: string;
+  concept: string;
   dataset: string;
   datasetVersion: string;
   entry: string;
+  evidence: string;
   headword: string;
   provenance: string;
   rightsPolicy: string;
   sense: string;
+  sourceRecord: string;
 }
 
 interface ReleaseJoinRow {
@@ -194,6 +198,13 @@ async function createStagedPublish(
     options.entryProvenanceId ?? options.ids.provenance,
   );
 
+  const artifactUri = `file:///publisher-integration/${publishRunId}.json.zst`;
+  await createPublishedArtifactFixture(target, {
+    artifactUri,
+    artifactHash,
+    schemaVersion: "sylis.lexicon-artifact/1",
+  });
+
   await target.$transaction(async (transaction) => {
     await transaction.job.create({
       data: {
@@ -210,7 +221,7 @@ async function createStagedPublish(
       data: {
         id: publishRunId,
         jobId,
-        artifactUri: `file:///publisher-integration/${publishRunId}.json.zst`,
+        artifactUri,
         artifactHash,
         expectedSchema: "sylis.lexicon-artifact/1",
         mode: PublishRunMode.PUBLISH,
@@ -347,6 +358,18 @@ function stagingRows(
       },
     ],
     [
+      ArtifactCollectionPath.SOURCE_RECORDS,
+      {
+        id: ids.sourceRecord,
+        datasetVersionId: ids.datasetVersion,
+        sourceKey: `release-${fixtureKey}`,
+        languageTag: "en",
+        rawPayloadHash: digest(`source-record:${fixtureKey}`),
+        rawPayloadUri: null,
+        rawPayload: { headword: "release" },
+      },
+    ],
+    [
       ArtifactCollectionPath.PROVENANCE_BUNDLES,
       {
         id: ids.provenance,
@@ -354,6 +377,17 @@ function stagingRows(
         contentHash: digest(`provenance:${fixtureKey}`),
         resolverVersion: "publisher-integration/1",
         decisionReason: "Publisher release identity integration fixture",
+      },
+    ],
+    [
+      ArtifactCollectionPath.PROVENANCE_EVIDENCE,
+      {
+        id: ids.evidence,
+        provenanceId: ids.provenance,
+        evidenceKind: "DIRECT",
+        sourceRecordId: ids.sourceRecord,
+        upstreamProvenanceId: null,
+        note: null,
       },
     ],
     [
@@ -412,6 +446,32 @@ function stagingRows(
         provenanceId: ids.provenance,
       },
     ],
+    [
+      ArtifactCollectionPath.CONCEPTS,
+      {
+        id: ids.concept,
+        identityKey: `en:release:concept:publication:${fixtureKey}`,
+        artifactRole: "CURRENT",
+      },
+    ],
+    [
+      ArtifactCollectionPath.CONCEPT_REVISIONS,
+      {
+        conceptId: ids.concept,
+        conceptType: "LOCAL_SENSE",
+        provenanceId: ids.provenance,
+      },
+    ],
+    [
+      ArtifactCollectionPath.SENSE_CONCEPT_MEMBERSHIPS,
+      {
+        senseId: ids.sense,
+        conceptId: ids.concept,
+        membershipType: "LEXICALIZED_BY",
+        canonical: true,
+        provenanceId: ids.provenance,
+      },
+    ],
   ];
   return payloads.map(([collectionPath, payload]) => ({
     publishRunId,
@@ -426,6 +486,9 @@ async function releaseJoins(
   target: SylisDatabase,
   releaseIds: readonly string[],
 ): Promise<ReleaseJoinRow[]> {
+  const releaseIdValues = releaseIds.map(
+    (releaseId) => Prisma.sql`${releaseId}::uuid`,
+  );
   return target.$queryRaw<ReleaseJoinRow[]>(Prisma.sql`
     SELECT
       sense_revision."releaseId",
@@ -442,7 +505,7 @@ async function releaseJoins(
     JOIN "HeadwordRevision" AS headword_revision
       ON headword_revision."releaseId" = entry_revision."releaseId"
       AND headword_revision."headwordId" = entry_revision."headwordId"
-    WHERE sense_revision."releaseId" IN (${Prisma.join(releaseIds)} )
+    WHERE sense_revision."releaseId" IN (${Prisma.join(releaseIdValues)})
     ORDER BY sense_revision."releaseId"
   `);
 }
@@ -450,13 +513,16 @@ async function releaseJoins(
 function fixtureIds(): FixtureIds {
   return {
     bundle: randomUUID(),
+    concept: randomUUID(),
     dataset: randomUUID(),
     datasetVersion: randomUUID(),
     entry: randomUUID(),
+    evidence: randomUUID(),
     headword: randomUUID(),
     provenance: randomUUID(),
     rightsPolicy: randomUUID(),
     sense: randomUUID(),
+    sourceRecord: randomUUID(),
   };
 }
 

@@ -1,21 +1,9 @@
 import { createReadStream } from "node:fs";
-import { Duplex, Transform } from "node:stream";
-import { constants, createZstdCompress, type ZstdOptions } from "node:zlib";
 
 const ZSTD_FRAME_MAGIC = 0xfd2fb528;
 const ZSTD_SKIPPABLE_MAGIC_MIN = 0x184d2a50;
 const ZSTD_SKIPPABLE_MAGIC_MAX = 0x184d2a5f;
 const MAX_BLOCK_SIZE = 128 * 1024;
-const EMPTY_CHECKSUMMED_FRAME = Buffer.from([
-  0x28, 0xb5, 0x2f, 0xfd, 0x24, 0x00, 0x01, 0x00, 0x00, 0x99, 0xe9, 0xd8, 0x51,
-]);
-
-const COMPRESSION_OPTIONS: ZstdOptions = {
-  params: {
-    [constants.ZSTD_c_checksumFlag]: 1,
-  },
-};
-
 type ScannerState =
   | "MAGIC"
   | "FRAME_DESCRIPTOR"
@@ -27,47 +15,6 @@ type ScannerState =
 
 export interface ZstdEnvelopeInspection {
   compressedBytes: number;
-}
-
-// Node 24 appends this empty frame when a Zstd stream receives multiple writes.
-class StripNodeTrailingEmptyFrame extends Transform {
-  #tail = Buffer.alloc(0);
-  #totalBytes = 0;
-
-  override _transform(
-    chunk: Buffer,
-    _encoding: BufferEncoding,
-    callback: (error?: Error | null) => void,
-  ): void {
-    const bytes = Buffer.from(chunk);
-    this.#totalBytes += bytes.length;
-    const combined = Buffer.concat([this.#tail, bytes]);
-    if (combined.length <= EMPTY_CHECKSUMMED_FRAME.length) {
-      this.#tail = combined;
-      callback();
-      return;
-    }
-    const emitBytes = combined.length - EMPTY_CHECKSUMMED_FRAME.length;
-    this.push(combined.subarray(0, emitBytes));
-    this.#tail = combined.subarray(emitBytes);
-    callback();
-  }
-
-  override _flush(callback: (error?: Error | null) => void): void {
-    if (
-      this.#totalBytes <= EMPTY_CHECKSUMMED_FRAME.length ||
-      !this.#tail.equals(EMPTY_CHECKSUMMED_FRAME)
-    ) {
-      this.push(this.#tail);
-    }
-    callback();
-  }
-}
-
-export function createSingleFrameZstdCompress(): Duplex {
-  const compressor = createZstdCompress(COMPRESSION_OPTIONS);
-  const output = compressor.pipe(new StripNodeTrailingEmptyFrame());
-  return Duplex.from({ writable: compressor, readable: output });
 }
 
 class SingleFrameScanner {

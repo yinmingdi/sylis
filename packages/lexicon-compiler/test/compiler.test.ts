@@ -8,6 +8,7 @@ import { pipeline } from "node:stream/promises";
 import {
   canonicalContentHash,
   canonicalJsonChunks,
+  createSingleFrameZstdCompress,
   sortArtifactArrays,
   validateArtifactStream,
   validationSummaryContentHash,
@@ -29,7 +30,6 @@ import { MemoryCandidateCache } from "../src/enrich/candidate-cache";
 import { enrichLearningContent } from "../src/enrich/learning-enricher";
 import { StructuredTaskExecutor } from "../src/enrich/structured-task-executor";
 import { readArtifact } from "../src/export/artifact-writer";
-import { createSingleFrameZstdCompress } from "../src/export/zstd-envelope";
 import {
   type HeadwordSelector,
   loadHeadwordSet,

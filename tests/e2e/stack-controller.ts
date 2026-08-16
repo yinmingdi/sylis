@@ -1,6 +1,13 @@
 import { execFile } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  copyFile,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { createServer, type ServerResponse } from "node:http";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
@@ -449,7 +456,8 @@ async function writeEnvironment(): Promise<void> {
 }
 
 async function prepareLexiconFixture(): Promise<E2eLexiconFixture> {
-  await mkdir(lexiconFixtureDirectory, { recursive: true, mode: 0o700 });
+  await mkdir(lexiconFixtureDirectory, { recursive: true, mode: 0o755 });
+  await chmod(lexiconFixtureDirectory, 0o755);
   const compilerRoot = resolve(root, "packages/lexicon-compiler");
   const pilotHeadwords = JSON.parse(
     await readFile(
@@ -498,18 +506,18 @@ async function prepareLexiconFixture(): Promise<E2eLexiconFixture> {
   await writeFile(
     ecdictPath,
     `${ecdictRows.map((row) => row.map(csvField).join(",")).join("\n")}\n`,
-    { mode: 0o600 },
+    { mode: 0o644 },
   );
+  await chmod(ecdictPath, 0o644);
 
   const fixtureRoot = resolve(compilerRoot, "test/fixtures");
   const copiedSources = ["kaikki.jsonl", "oewn.xml", "youdao.ndjson"] as const;
   await Promise.all(
-    copiedSources.map((name) =>
-      copyFile(
-        resolve(fixtureRoot, name),
-        resolve(lexiconFixtureDirectory, name),
-      ),
-    ),
+    copiedSources.map(async (name) => {
+      const destination = resolve(lexiconFixtureDirectory, name);
+      await copyFile(resolve(fixtureRoot, name), destination);
+      await chmod(destination, 0o644);
+    }),
   );
   const richTargetsPath = resolve(lexiconFixtureDirectory, "rich-targets.json");
   await writeJson(richTargetsPath, {
@@ -603,7 +611,8 @@ async function prepareLexiconFixture(): Promise<E2eLexiconFixture> {
 }
 
 async function writeJson(path: string, value: unknown): Promise<void> {
-  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o644 });
+  await chmod(path, 0o644);
 }
 
 async function fileHash(path: string): Promise<string> {

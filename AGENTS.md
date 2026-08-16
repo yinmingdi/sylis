@@ -10,6 +10,7 @@ This file is the entry map for humans and coding agents working in Sylis. Keep i
 - Tool capabilities: `docs/overview/generated/tool-capabilities.md`
 - Commands: `docs/overview/generated/command-registry.md`
 - Verification gates: `docs/overview/quality/verification-gates.md`
+- Refactor acceptance state: `docs/overview/refactor/implementation/acceptance-checklist.md`
 
 ## Engineering Loop
 
@@ -29,6 +30,7 @@ Before implementation, route the task, retrieve similar code, define validation 
 - Parallelize independent read-only work; serialize edits that touch the same files or code region.
 - Do not treat a started command as a passing check. Wait for completion and report the result.
 - Support important conclusions with file, symbol, command, diff, or test evidence.
+- Read the acceptance checklist before resuming refactor work. Record every completed item separately by updating its acceptance row, current recovery point, and acceptance log immediately whenever it is implemented, verified, fails, or gains a new unresolved risk; database-invariant work must also update the coverage matrix in the same change. Do not combine distinct completed items into a vague batch entry, and do not start the next work item before every applicable ledger is synchronized; conversation history is not completion evidence.
 - Update generated harness facts through the harness command instead of editing them by hand.
 
 ## Code Discovery
@@ -37,4 +39,4 @@ When codebase-memory-mcp is available, use `search_graph`, `trace_path`, `get_co
 
 ## Completion Gate
 
-A task is complete only after its relevant verification commands finish successfully, the final diff is reviewed, and unresolved risks are stated explicitly.
+A task is complete only after its relevant verification commands finish successfully, the final diff is reviewed, unresolved risks are stated explicitly, and its implementation and evidence are recorded in the acceptance checklist. `IMPLEMENTED` is not `ACCEPTED`; only the final complete gate may promote an item to `ACCEPTED`.

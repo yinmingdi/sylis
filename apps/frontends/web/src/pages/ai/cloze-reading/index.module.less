@@ -1,0 +1,107 @@
+.clozeReadingPage {
+  flex-shrink: 0;
+}
+
+.spellingBlank {
+  display: inline-block;
+  position: relative;
+  margin: 0 var(--spacing-1);
+  vertical-align: baseline; // 确保容器本身基线对齐
+}
+
+// 为 cloze-reading 页面定制的 SpellingInput 样式
+.clozeSpellingInput {
+  display: inline-flex; // 使用 inline-flex 而不是 inline-block，更好地控制对齐
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  position: relative;
+  width: 100%;
+  vertical-align: baseline; // 双重保险：确保外层容器基线对齐
+
+  // 使用属性选择器来选择 contentEditable 的输入框
+  div[contenteditable] {
+    display: inline-block;
+    padding: 0 !important;
+    height: auto;
+    line-height: inherit;
+    border: none !important;
+    border-radius: 0;
+    background: transparent !important;
+    vertical-align: baseline;
+    // 宽度通过内联样式动态设置（基于答案宽度）
+    min-width: 0;
+    position: relative;
+    overflow-x: auto; // 使用 auto 而不是 scroll，只在需要时显示滚动条
+    scrollbar-width: none;
+
+    // 隐藏滚动条但保持滚动功能
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // 使用伪元素确保下划线一直存在（即使为空也显示）
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-border-primary);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    &:focus {
+      outline: none;
+
+      &::after {
+        background: var(--color-primary-500);
+      }
+    }
+  }
+}
+
+.correctAnswer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--color-success-50);
+  color: var(--color-success-700);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-success-200);
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  // 添加一个小箭头指向输入框
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: var(--spacing-2);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid var(--color-success-200);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: calc(var(--spacing-2) + 1px);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid var(--color-success-50);
+  }
+}

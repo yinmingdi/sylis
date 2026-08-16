@@ -1,7 +1,8 @@
-import type { StructuredGenerationResult } from "@sylis/ai-provider/contracts";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+
+import type { StructuredGenerationResult } from "../ports/structured-generation";
 
 export interface CandidateCache {
   get<T>(candidateKey: string): Promise<StructuredGenerationResult<T> | null>;

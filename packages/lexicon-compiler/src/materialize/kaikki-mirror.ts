@@ -31,11 +31,12 @@ export interface KaikkiMirrorOptions {
   progress?: KaikkiMirrorProgressPort;
 }
 
-export type KaikkiMirrorStage =
-  | "METADATA_BEFORE"
-  | "DOWNLOAD"
-  | "METADATA_AFTER"
-  | "INSTALL";
+export enum KaikkiMirrorStage {
+  METADATA_BEFORE = "METADATA_BEFORE",
+  DOWNLOAD = "DOWNLOAD",
+  METADATA_AFTER = "METADATA_AFTER",
+  INSTALL = "INSTALL",
+}
 
 export interface KaikkiMirrorProgressEvent {
   stage: KaikkiMirrorStage;
@@ -194,7 +195,9 @@ export async function mirrorKaikkiSource(
   const startedAt = Date.now();
 
   try {
-    progress.report(progressEvent("METADATA_BEFORE", 0, null, startedAt));
+    progress.report(
+      progressEvent(KaikkiMirrorStage.METADATA_BEFORE, 0, null, startedAt),
+    );
     const before = await fetchVersion(metadataUrl);
     const response = await fetch(sourceUrl, {
       headers: { accept: "application/gzip", "cache-control": "no-cache" },
@@ -236,7 +239,12 @@ export async function mirrorKaikkiSource(
         return;
       }
       progress.report(
-        progressEvent("DOWNLOAD", byteSize, contentLength, startedAt),
+        progressEvent(
+          KaikkiMirrorStage.DOWNLOAD,
+          byteSize,
+          contentLength,
+          startedAt,
+        ),
       );
       lastProgressAt = now;
       lastProgressBytes = byteSize;
@@ -263,7 +271,12 @@ export async function mirrorKaikkiSource(
     }
     await assertGzip(temporaryPath);
     progress.report(
-      progressEvent("METADATA_AFTER", byteSize, contentLength, startedAt),
+      progressEvent(
+        KaikkiMirrorStage.METADATA_AFTER,
+        byteSize,
+        contentLength,
+        startedAt,
+      ),
     );
     const after = await fetchVersion(metadataUrl);
     if (!equalVersion(before, after)) {
@@ -276,7 +289,12 @@ export async function mirrorKaikkiSource(
     const objectDirectory = join(mirrorRoot, "sha256", digest);
     const finalPath = join(objectDirectory, "raw-wiktextract-data.jsonl.gz");
     progress.report(
-      progressEvent("INSTALL", byteSize, contentLength, startedAt),
+      progressEvent(
+        KaikkiMirrorStage.INSTALL,
+        byteSize,
+        contentLength,
+        startedAt,
+      ),
     );
     await installContentAddressedFile(temporaryPath, finalPath, digest);
     const result: KaikkiMirrorResult = {

@@ -1,9 +1,9 @@
-import type { StructuredGenerationPort } from "@sylis/ai-provider";
-import { FakeStructuredGenerationPort } from "@sylis/ai-provider/testing";
 import { describe, expect, it } from "vitest";
 
 import { MemoryCandidateCache } from "../src/enrich/candidate-cache";
 import { StructuredTaskExecutor } from "../src/enrich/structured-task-executor";
+import type { StructuredGenerationPort } from "../src/ports/structured-generation";
+import { FakeStructuredGenerationPort } from "./fake-generation";
 
 const options = {
   enabled: true,

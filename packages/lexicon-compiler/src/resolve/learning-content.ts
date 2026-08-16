@@ -2,7 +2,7 @@ import type {
   ExerciseRevision,
   LearningObjectiveTarget,
   SylisLexiconArtifactV1,
-} from "@sylis/lexicon-contracts";
+} from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 
 import type {
@@ -282,13 +282,14 @@ function addShortTextExercise(
   artifact: SylisLexiconArtifactV1,
   objective: Objective,
   task: string,
-  evidenceKind: string,
+  evidenceKind: ExerciseRevision["evidenceKind"],
   prompt: string,
   accepted: Array<{ languageTag: string; text: string }>,
   placement: "BLOCK" | "INLINE" = "BLOCK",
   stimulusRevisionId?: string,
   gradingMode: "EXACT" | "SELF_REPORT" = "EXACT",
 ): void {
+  if (accepted.length === 0) return;
   const revision = baseExercise(
     artifact,
     objective,
@@ -311,7 +312,7 @@ function addShortTextExercise(
     caseSensitive: false,
     diacriticPolicy: "PRESERVE",
     whitespacePolicy: "COLLAPSE",
-    capturePolicy: "REQUIRED",
+    capturePolicy: gradingMode === "SELF_REPORT" ? "OPTIONAL" : "REQUIRED",
   });
   const seen = new Set<string>();
   for (const value of accepted) {
@@ -334,13 +335,31 @@ function addShortTextExercise(
       displayOrder: 1,
     });
   }
+  if (gradingMode === "SELF_REPORT" && accepted.length > 0) {
+    const reference = accepted
+      .map(({ languageTag, text }) => `[${languageTag}] ${text}`)
+      .join("\n");
+    const revealRevisionId = addTextStimulus(
+      artifact,
+      `short-text-reveal:${revision.id}`,
+      reference,
+      accepted[0]!.languageTag,
+      objective.provenanceId,
+    );
+    artifact.learning.exerciseStimulusRefs.push({
+      exerciseRevisionId: revision.id,
+      stimulusRevisionId: revealRevisionId,
+      role: "REVEAL",
+      displayOrder: stimulusRevisionId ? 2 : 1,
+    });
+  }
 }
 
 function addChoiceExercise(
   artifact: SylisLexiconArtifactV1,
   objective: Objective,
   task: string,
-  evidenceKind: string,
+  evidenceKind: ExerciseRevision["evidenceKind"],
   prompt: string,
   choices: Array<{
     languageTag: string;
@@ -525,6 +544,7 @@ function addSentenceExercise(
     maxCharacters: 500,
     minWords: 1,
     maxWords: 80,
+    capturePolicy: "OPTIONAL",
   });
   const rubricId = stableId("exerciseRubric", revision.id, "target-use");
   artifact.learning.exerciseRubrics.push({
@@ -1019,7 +1039,7 @@ export function buildLearningContent(
     const objective = addObjective(
       artifact,
       "FORM_WORD_PARTS",
-      "RECEPTIVE",
+      "BIDIRECTIONAL",
       { targetKind: "FORM", targetId: representation.formId },
       analysis.provenanceId,
     );

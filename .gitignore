@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.tsbuildinfo
 *.local
-.nx/
 .work/
 
 /papper
@@ -43,13 +42,6 @@ dist/
 *.egg-info/
 *.egg
 
-# Product source directories named `build` are not generated output.
-!services/lexicon-importer/src/build/
-!services/lexicon-importer/src/build/**
-
-
-
-
 # Testing
 .pytest_cache/
 .coverage
@@ -59,13 +51,22 @@ test-results/
 
 # Development tools
 .mypy_cache/
+.nx/
 
-# Speech Service specific
-services/speech-service/models/
-services/speech-service/downloads/
-services/speech-service/temp/
-services/speech-service/logs/
-services/speech-service/aligned_data/
 *.flac
 *.mp3
 *.m4a
+# Root monorepo E2E runtime state and authentication material.
+tests/e2e/.runtime/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/blob-report/
+tests/e2e/diagnostics/
+tests/e2e/evidence/
+tests/deployment/report/
+tests/deployment/test-results/
+coverage/
+!tests/coverage/
+tests/coverage/*
+!tests/coverage/requirements.json
+reports/mutation/

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "apps/backends/lexicon-builder/Dockerfile",
+    "watchPatterns": [
+      "/apps/backends/lexicon-builder/**",
+      "/packages/database/**",
+      "/packages/job-contracts/**",
+      "/packages/job-runtime/**",
+      "/packages/lexicon-artifact/**",
+      "/packages/lexicon-compiler/**",
+      "/packages/utils/**",
+      "/package.json",
+      "/pnpm-lock.yaml",
+      "/pnpm-workspace.yaml",
+      "/turbo.json",
+      "/tsconfig.base.json"
+    ]
+  },
+  "deploy": {
+    "healthcheckPath": "/ready",
+    "healthcheckTimeout": 180,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}

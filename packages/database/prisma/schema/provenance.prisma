@@ -32,6 +32,11 @@ model SourceDatasetVersion {
   sourceUri                    String
   checksum                     String                        @unique
   retrievedAt                  DateTime                      @db.Timestamptz(3)
+  adapter                      String
+  parserVersion                String
+  schemaVersion                String
+  validationSummary            Json
+  status                       SourceDatasetVersionStatus    @default(REGISTERED)
   rightsPolicyId               String                        @db.Uuid
   dataset                      SourceDataset                 @relation(fields: [datasetId], references: [id], onDelete: Restrict)
   rightsPolicy                 SourceRightsPolicy            @relation(fields: [rightsPolicyId], references: [id], onDelete: Restrict)
@@ -40,22 +45,27 @@ model SourceDatasetVersion {
   restrictions                 SourceRestriction[]
   bookEditions                 VocabularyBookEdition[]
   proficiencyFrameworkVersions ProficiencyFrameworkVersion[]
+  rightsDecisions              RightsDecision[]
+  synchronizations             SourceSynchronization[]
 
   @@unique([datasetId, version])
 }
 
 model SourceRecord {
-  id               String               @id @default(uuid()) @db.Uuid
-  datasetVersionId String               @db.Uuid
-  sourceKey        String
-  languageTag      String
-  rawPayloadHash   String
-  rawPayloadUri    String?
-  rawPayload       Json
-  datasetVersion   SourceDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
-  evidence         ContentEvidence[]
-  citations        ExampleCitation[]
-  attestations     Attestation[]
+  id                String                      @id @default(uuid()) @db.Uuid
+  datasetVersionId  String                      @db.Uuid
+  sourceKey         String
+  languageTag       String
+  rawPayloadHash    String
+  rawPayloadUri     String?
+  rawPayload        Json
+  datasetVersion    SourceDatasetVersion        @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  evidence          ContentEvidence[]
+  candidateEvidence CandidateRevisionEvidence[]
+  citations         ExampleCitation[]
+  entryAttestations EntryAttestation[]
+  formAttestations  FormAttestation[]
+  senseAttestations SenseAttestation[]
 
   @@unique([datasetVersionId, sourceKey])
   @@index([rawPayloadHash])
@@ -65,7 +75,7 @@ model SourceRestriction {
   id               String                @id @default(uuid()) @db.Uuid
   rightsPolicyId   String                @db.Uuid
   datasetVersionId String?               @db.Uuid
-  restrictionKind  String
+  restrictionKind  SourceRestrictionKind
   reason           String
   effectiveAt      DateTime              @db.Timestamptz(3)
   rightsPolicy     SourceRightsPolicy    @relation(fields: [rightsPolicyId], references: [id], onDelete: Restrict)
@@ -86,57 +96,69 @@ model LexiconReleaseSourceInput {
 }
 
 model Provenance {
-  id                      String                        @id @default(uuid()) @db.Uuid
-  kind                    ProvenanceKind
-  contentHash             String
-  resolverVersion         String
-  decisionReason          String
-  evidence                ContentEvidence[]             @relation("ProvenanceEvidence")
-  downstreamEvidence      ContentEvidence[]             @relation("UpstreamEvidence")
-  formRepresentations     FormRepresentation[]
-  entryRevisions          LexicalEntryRevision[]
-  forms                   LexicalForm[]
-  senseRevisions          LexicalSenseRevision[]
-  conceptRevisions        LexicalConceptRevision[]
-  senseDefinitions        SenseDefinition[]
-  senseTranslations       SenseTranslationText[]
-  senseUsages             SenseUsage[]
-  senseMemberships        SenseConceptMembership[]
-  conceptDefinitions      ConceptDefinition[]
-  mediaAssets             MediaAsset[]
-  entryRelations          EntryRelation[]
-  senseRelations          SenseRelation[]
-  conceptRelations        ConceptRelation[]
-  examples                ExampleSentence[]
-  exampleTranslations     ExampleTranslation[]
-  senseExamples           SenseExample[]
-  collocations            Collocation[]
-  senseCollocations       SenseCollocation[]
-  frames                  SyntacticFrame[]
-  predicates              SemanticPredicate[]
-  senseFrames             SenseFrame[]
-  morphologicalAnalyses   MorphologicalAnalysis[]
-  inflectionGenerations   InflectionGeneration[]
-  wordFormations          WordFormation[]
-  pedagogicalMaterials    PedagogicalMaterialRevision[]
-  objectiveHints          LearningObjectiveHint[]
-  objectiveRevisions      LearningObjectiveRevision[]
-  stimuli                 AssessmentStimulusRevision[]
-  exerciseRevisions       ExerciseRevision[]
-  translationRelations    TranslationRelation[]
-  lexicalLineages         LexicalLineage[]
-  externalIdentifiers     LexicalExternalIdentifier[]
-  etymonRevisions         EtymonRevision[]
-  etymologyHypotheses     EtymologyHypothesis[]
-  etymologyLinks          EtymologyLink[]
-  corpusAttestations      Attestation[]
-  collocationObservations CollocationObservation[]
-  corpusDatasetVersions   CorpusDatasetVersion[]
-  frequencyObservations   FrequencyObservation[]
-  proficiencyClaims       ProficiencyClaim[]
-  inflectionRules         InflectionRule[]              @relation("InflectionRuleProvenance")
-  wordFormationRules      WordFormationRule[]           @relation("WordFormationRuleProvenance")
-  assessmentBlueprints    AssessmentBlueprintRevision[]
+  id                         String                        @id @default(uuid()) @db.Uuid
+  kind                       ProvenanceKind
+  contentHash                String
+  resolverVersion            String
+  decisionReason             String
+  evidence                   ContentEvidence[]             @relation("ProvenanceEvidence")
+  downstreamEvidence         ContentEvidence[]             @relation("UpstreamEvidence")
+  candidateEvidence          CandidateRevisionEvidence[]   @relation("CandidateUpstreamEvidence")
+  formRepresentations        FormRepresentation[]
+  entryRevisions             LexicalEntryRevision[]
+  forms                      LexicalForm[]
+  senseRevisions             LexicalSenseRevision[]
+  conceptRevisions           LexicalConceptRevision[]
+  senseDefinitions           SenseDefinition[]
+  senseTranslations          SenseTranslationText[]
+  senseUsages                SenseUsage[]
+  senseMemberships           SenseConceptMembership[]
+  conceptDefinitions         ConceptDefinition[]
+  mediaAssets                MediaAsset[]
+  entryRelations             EntryRelation[]
+  senseRelations             SenseRelation[]
+  conceptRelations           ConceptRelation[]
+  examples                   ExampleSentence[]
+  exampleTranslations        ExampleTranslation[]
+  senseExamples              SenseExample[]
+  collocations               Collocation[]
+  senseCollocations          SenseCollocation[]
+  frames                     SyntacticFrame[]
+  predicates                 SemanticPredicate[]
+  senseFrames                SenseFrame[]
+  morphologicalAnalyses      MorphologicalAnalysis[]
+  inflectionGenerations      InflectionGeneration[]
+  wordFormations             WordFormation[]
+  pedagogicalMaterials       PedagogicalMaterialRevision[]
+  objectiveHints             LearningObjectiveHint[]
+  objectiveRevisions         LearningObjectiveRevision[]
+  stimuli                    AssessmentStimulusRevision[]
+  exerciseRevisions          ExerciseRevision[]
+  translationRelations       TranslationRelation[]
+  entryLineages              EntryLineage[]
+  senseLineages              SenseLineage[]
+  conceptLineages            ConceptLineage[]
+  entryExternalIdentifiers   EntryExternalIdentifier[]
+  senseExternalIdentifiers   SenseExternalIdentifier[]
+  conceptExternalIdentifiers ConceptExternalIdentifier[]
+  etymonRevisions            EtymonRevision[]
+  etymologyHypotheses        EtymologyHypothesis[]
+  etymologyLinks             EtymologyLink[]
+  entryAttestations          EntryAttestation[]
+  formAttestations           FormAttestation[]
+  senseAttestations          SenseAttestation[]
+  collocationObservations    CollocationObservation[]
+  corpusDatasetVersions      CorpusDatasetVersion[]
+  entryFrequencyObservations EntryFrequencyObservation[]
+  formFrequencyObservations  FormFrequencyObservation[]
+  senseFrequencyObservations SenseFrequencyObservation[]
+  proficiencyHeadwordClaims  ProficiencyHeadwordClaim[]
+  proficiencyEntryClaims     ProficiencyEntryClaim[]
+  proficiencySenseClaims     ProficiencySenseClaim[]
+  bookItems                  VocabularyBookItem[]
+  inflectionRules            InflectionRule[]              @relation("InflectionRuleProvenance")
+  wordFormationRules         WordFormationRule[]           @relation("WordFormationRuleProvenance")
+  assessmentBlueprints       AssessmentBlueprintRevision[]
 
   @@unique([contentHash, resolverVersion, decisionReason])
 }
@@ -144,7 +166,7 @@ model Provenance {
 model ContentEvidence {
   id                   String                        @id @default(uuid()) @db.Uuid
   provenanceId         String                        @db.Uuid
-  evidenceKind         String
+  evidenceKind         ContentEvidenceKind
   sourceRecordId       String?                       @db.Uuid
   upstreamProvenanceId String?                       @db.Uuid
   note                 String?
@@ -152,17 +174,4 @@ model ContentEvidence {
   sourceRecord         SourceRecord?                 @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
   upstreamProvenance   Provenance?                   @relation("UpstreamEvidence", fields: [upstreamProvenanceId], references: [id], onDelete: Restrict)
   materialCitations    PedagogicalMaterialCitation[]
-}
-
-model ArtifactProjectionRecord {
-  releaseId      String         @db.Uuid
-  collectionPath String
-  position       Int
-  entityId       String?
-  payloadHash    String
-  payload        Json
-  release        LexiconRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
-
-  @@id([releaseId, collectionPath, position])
-  @@index([releaseId, collectionPath, entityId])
 }

@@ -1,7 +1,7 @@
 model ContentProfile {
   id         String                  @id @default(uuid()) @db.Uuid
   key        String
-  targetKind String
+  targetKind ContentProfileTargetKind
   versions   ContentProfileVersion[]
 
   @@unique([key, targetKind])
@@ -19,45 +19,137 @@ model ContentProfileVersion {
 }
 
 model ContentProfileEvaluation {
-  id               String                           @id @default(uuid()) @db.Uuid
-  releaseId        String                           @db.Uuid
-  profileVersionId String                           @db.Uuid
-  status           String
-  profileVersion   ContentProfileVersion            @relation(fields: [profileVersionId], references: [id], onDelete: Restrict)
-  targets          ContentProfileEvaluationTarget[]
-  requirements     ContentRequirementEvaluation[]
+  id                         String                                              @id @default(uuid()) @db.Uuid
+  releaseId                  String                                              @db.Uuid
+  profileVersionId           String                                              @db.Uuid
+  status                     ContentEvaluationStatus
+  release                    LexiconRelease                                      @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  profileVersion             ContentProfileVersion                               @relation(fields: [profileVersionId], references: [id], onDelete: Restrict)
+  headwordTargets            ContentProfileEvaluationHeadwordTarget[]
+  entryTargets               ContentProfileEvaluationEntryTarget[]
+  formTargets                ContentProfileEvaluationFormTarget[]
+  senseTargets               ContentProfileEvaluationSenseTarget[]
+  conceptTargets             ContentProfileEvaluationConceptTarget[]
+  learningObjectiveTargets   ContentProfileEvaluationLearningObjectiveTarget[]
+  pedagogicalMaterialTargets ContentProfileEvaluationPedagogicalMaterialTarget[]
+  exerciseTargets            ContentProfileEvaluationExerciseTarget[]
+  bookEditionTargets         ContentProfileEvaluationBookEditionTarget[]
+  requirements               ContentRequirementEvaluation[]
 
   @@unique([releaseId, id])
 }
 
-model ContentProfileEvaluationTarget {
-  evaluationId String                   @db.Uuid
-  targetKind   String
-  targetId     String                   @db.Uuid
-  evaluation   ContentProfileEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+model ContentProfileEvaluationHeadwordTarget {
+  releaseId        String                   @db.Uuid
+  evaluationId     String                   @db.Uuid
+  headwordId       String                   @db.Uuid
+  evaluation       ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  headwordRevision HeadwordRevision         @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
 
-  @@id([evaluationId, targetKind, targetId])
+  @@id([releaseId, evaluationId, headwordId])
+}
+
+model ContentProfileEvaluationEntryTarget {
+  releaseId     String                   @db.Uuid
+  evaluationId  String                   @db.Uuid
+  entryId       String                   @db.Uuid
+  evaluation    ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  entryRevision LexicalEntryRevision     @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, entryId])
+}
+
+model ContentProfileEvaluationFormTarget {
+  releaseId    String                   @db.Uuid
+  evaluationId String                   @db.Uuid
+  formId       String                   @db.Uuid
+  evaluation   ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  form         LexicalForm              @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, formId])
+}
+
+model ContentProfileEvaluationSenseTarget {
+  releaseId     String                   @db.Uuid
+  evaluationId  String                   @db.Uuid
+  senseId       String                   @db.Uuid
+  evaluation    ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  senseRevision LexicalSenseRevision     @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, senseId])
+}
+
+model ContentProfileEvaluationConceptTarget {
+  releaseId       String                   @db.Uuid
+  evaluationId    String                   @db.Uuid
+  conceptId       String                   @db.Uuid
+  evaluation      ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  conceptRevision LexicalConceptRevision   @relation(fields: [releaseId, conceptId], references: [releaseId, conceptId], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, conceptId])
+}
+
+model ContentProfileEvaluationLearningObjectiveTarget {
+  releaseId           String                    @db.Uuid
+  evaluationId        String                    @db.Uuid
+  learningObjectiveId String                    @db.Uuid
+  evaluation          ContentProfileEvaluation  @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict, map: "CPELearningObjectiveTarget_evaluation_fkey")
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, learningObjectiveId], references: [releaseId, objectiveId], onDelete: Restrict, map: "CPELearningObjectiveTarget_objective_fkey")
+
+  @@id([releaseId, evaluationId, learningObjectiveId])
+}
+
+model ContentProfileEvaluationPedagogicalMaterialTarget {
+  releaseId             String                      @db.Uuid
+  evaluationId          String                      @db.Uuid
+  pedagogicalMaterialId String                      @db.Uuid
+  evaluation            ContentProfileEvaluation    @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict, map: "CPEPedagogicalMaterialTarget_evaluation_fkey")
+  materialRevision      PedagogicalMaterialRevision @relation(fields: [releaseId, pedagogicalMaterialId], references: [releaseId, materialId], onDelete: Restrict, map: "CPEPedagogicalMaterialTarget_material_fkey")
+
+  @@id([releaseId, evaluationId, pedagogicalMaterialId])
+}
+
+model ContentProfileEvaluationExerciseTarget {
+  releaseId          String                   @db.Uuid
+  evaluationId       String                   @db.Uuid
+  exerciseRevisionId String                   @db.Uuid
+  evaluation         ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  exerciseRevision   ExerciseRevision         @relation(fields: [releaseId, exerciseRevisionId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, exerciseRevisionId])
+}
+
+model ContentProfileEvaluationBookEditionTarget {
+  releaseId      String                    @db.Uuid
+  evaluationId   String                    @db.Uuid
+  bookEditionId  String                    @db.Uuid
+  evaluation     ContentProfileEvaluation  @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
+  releaseEdition LexiconReleaseBookEdition @relation(fields: [releaseId, bookEditionId], references: [releaseId, editionId], onDelete: Restrict)
+
+  @@id([releaseId, evaluationId, bookEditionId])
 }
 
 model ContentRequirementEvaluation {
   id              String                   @id @default(uuid()) @db.Uuid
+  releaseId       String                   @db.Uuid
   evaluationId    String                   @db.Uuid
   requirementCode String
-  status          String
+  status          ContentEvaluationStatus
   reasonCode      String?
   evidenceCount   Int
   detailsHash     String?
-  evaluation      ContentProfileEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Restrict)
+  evaluation      ContentProfileEvaluation @relation(fields: [releaseId, evaluationId], references: [releaseId, id], onDelete: Restrict)
 
-  @@unique([evaluationId, requirementCode])
+  @@unique([releaseId, evaluationId, requirementCode])
 }
 
 model ReleaseQualityStatistic {
-  id        String @id @default(uuid()) @db.Uuid
-  releaseId String @db.Uuid
+  id        String         @id @default(uuid()) @db.Uuid
+  releaseId String         @db.Uuid
   category  String
   key       String
   count     BigInt
+  release   LexiconRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
 
   @@unique([releaseId, category, key])
 }

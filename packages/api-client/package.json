@@ -2,29 +2,41 @@
   "name": "@sylis/api-client",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "files": [
     "dist"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+    "./user": {
+      "types": "./dist/user/index.d.ts",
+      "default": "./dist/user/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/index.d.ts",
+      "default": "./dist/admin/index.js"
+    },
+    "./agent": {
+      "types": "./dist/agent/index.d.ts",
+      "default": "./dist/agent/index.js"
     }
   },
   "scripts": {
-    "build": "tsdown",
-    "generate": "openapi-typescript ../../apps/api/openapi/user.openapi.json -o src/generated/schema.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "generate": "pnpm generate:user && pnpm generate:admin && pnpm generate:agent",
+    "generate:user": "openapi-typescript ../../apps/backends/api/openapi/user.openapi.json -o src/user/generated/schema.ts",
+    "generate:admin": "openapi-typescript ../../apps/backends/admin-api/openapi/admin.openapi.json -o src/admin/generated/schema.ts",
+    "generate:agent": "openapi-typescript ../../apps/backends/agent-api/openapi/agent.openapi.json -o src/agent/generated/schema.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@sylis/agent-contracts": "workspace:*",
+    "@sylis/job-contracts": "workspace:*",
     "openapi-fetch": "0.17.0"
   },
   "devDependencies": {
     "openapi-typescript": "7.13.0",
-    "tsdown": "0.22.14",
     "typescript": "5.9.3",
     "vitest": "^3.2.4"
   }

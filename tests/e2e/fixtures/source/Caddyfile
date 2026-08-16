@@ -1,0 +1,10 @@
+https://source-fixture {
+  tls internal
+
+  handle /health {
+    respond "ready" 200
+  }
+
+  root * /srv
+  file_server
+}

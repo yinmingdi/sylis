@@ -29,24 +29,43 @@ model VocabularyBookEdition {
 }
 
 model LexiconReleaseBookEdition {
-  releaseId String                @db.Uuid
-  editionId String                @db.Uuid
-  release   LexiconRelease        @relation(fields: [releaseId], references: [id], onDelete: Restrict)
-  edition   VocabularyBookEdition @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  releaseId            String                                      @db.Uuid
+  editionId            String                                      @db.Uuid
+  release              LexiconRelease                              @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  edition              VocabularyBookEdition                       @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  profileTargets       ContentProfileEvaluationBookEditionTarget[]
+  assessmentScopeRules AssessmentBookEditionScopeRule[]
 
   @@id([releaseId, editionId])
 }
 
 model VocabularyBookItem {
-  id         String                @id @default(uuid()) @db.Uuid
-  editionId  String                @db.Uuid
-  releaseId  String                @db.Uuid
-  position   Int
-  targetKind String
-  targetId   String                @db.Uuid
-  evidenceId String?               @db.Uuid
-  edition    VocabularyBookEdition @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  id             String                            @id @default(uuid()) @db.Uuid
+  editionId      String                            @db.Uuid
+  position       Int
+  provenanceId   String?                           @db.Uuid
+  edition        VocabularyBookEdition             @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  provenance     Provenance?                       @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  headwordTarget VocabularyBookItemHeadwordTarget?
+  entryTarget    VocabularyBookItemEntryTarget?
 
   @@unique([editionId, position])
-  @@unique([editionId, targetKind, targetId])
+}
+
+model VocabularyBookItemHeadwordTarget {
+  itemId     String             @id @db.Uuid
+  headwordId String             @db.Uuid
+  item       VocabularyBookItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  headword   Headword           @relation(fields: [headwordId], references: [id], onDelete: Restrict)
+
+  @@unique([headwordId, itemId])
+}
+
+model VocabularyBookItemEntryTarget {
+  itemId  String             @id @db.Uuid
+  entryId String             @db.Uuid
+  item    VocabularyBookItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  entry   LexicalEntry       @relation(fields: [entryId], references: [id], onDelete: Restrict)
+
+  @@unique([entryId, itemId])
 }

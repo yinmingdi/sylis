@@ -6,6 +6,7 @@ import { gzipSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
 
+import { SourceAdapterKind } from "../src/candidates/candidate-v1";
 import { materializeSourceSlice } from "../src/materialize/source-slice";
 
 function sha256(value: string | Buffer): string {
@@ -41,7 +42,7 @@ describe("source materialization", () => {
     const progress: string[] = [];
 
     const first = await materializeSourceSlice({
-      adapter: "ECDICT",
+      adapter: SourceAdapterKind.ECDICT,
       inputPath: parentPath,
       outputPath: join(root, "first.csv"),
       metadataOutputPath: join(root, "first.slice.json"),
@@ -53,7 +54,7 @@ describe("source materialization", () => {
       progress: { report: (event) => progress.push(event.stage) },
     });
     const second = await materializeSourceSlice({
-      adapter: "ECDICT",
+      adapter: SourceAdapterKind.ECDICT,
       inputPath: parentPath,
       outputPath: join(root, "second.csv"),
       metadataOutputPath: join(root, "second.slice.json"),
@@ -103,7 +104,7 @@ describe("source materialization", () => {
     const headwords = await headwordFixture(root);
 
     const result = await materializeSourceSlice({
-      adapter: "WIKTEXTRACT_EN",
+      adapter: SourceAdapterKind.WIKTEXTRACT_EN,
       inputPath: parentPath,
       outputPath: join(root, "kaikki.slice.jsonl"),
       metadataOutputPath: join(root, "kaikki.slice.json"),
@@ -149,7 +150,7 @@ describe("source materialization", () => {
     const headwords = await headwordFixture(root);
 
     const result = await materializeSourceSlice({
-      adapter: "WIKTEXTRACT_EN",
+      adapter: SourceAdapterKind.WIKTEXTRACT_EN,
       inputPath: parentPath,
       outputPath: join(root, "kaikki.slice.jsonl"),
       metadataOutputPath: join(root, "kaikki.slice.json"),
@@ -182,7 +183,7 @@ describe("source materialization", () => {
     let failure: Error | null = null;
     try {
       await materializeSourceSlice({
-        adapter: "WIKTEXTRACT_EN",
+        adapter: SourceAdapterKind.WIKTEXTRACT_EN,
         inputPath: parentPath,
         outputPath: join(root, "kaikki.slice.jsonl"),
         metadataOutputPath: join(root, "kaikki.slice.json"),

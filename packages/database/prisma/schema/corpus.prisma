@@ -7,38 +7,80 @@ model CorpusDataset {
 }
 
 model CorpusDatasetVersion {
-  id           String                   @id @default(uuid()) @db.Uuid
-  datasetId    String                   @db.Uuid
-  version      String
-  checksum     String
-  tokenCount   BigInt
-  provenanceId String                   @db.Uuid
-  dataset      CorpusDataset            @relation(fields: [datasetId], references: [id], onDelete: Restrict)
-  provenance   Provenance               @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
-  observations FrequencyObservation[]
-  attestations Attestation[]
-  collocations CollocationObservation[]
+  id                         String                      @id @default(uuid()) @db.Uuid
+  datasetId                  String                      @db.Uuid
+  version                    String
+  checksum                   String
+  tokenCount                 BigInt
+  provenanceId               String                      @db.Uuid
+  dataset                    CorpusDataset               @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  provenance                 Provenance                  @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  entryFrequencyObservations EntryFrequencyObservation[]
+  formFrequencyObservations  FormFrequencyObservation[]
+  senseFrequencyObservations SenseFrequencyObservation[]
+  entryAttestations          EntryAttestation[]
+  formAttestations           FormAttestation[]
+  senseAttestations          SenseAttestation[]
+  collocations               CollocationObservation[]
 
   @@unique([datasetId, version])
 }
 
-model Attestation {
+model EntryAttestation {
   id               String               @id @default(uuid()) @db.Uuid
   releaseId        String               @db.Uuid
   datasetVersionId String               @db.Uuid
-  targetKind       String
-  targetId         String               @db.Uuid
+  entryId          String               @db.Uuid
   documentRef      String
   offset           Int
-  offsetUnit       String
+  offsetUnit       TextOffsetUnit
   surfaceText      String
   sourceRecordId   String               @db.Uuid
   provenanceId     String               @db.Uuid
   datasetVersion   CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  entry            LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
   sourceRecord     SourceRecord         @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
   provenance       Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
 
-  @@unique([releaseId, datasetVersionId, documentRef, offset, targetKind, targetId])
+  @@unique([releaseId, datasetVersionId, documentRef, offset, entryId])
+}
+
+model FormAttestation {
+  id               String               @id @default(uuid()) @db.Uuid
+  releaseId        String               @db.Uuid
+  datasetVersionId String               @db.Uuid
+  formId           String               @db.Uuid
+  documentRef      String
+  offset           Int
+  offsetUnit       TextOffsetUnit
+  surfaceText      String
+  sourceRecordId   String               @db.Uuid
+  provenanceId     String               @db.Uuid
+  datasetVersion   CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  form             LexicalForm          @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+  sourceRecord     SourceRecord         @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  provenance       Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, datasetVersionId, documentRef, offset, formId])
+}
+
+model SenseAttestation {
+  id               String               @id @default(uuid()) @db.Uuid
+  releaseId        String               @db.Uuid
+  datasetVersionId String               @db.Uuid
+  senseId          String               @db.Uuid
+  documentRef      String
+  offset           Int
+  offsetUnit       TextOffsetUnit
+  surfaceText      String
+  sourceRecordId   String               @db.Uuid
+  provenanceId     String               @db.Uuid
+  datasetVersion   CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  sense            LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  sourceRecord     SourceRecord         @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  provenance       Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, datasetVersionId, documentRef, offset, senseId])
 }
 
 model CollocationObservation {
@@ -51,18 +93,18 @@ model CollocationObservation {
   window           Int
   algorithmVersion String
   provenanceId     String               @db.Uuid
+  collocation      Collocation          @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
   datasetVersion   CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
   provenance       Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
 
   @@unique([releaseId, datasetVersionId, collocationId, measureCode, algorithmVersion])
 }
 
-model FrequencyObservation {
+model EntryFrequencyObservation {
   id                  String               @id @default(uuid()) @db.Uuid
   releaseId           String               @db.Uuid
   datasetVersionId    String               @db.Uuid
-  targetKind          String
-  targetId            String               @db.Uuid
+  entryId             String               @db.Uuid
   count               BigInt?
   normalizedFrequency Decimal?             @db.Decimal(20, 10)
   rank                Int?
@@ -70,7 +112,44 @@ model FrequencyObservation {
   algorithmVersion    String
   provenanceId        String               @db.Uuid
   datasetVersion      CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  entry               LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
   provenance          Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
 
-  @@unique([releaseId, datasetVersionId, targetKind, targetId, unit])
+  @@unique([releaseId, datasetVersionId, entryId, unit])
+}
+
+model FormFrequencyObservation {
+  id                  String               @id @default(uuid()) @db.Uuid
+  releaseId           String               @db.Uuid
+  datasetVersionId    String               @db.Uuid
+  formId              String               @db.Uuid
+  count               BigInt?
+  normalizedFrequency Decimal?             @db.Decimal(20, 10)
+  rank                Int?
+  unit                String
+  algorithmVersion    String
+  provenanceId        String               @db.Uuid
+  datasetVersion      CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  form                LexicalForm          @relation(fields: [releaseId, formId], references: [releaseId, id], onDelete: Restrict)
+  provenance          Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, datasetVersionId, formId, unit])
+}
+
+model SenseFrequencyObservation {
+  id                  String               @id @default(uuid()) @db.Uuid
+  releaseId           String               @db.Uuid
+  datasetVersionId    String               @db.Uuid
+  senseId             String               @db.Uuid
+  count               BigInt?
+  normalizedFrequency Decimal?             @db.Decimal(20, 10)
+  rank                Int?
+  unit                String
+  algorithmVersion    String
+  provenanceId        String               @db.Uuid
+  datasetVersion      CorpusDatasetVersion @relation(fields: [datasetVersionId], references: [id], onDelete: Restrict)
+  sense               LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+  provenance          Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([releaseId, datasetVersionId, senseId, unit])
 }

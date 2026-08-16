@@ -2,21 +2,27 @@
   "name": "@sylis/utils",
   "version": "0.0.1",
   "description": "",
-  "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
+  "type": "commonjs",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "default": "./dist/index.js"
+    },
+    "./stable-uuid": {
+      "types": "./dist/stable-uuid.d.ts",
+      "default": "./dist/stable-uuid.js"
+    },
+    "./release-identity": {
+      "types": "./dist/release-identity.d.ts",
+      "default": "./dist/release-identity.js"
     }
   },
   "scripts": {
-    "build": "tsdown",
-    "build:watch": "tsdown --watch",
-    "dev": "tsdown --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "build:watch": "tsc -p tsconfig.build.json --watch",
+    "dev": "tsc -p tsconfig.build.json --watch",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit"
   },
@@ -24,7 +30,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "tsdown": "0.22.14",
     "typescript": "5.9.3"
   }
 }

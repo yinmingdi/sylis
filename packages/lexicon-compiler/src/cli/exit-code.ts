@@ -1,6 +1,16 @@
-import { StructuredGenerationError } from "@sylis/ai-provider/contracts";
+import {
+  StructuredGenerationError,
+  StructuredGenerationErrorCode,
+} from "../ports/structured-generation";
 
-export type CompilerCliExitCode = 2 | 3 | 4 | 5 | 6 | 7;
+export enum CompilerCliExitCode {
+  USAGE = 2,
+  SOURCE_INTEGRITY = 3,
+  CANDIDATE_VALIDATION = 4,
+  ARTIFACT_QUALITY = 5,
+  BUDGET_EXHAUSTED = 6,
+  TRANSIENT_PROVIDER = 7,
+}
 
 const QUALITY_FAILURE_PREFIXES = [
   "ARTIFACT_INVALID",
@@ -17,26 +27,31 @@ const CANDIDATE_FAILURE_PREFIXES = [
 
 export function compilerCliExitCode(error: unknown): CompilerCliExitCode {
   if (error instanceof StructuredGenerationError) {
-    if (error.retryable) return 7;
-    return error.code === "CONFIGURATION" || error.code === "REQUEST_REJECTED"
-      ? 2
-      : 4;
+    if (error.retryable) return CompilerCliExitCode.TRANSIENT_PROVIDER;
+    return error.code === StructuredGenerationErrorCode.CONFIGURATION ||
+      error.code === StructuredGenerationErrorCode.REQUEST_REJECTED
+      ? CompilerCliExitCode.USAGE
+      : CompilerCliExitCode.CANDIDATE_VALIDATION;
   }
 
   const message = error instanceof Error ? error.message : String(error);
   const normalized = message.toUpperCase();
-  if (normalized.includes("CHECKSUM")) return 3;
-  if (normalized.includes("BUDGET")) return 6;
+  if (normalized.includes("CHECKSUM")) {
+    return CompilerCliExitCode.SOURCE_INTEGRITY;
+  }
+  if (normalized.includes("BUDGET")) {
+    return CompilerCliExitCode.BUDGET_EXHAUSTED;
+  }
   if (
     QUALITY_FAILURE_PREFIXES.some((prefix) => normalized.includes(prefix)) ||
     normalized.startsWith("ARTIFACT ")
   ) {
-    return 5;
+    return CompilerCliExitCode.ARTIFACT_QUALITY;
   }
   if (
     CANDIDATE_FAILURE_PREFIXES.some((prefix) => normalized.includes(prefix))
   ) {
-    return 4;
+    return CompilerCliExitCode.CANDIDATE_VALIDATION;
   }
-  return 2;
+  return CompilerCliExitCode.USAGE;
 }

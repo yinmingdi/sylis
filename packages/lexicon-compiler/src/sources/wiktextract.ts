@@ -3,6 +3,17 @@ import { createInterface } from "node:readline";
 import { createGunzip } from "node:zlib";
 
 import { hashText, sourceContext } from "./source-context";
+import {
+  CandidateCollocationComponentRole,
+  CandidateCollocationType,
+  CandidateEntryRelationType,
+  CandidateFormationType,
+  CandidateFormType,
+  CandidateMorphemeRole,
+  CandidateSenseRelationType,
+  CandidateUsageType,
+  SourceAdapterKind,
+} from "../candidates/candidate-v1";
 import type {
   CandidateCollocation,
   CandidateEntryRelation,
@@ -81,12 +92,11 @@ function collocationArray(
     if (!text) return [];
     const explicit = objectArray(record.components).flatMap((component) => {
       if (typeof component.surfaceText !== "string") return [];
-      const role: "HEAD" | "PARTNER" | "FUNCTION" =
-        component.role === "HEAD" ||
-        component.role === "PARTNER" ||
-        component.role === "FUNCTION"
-          ? component.role
-          : "PARTNER";
+      const role = Object.values(CandidateCollocationComponentRole).includes(
+        component.role as CandidateCollocationComponentRole,
+      )
+        ? (component.role as CandidateCollocationComponentRole)
+        : CandidateCollocationComponentRole.PARTNER;
       return [
         {
           surfaceText: component.surfaceText,
@@ -104,8 +114,8 @@ function collocationArray(
           surfaceText,
           role:
             surfaceText.toLocaleLowerCase() === headword.toLocaleLowerCase()
-              ? ("HEAD" as const)
-              : ("PARTNER" as const),
+              ? CandidateCollocationComponentRole.HEAD
+              : CandidateCollocationComponentRole.PARTNER,
           targetText:
             surfaceText.toLocaleLowerCase() === headword.toLocaleLowerCase()
               ? headword
@@ -115,11 +125,11 @@ function collocationArray(
       {
         text,
         relationType:
-          record.relationType === "FREE" ||
-          record.relationType === "RESTRICTED" ||
-          record.relationType === "IDIOMATIC"
-            ? record.relationType
-            : "UNKNOWN",
+          record.relationType === CandidateCollocationType.FREE ||
+          record.relationType === CandidateCollocationType.RESTRICTED ||
+          record.relationType === CandidateCollocationType.IDIOMATIC
+            ? (record.relationType as CandidateCollocationType)
+            : CandidateCollocationType.UNKNOWN,
         components,
       },
     ];
@@ -172,17 +182,13 @@ function usageArray(sense: JsonRecord): CandidateUsage[] {
   const explicit = objectArray(sense.usages).flatMap((usage) => {
     const type = usage.usageType;
     if (
-      type !== "REGISTER" &&
-      type !== "DOMAIN" &&
-      type !== "REGION" &&
-      type !== "TEMPORAL" &&
-      type !== "OTHER"
+      !Object.values(CandidateUsageType).includes(type as CandidateUsageType)
     ) {
       return [];
     }
     return [
       {
-        usageType: type as CandidateUsage["usageType"],
+        usageType: type as CandidateUsageType,
         value: typeof usage.value === "string" ? usage.value : undefined,
         text: typeof usage.text === "string" ? usage.text : undefined,
       },
@@ -195,12 +201,12 @@ function usageArray(sense: JsonRecord): CandidateUsage[] {
     ...explicit,
     ...tags
       .filter((tag) => registerTags.has(tag))
-      .map((value) => ({ usageType: "REGISTER" as const, value })),
+      .map((value) => ({ usageType: CandidateUsageType.REGISTER, value })),
     ...tags
       .filter((tag) => temporalTags.has(tag))
-      .map((value) => ({ usageType: "TEMPORAL" as const, value })),
+      .map((value) => ({ usageType: CandidateUsageType.TEMPORAL, value })),
     ...stringArray(sense.topics).map((value) => ({
-      usageType: "DOMAIN" as const,
+      usageType: CandidateUsageType.DOMAIN,
       value,
     })),
   ];
@@ -257,8 +263,8 @@ function senseCandidates(
           tag.toLocaleLowerCase(),
         ),
       )
-        ? "ABBREVIATION_OF"
-        : "VARIANT_OF";
+        ? CandidateEntryRelationType.ABBREVIATION_OF
+        : CandidateEntryRelationType.VARIANT_OF;
       entryRelations.set(`${relationType}:${targetText}`, {
         relationType,
         targetText,
@@ -302,10 +308,22 @@ function senseCandidates(
         examples: leaf ? examples : [],
         relations: leaf
           ? [
-              ...relationArray(sense.synonyms, "SYNONYM"),
-              ...relationArray(sense.antonyms, "ANTONYM"),
-              ...relationArray(sense.hypernyms, "HYPERNYM"),
-              ...relationArray(sense.hyponyms, "HYPONYM"),
+              ...relationArray(
+                sense.synonyms,
+                CandidateSenseRelationType.SYNONYM,
+              ),
+              ...relationArray(
+                sense.antonyms,
+                CandidateSenseRelationType.ANTONYM,
+              ),
+              ...relationArray(
+                sense.hypernyms,
+                CandidateSenseRelationType.HYPERNYM,
+              ),
+              ...relationArray(
+                sense.hyponyms,
+                CandidateSenseRelationType.HYPONYM,
+              ),
             ]
           : [],
         tags: leaf ? tags : [],
@@ -323,7 +341,13 @@ function senseCandidates(
 
 function formationSegments(
   word: string,
-  parts: Array<{ text: string; role: "ROOT" | "PREFIX" | "SUFFIX" }>,
+  parts: Array<{
+    text: string;
+    role:
+      | CandidateMorphemeRole.ROOT
+      | CandidateMorphemeRole.PREFIX
+      | CandidateMorphemeRole.SUFFIX;
+  }>,
 ) {
   const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
   const wordGraphemes = [...segmenter.segment(word.normalize("NFC"))].map(
@@ -396,26 +420,35 @@ function wordFormationArray(
         : undefined;
     if (!first || !second || !["prefix", "suffix", "compound"].includes(name))
       return [];
-    const parts =
+    const parts: Array<{
+      text: string;
+      role:
+        | CandidateMorphemeRole.ROOT
+        | CandidateMorphemeRole.PREFIX
+        | CandidateMorphemeRole.SUFFIX;
+    }> =
       name === "prefix"
         ? [
-            { text: first, role: "PREFIX" as const },
-            { text: second, role: "ROOT" as const },
+            { text: first, role: CandidateMorphemeRole.PREFIX },
+            { text: second, role: CandidateMorphemeRole.ROOT },
           ]
         : name === "suffix"
           ? [
-              { text: first, role: "ROOT" as const },
-              { text: second, role: "SUFFIX" as const },
+              { text: first, role: CandidateMorphemeRole.ROOT },
+              { text: second, role: CandidateMorphemeRole.SUFFIX },
             ]
           : [
-              { text: first, role: "ROOT" as const },
-              { text: second, role: "ROOT" as const },
+              { text: first, role: CandidateMorphemeRole.ROOT },
+              { text: second, role: CandidateMorphemeRole.ROOT },
             ];
     const segments = formationSegments(word, parts);
     if (segments.length !== parts.length) return [];
     return [
       {
-        formationType: name === "compound" ? "COMPOUNDING" : "DERIVATION",
+        formationType:
+          name === "compound"
+            ? CandidateFormationType.COMPOUNDING
+            : CandidateFormationType.DERIVATION,
         ruleKey: `${name}-${index + 1}`,
         inputPattern: parts.map((part) => part.text).join(" + "),
         outputPattern: word.normalize("NFC"),
@@ -458,10 +491,10 @@ export async function* readWiktextract(
           {
             text: form.form,
             formType: tags.includes("abbreviation")
-              ? ("ABBREVIATED" as const)
+              ? CandidateFormType.ABBREVIATED
               : tags.some((tag) => mapWiktextractFeatures([tag]).length > 0)
-                ? ("INFLECTED" as const)
-                : ("VARIANT" as const),
+                ? CandidateFormType.INFLECTED
+                : CandidateFormType.VARIANT,
             features: mapWiktextractFeatures(tags),
             formOf: word,
           },
@@ -482,7 +515,7 @@ export async function* readWiktextract(
         : [];
     });
 
-    yield sourceContext(source, "WIKTEXTRACT_EN", {
+    yield sourceContext(source, SourceAdapterKind.WIKTEXTRACT_EN, {
       sourceKey:
         typeof record.word === "string" && typeof record.pos === "string"
           ? `${record.word}:${record.pos}:${hashText(JSON.stringify(record))}`

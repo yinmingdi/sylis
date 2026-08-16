@@ -1,6 +1,6 @@
-import type {
+import {
   FormResolutionStatus,
-  NormalizedSourceRecord,
+  type NormalizedSourceRecord,
 } from "../candidates/candidate-v1";
 
 export function resolveFormStatus(
@@ -13,8 +13,8 @@ export function resolveFormStatus(
   const hasIndependentEntry = records.some(
     (record) => record.independentEntryEvidence,
   );
-  if (hasFormOf && hasIndependentEntry) return "BOTH";
-  if (hasFormOf) return "INFLECTED_ONLY";
-  if (hasIndependentEntry) return "INDEPENDENT_ONLY";
-  return "UNRESOLVED";
+  if (hasFormOf && hasIndependentEntry) return FormResolutionStatus.BOTH;
+  if (hasFormOf) return FormResolutionStatus.INFLECTED_ONLY;
+  if (hasIndependentEntry) return FormResolutionStatus.INDEPENDENT_ONLY;
+  return FormResolutionStatus.UNRESOLVED;
 }

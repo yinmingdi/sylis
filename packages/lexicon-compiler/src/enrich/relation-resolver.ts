@@ -3,10 +3,18 @@ import type {
   CandidateSense,
   NormalizedSourceRecord,
 } from "../candidates/candidate-v1";
+import {
+  executeLexicalCandidateTasks,
+  type LexicalCandidatePort,
+  LexicalCandidateRiskClass,
+  LexicalCandidateTargetKind,
+  LexicalCandidateTaskType,
+} from "../candidates/lexical-candidate";
 import { normalizeIdentityText } from "../normalize/text-profile";
-import type { CompileProgressPort } from "../progress/reporter";
+import { CompileStage, type CompileProgressPort } from "../progress/reporter";
 import { semanticSignature } from "../resolve/sense";
 import {
+  RelationResolutionDecision,
   type RelationResolutionCandidate,
   relationResolutionCandidateSchema,
 } from "./schemas/relation-resolution";
@@ -73,17 +81,19 @@ function applyResolution(
   relation: CandidateRelation,
   reference: SourceSenseReference,
   candidateKey?: string,
+  candidateRevisionId?: string,
 ): void {
   relation.resolvedTargetSourceRecordId = reference.record.sourceRecordId;
   relation.resolvedTargetSourceSenseKey = reference.sense.sourceSenseKey;
   relation.resolutionCandidateKey = candidateKey;
+  relation.resolutionCandidateRevisionId = candidateRevisionId;
 }
 
 function validateResolution(
   candidate: RelationResolutionCandidate,
   candidates: SourceSenseReference[],
 ): string | null {
-  if (candidate.decision === "UNRESOLVED") {
+  if (candidate.decision === RelationResolutionDecision.UNRESOLVED) {
     return candidate.target === null ? null : "UNRESOLVED_WITH_TARGET";
   }
   if (!candidate.target) return "RESOLVED_WITHOUT_TARGET";
@@ -103,6 +113,7 @@ function validateResolution(
 export async function resolveAmbiguousRelations(
   records: NormalizedSourceRecord[],
   executor: StructuredTaskExecutor | undefined,
+  candidatePort: LexicalCandidatePort | undefined,
   progress: CompileProgressPort,
 ): Promise<void> {
   const sensesByHeadwordAndPos = new Map<string, SourceSenseReference[]>();
@@ -139,54 +150,73 @@ export async function resolveAmbiguousRelations(
     const rightKey = `${right.record.sourceRecordId}:${right.sourceSense.sourceSenseKey}:${right.relation.relationType}:${right.relation.targetText}`;
     return leftKey.localeCompare(rightKey);
   });
-  if (!executor || ambiguous.length === 0) {
+  if (!executor || !candidatePort || ambiguous.length === 0) {
     await progress.report({
-      stage: "RELATION_RESOLUTION",
+      stage: CompileStage.RELATION_RESOLUTION,
       processed: 0,
       total: ambiguous.length,
       message: `${deterministicCount} deterministic; ${ambiguous.length} unresolved`,
     });
     return;
   }
-  const executions = await executor.executeAll<RelationResolutionCandidate>(
-    ambiguous.map((pending) => ({
-      taskType: "RELATION_RESOLUTION",
-      schemaName: "sylis_relation_resolution",
-      schema: relationResolutionCandidateSchema,
-      systemPrompt:
-        "Resolve one source relation to exactly one supplied target Sense candidate, or return UNRESOLVED. Respect relation level and the source Sense meaning; never create a target or change relation type.",
-      input: {
-        source: {
-          sourceRecordId: pending.record.sourceRecordId,
-          sourceSenseKey: pending.sourceSense.sourceSenseKey,
-          definitions: pending.sourceSense.definitions,
-          translations: pending.sourceSense.translations,
+  const executions =
+    await executeLexicalCandidateTasks<RelationResolutionCandidate>(
+      executor,
+      candidatePort,
+      ambiguous.map((pending) => ({
+        taskType: LexicalCandidateTaskType.RELATION_RESOLUTION,
+        target: {
+          kind: LexicalCandidateTargetKind.SOURCE_RELATION,
+          targetKey: [
+            pending.record.sourceRecordId,
+            pending.sourceSense.sourceSenseKey,
+            pending.relation.relationType,
+            pending.relation.targetText,
+          ].join(":"),
         },
-        relation: {
-          relationType: pending.relation.relationType,
-          targetText: pending.relation.targetText,
-          targetExternalId: pending.relation.targetExternalId ?? null,
+        riskClass: LexicalCandidateRiskClass.HIGH,
+        sourceRecordIds: [
+          pending.record.sourceRecordId,
+          ...pending.candidates.map(
+            (candidate) => candidate.record.sourceRecordId,
+          ),
+        ],
+        schemaName: "sylis_relation_resolution",
+        schema: relationResolutionCandidateSchema,
+        systemPrompt:
+          "Resolve one source relation to exactly one supplied target Sense candidate, or return UNRESOLVED. Respect relation level and the source Sense meaning; never create a target or change relation type.",
+        input: {
+          source: {
+            sourceRecordId: pending.record.sourceRecordId,
+            sourceSenseKey: pending.sourceSense.sourceSenseKey,
+            definitions: pending.sourceSense.definitions,
+            translations: pending.sourceSense.translations,
+          },
+          relation: {
+            relationType: pending.relation.relationType,
+            targetText: pending.relation.targetText,
+            targetExternalId: pending.relation.targetExternalId ?? null,
+          },
+          candidates: pending.candidates.map(({ record, sense }) => ({
+            sourceRecordId: record.sourceRecordId,
+            sourceSenseKey: sense.sourceSenseKey,
+            definitions: sense.definitions,
+            translations: sense.translations,
+            conceptExternalId: sense.conceptExternalId ?? null,
+          })),
         },
-        candidates: pending.candidates.map(({ record, sense }) => ({
-          sourceRecordId: record.sourceRecordId,
-          sourceSenseKey: sense.sourceSenseKey,
-          definitions: sense.definitions,
-          translations: sense.translations,
-          conceptExternalId: sense.conceptExternalId ?? null,
-        })),
-      },
-      maxTokens: 500,
-      semanticValidator: (candidate) =>
-        validateResolution(candidate, pending.candidates),
-    })),
-  );
+        maxTokens: 500,
+        semanticValidator: (candidate) =>
+          validateResolution(candidate, pending.candidates),
+      })),
+    );
   for (const [index, pending] of ambiguous.entries()) {
     const execution = executions[index]!;
     if (
-      execution.result.value.decision === "RESOLVED" &&
-      execution.result.value.target
+      execution.value?.decision === RelationResolutionDecision.RESOLVED &&
+      execution.value.target
     ) {
-      const targetKey = referenceKey(execution.result.value.target);
+      const targetKey = referenceKey(execution.value.target);
       const target = pending.candidates.find(
         ({ record, sense }) =>
           referenceKey({
@@ -194,16 +224,21 @@ export async function resolveAmbiguousRelations(
             sourceSenseKey: sense.sourceSenseKey,
           }) === targetKey,
       )!;
-      applyResolution(pending.relation, target, execution.candidateKey);
+      applyResolution(
+        pending.relation,
+        target,
+        execution.candidateKey,
+        execution.candidateRevisionId!,
+      );
     }
     await progress.report({
-      stage: "RELATION_RESOLUTION",
+      stage: CompileStage.RELATION_RESOLUTION,
       processed: index + 1,
       total: ambiguous.length,
-      aiInputTokens: execution.result.usage.inputTokens,
-      aiOutputTokens: execution.result.usage.outputTokens,
+      aiInputTokens: execution.usage.inputTokens,
+      aiOutputTokens: execution.usage.outputTokens,
       aiCostMicros: executor.spentMicros,
-      message: `${pending.relation.relationType}:${pending.relation.targetText}`,
+      message: `${pending.relation.relationType}:${pending.relation.targetText}:${execution.disposition}`,
     });
   }
 }

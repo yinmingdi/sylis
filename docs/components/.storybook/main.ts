@@ -16,6 +16,20 @@ const config: StorybookConfig = {
       process.env.NODE_ENV === "production"
         ? "/sylis/components/"
         : viteConfig.base,
+    optimizeDeps: {
+      ...viteConfig.optimizeDeps,
+      include: [
+        ...(viteConfig.optimizeDeps?.include ?? []),
+        "@sylis/components",
+      ],
+    },
+    build: {
+      ...viteConfig.build,
+      commonjsOptions: {
+        ...viteConfig.build?.commonjsOptions,
+        include: [/node_modules/, /packages\/[^/]+\/dist/],
+      },
+    },
   }),
 };
 

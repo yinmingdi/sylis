@@ -36,6 +36,7 @@
       "requestedIdentity": null,
       "resolvedIdentity": null
     },
+    "candidatePromotionLineage": [],
     "textProfile": {
       "normalization": "NFC",
       "unicodeVersion": "example",

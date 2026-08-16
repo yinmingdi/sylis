@@ -9,9 +9,9 @@ Sylis 使用 pnpm workspace + Turborepo，不使用 Nx：
 - pnpm 是 package manager 和 workspace package graph 的事实源。
 - Turbo 消费现有 `package.json` scripts 和 workspace dependencies，负责任务依赖、并行、cache 和 affected selection。
 - 精确 package allowlist、exports、直接依赖与源码 import 规则由 `tools/architecture/check-workspace.mjs` 执行，不把架构边界绑定到 task runner plugin。
-- Nest、Vite、tsdown、tsc、Prisma 和测试框架仍负责实际工作。
+- Nest、Vite、tsc、Prisma 和测试框架仍负责实际工作。
 
-现有 `tsup` 全部迁移到 `tsdown`。`tsup` 官方仓库已经声明不再积极维护并推荐 tsdown；迁移必须逐包验证 exports、CJS/ESM、declaration 和 CLI，不能只替换 package name。[tsup official repository](https://github.com/egoist/tsup#readme)、[tsdown migration guide](https://tsdown.dev/guide/migrate-from-tsup)
+最终 workspace 不保留 `tsup` 或 `tsdown`。Vite 和 Nest/SWC 构建应用，简单 Node app 与内部 library 使用各项目的 `tsc -p tsconfig.build.json`，依赖顺序由 Turbo workspace graph 负责；只有未来出现真实外部 JS consumer 且 `tsc` 无法满足其 format contract 时，才为那个 package 单独评估 bundler。
 
 ## 2. 为什么选择 Turbo
 
@@ -33,14 +33,14 @@ Turbo 和 pnpm 的边界必须保持清楚：pnpm 负责安装与 workspace depe
 
 GitHub Actions run `30967844682` 的历史实测：
 
-| 步骤                       |       时间 | 结论                      |
-| -------------------------- | ---------: | ------------------------- |
-| Harness dependency install |      14 秒 | 不是瓶颈                  |
-| Artifact contract gate     |  3 分 9 秒 | 每个 PR 重跑历史里程碑    |
-| Lexicon compiler gate      | 1 分 25 秒 | 串行重复 package checks   |
-| Quality service/init       |      38 秒 | 被 `needs: harness` 延后  |
-| Quality dependency install |       5 秒 | pnpm cache 已有效         |
-| `@sylis/utils` tsup build  |    约 2 秒 | tsup 不是五分钟等待的原因 |
+| 步骤                            |       时间 | 结论                         |
+| ------------------------------- | ---------: | ---------------------------- |
+| Harness dependency install      |      14 秒 | 不是瓶颈                     |
+| Artifact contract gate          |  3 分 9 秒 | 每个 PR 重跑历史里程碑       |
+| Lexicon compiler gate           | 1 分 25 秒 | 串行重复 package checks      |
+| Quality service/init            |      38 秒 | 被 `needs: harness` 延后     |
+| Quality dependency install      |       5 秒 | pnpm cache 已有效            |
+| `@sylis/utils` 旧 bundler build |    约 2 秒 | bundler 不是五分钟等待的原因 |
 
 因此 CI 优化不是换一个更快的 installer，而是：
 
@@ -58,34 +58,19 @@ Aggregate job 使用 `if: always()`，并明确要求 secret scan、policy 与 q
 
 `actions/setup-node` 的 pnpm cache 缓存 package store，不缓存 `node_modules`，也不能保存 secret。[GitHub dependency caching](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching)、[pnpm CI](https://pnpm.io/continuous-integration)
 
-## 5. tsup 到 tsdown
+## 5. 为什么不保留通用 library bundler
 
-### 5.1 哪些包需要 bundler
+最终目标都是仓库内 consumer 或数据 Artifact consumer：
 
-| Package                    | 需要 | 原因                                         |
-| -------------------------- | ---- | -------------------------------------------- |
-| `@sylis/utils`             | 是   | Nest CJS 与 Vite ESM 的条件导出、declaration |
-| `@sylis/ai-provider`       | 是   | Node ESM、多 entry、declaration              |
-| `@sylis/lexicon-contracts` | 是   | 稳定 ESM artifact contract 与 declaration    |
-| `@sylis/lexicon-compiler`  | 是   | 可执行 CLI、ESM、declaration、稳定部署制品   |
+| 项目类型                | 构建方式                                          |
+| ----------------------- | ------------------------------------------------- |
+| React frontend          | Vite + 独立 `tsc --noEmit`                        |
+| Nest HTTP backend       | Nest CLI + SWC + 独立 typecheck                   |
+| 简单 executor           | `tsc -p tsconfig.build.json`，容器运行已编译 JS   |
+| 内部 TypeScript library | `tsc -p tsconfig.build.json` 输出 package exports |
+| 第三方 Lexicon consumer | JSON Schema + `.json.zst`，不要求加载 JS bundle   |
 
-Turbo 不生成 JavaScript，它不能替代 library bundler。
-
-### 5.2 为什么不全部使用裸 tsc
-
-Node ESM 要求相对 import 包含文件扩展名；TypeScript 不会在 emit 时为 extensionless source import 自动补 `.js`。[Node mandatory file extensions](https://nodejs.org/api/esm.html#mandatory-file-extensions)、[TypeScript modules reference](https://www.typescriptlang.org/docs/handbook/modules/reference.html)
-
-Sylis 的源码策略允许 local/workspace TypeScript import 省略扩展名，因此可执行的 Node ESM package 需要 bundling。只在 CommonJS service、不会被 Node 直接执行的类型项目，或采用 NodeNext `.js` source specifier 时，才适合直接 `tsc`/`tsc -b`。
-
-### 5.3 迁移差异
-
-tsdown 的 Node platform 默认 fixed extension 会输出 `.mjs/.cjs`，而原 package exports 使用 `.js/.mjs` 等组合。迁移配置必须显式选择 package `type`、`fixedExtension` 和 exports，并验证：
-
-- `@sylis/utils` 的 ESM import 与 CommonJS require；
-- AI provider 的四个 entry；
-- contracts JS、declaration 与 JSON Schema；
-- compiler library import、CLI shebang、execute bit 和 built CLI fixture；
-- dependency bundling allowlist，避免 Node 无法解析的 external subpath。
+源码保持 extensionless local/workspace import；运行时 module format 由对应 app 的构建配置统一处理。这样不用为所有 package 同时维护 bundler config、exports matrix 和 declaration pipeline。Turbo 仍只编排任务，不替代 Vite、SWC 或 TypeScript compiler。
 
 ## 6. Nest 构建调查
 
@@ -96,7 +81,7 @@ pnpm --filter @sylis/api build
 Error Debug Failure
 ```
 
-`tsc -p apps/api/tsconfig.build.json` 通过，关闭 `@nestjs/swagger` CLI plugin 后 `nest build` 通过，因此故障位于 Nest TSC plugin path，而不是普通 TypeScript、Nx、Turbo 或 workspace import。
+历史调查中普通 `tsc` 通过、关闭 `@nestjs/swagger` CLI plugin 后 `nest build` 通过，因此故障位于 Nest TSC plugin path，而不是 TypeScript、Nx、Turbo 或 workspace import。最终路径迁到 `apps/backends/api` 后仍使用相同 SWC + 独立 typecheck 结论。
 
 Nest 官方 SWC recipe 说明 SWC 不自行 typecheck；使用 Nest CLI plugins 时应启用 `--type-check`。验证命令 `nest build --builder swc --type-check` 成功编译 157 files，并保留 Swagger plugin 的 type-check/metadata 阶段。[Nest SWC recipe](https://docs.nestjs.com/recipes/swc)、[Nest CLI scripts](https://docs.nestjs.com/cli/scripts)
 
@@ -131,8 +116,8 @@ Artifact contract 使用 `pnpm artifact:validate`，lexicon compiler 使用 `pnp
 
 - `pnpm architecture:check` 证明 pnpm package graph、allowlist、exports 与 Turbo cache policy。
 - `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` 通过。
-- tsdown 输出路径与全部 package exports 一致。
-- Utils CJS/ESM、provider subpaths、contracts 与 compiler built CLI 可真实加载。
+- Vite、Nest/SWC 与各项目 `tsc -p tsconfig.build.json` 的输出路径和 package exports 一致。
+- Utils、Artifact contracts 与 compiler CLI 可被真实 consumer 加载；Provider SDK 只存在于 Model Gateway image。
 - 连续两次 Turbo build 的第二次命中本地 cache。
 - API SWC build、Jest、fresh migration 和 health smoke 通过。
 - GitHub Actions 不再串行重复历史里程碑；专项门禁仍可通过正式职责命令运行。

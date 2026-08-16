@@ -2,30 +2,23 @@
 
 ## 1. 配置与密钥
 
-compiler 专用变量：
+Compiler/Builder 只配置 Model Gateway client，不直接配置 Provider：
 
 ```text
-LEXICON_AI_API_KEY=<secret>
-LEXICON_AI_BASE_URL=https://api.deepseek.com
-LEXICON_AI_STRICT_BASE_URL=https://api.deepseek.com/beta
-LEXICON_AI_MODEL=<validated-model-id>
-LEXICON_AI_THINKING=disabled
+MODEL_GATEWAY_URL=<private-service-url>
+MODEL_GATEWAY_AUDIENCE=<service-audience>
+LEXICON_PROVIDER_ROUTE_RELEASE_ID=<evaluated-release-id>
+LEXICON_CREDENTIAL_PROFILE_ID=<platform-profile-id>
 LEXICON_AI_BUDGET_USD=<explicit decimal>
 LEXICON_AI_CONCURRENCY=<1..32; pilot starts low>
-LEXICON_AI_INPUT_USD_PER_MILLION=<pricing snapshot>
-LEXICON_AI_OUTPUT_USD_PER_MILLION=<pricing snapshot>
-LEXICON_AI_CACHE_HIT_USD_PER_MILLION=<optional pricing snapshot>
 LEXICON_AI_CACHE_KEY=<32-byte hex-or-base64 secret>
-LEXICON_AI_MAX_ATTEMPTS=5
-LEXICON_AI_RETRY_BASE_MS=500
-LEXICON_AI_RETRY_MAX_MS=30000
 ```
 
-runtime Worker key、Compiler Runner enrichment key、本地 pilot key、staging key 和 production key 分开。`LEXICON_AI_CACHE_KEY` 只加密本次 build 的本地 candidate cache，不复用 runtime、数据库或 session 加密 key。key 只存在本地 ignored env 或拥有 adapter 的 Railway sealed variable；GitHub protected environment 只持 build authorization/publish credential，不持长期 AI key。任何 key 都不进入 manifest、candidate、日志、JSON 或文档。
+Provider endpoint、model、thinking/schema 能力、价格和重试策略都固定在 `ProviderRouteRelease`；Platform/BYOK secret 固定在 `CredentialRevision`。只有 Model Gateway 读取 Provider key。本地 pilot 使用本地 Gateway + ignored secret，staging/production 使用各自 Railway sealed variables。`LEXICON_AI_CACHE_KEY` 只加密本次 build 的本地 candidate cache，不复用 Credential/Content KEK。GitHub protected environment 只持 build authorization/publish credential，不持长期 AI key。任何 key 都不进入 manifest、candidate、日志、JSON 或文档。
 
-DeepSeek adapter 的默认基础地址为 `https://api.deepseek.com`；model capability 和价格会变化，因此部署配置必须在 run 前 probe，每次正式 run 将实际 model、provider revision 和 pricing snapshot 写入 metadata，而不是在领域 enum 或代码中固定型号。[DeepSeek API](https://api-docs.deepseek.com/)
+DeepSeek route 可使用 `https://api.deepseek.com`，但 endpoint、model capability 和价格会变化，因此只能由 Git+CI 发布并评测 route release；每次正式 run 固定实际 route、credential revision 和 pricing snapshot，而不是在 Compiler enum 中固定型号。[DeepSeek API](https://api-docs.deepseek.com/)
 
-Compiler 从 public API 注入 `StructuredGenerationPort`，业务 pipeline 不 import DeepSeek SDK。CLI composition root 才读取上述变量并创建 `packages/ai-provider` adapter；测试注入 fake port。Compiler 不需要流式端口。
+Compiler 从 public interface 注入 structured generation，业务 pipeline 不 import Provider SDK。CLI/Builder composition root 创建 Model Gateway client，每个 task 使用绑定 build/route/credential/input digest/预算的一次性 permit；测试注入 fake。Compiler 不需要流式聊天 interface。
 
 ## 2. 任务拆分
 
@@ -78,7 +71,7 @@ AI 不能分配正式 UUID。响应中新增 node 使用 local ID：
 }
 ```
 
-promotion 使用 `CandidatePromotionMap(candidateId, localId, entityType, finalId)`；重试必须复用 mapping。
+Compiler 把已批准 revision 的 `candidateRevisionId + localId + entityType + artifactId` 写入 Artifact `manifest.candidatePromotionLineage`，不写候选 payload 或审核记录。Publisher 校验 revision 属于该 artifact 的 BuildRun、仍是当前 approved revision、`entityType` 指向本次 release 的真实实体后，幂等写 `CandidatePromotionMap(candidateId, candidateRevisionId, localId, entityType, finalId)` 并推进 Candidate 为 `PROMOTED`；重试必须复用同一 mapping，任何 finalId 漂移都失败。
 
 ## 4. Structured output
 
@@ -149,14 +142,14 @@ promotion 使用 `CandidatePromotionMap(candidateId, localId, entityType, finalI
 8. 独立 verifier 检查错误性、合理性、语境适配和多样性；生成器 confidence 不作为通过依据。
 9. 若已有等价 source-backed exercise，通过 semantic signature 复用，AI 不重复生成。
 10. 题目只作为 candidate；发布后不可变，prompt/stimulus/答案/干扰项任一实质变化都创建新 ExerciseRevision。
-11. AI 建议的 `validationLevel` 不是发布凭证；本地门禁强制 `SELF_REPORT`、`AI_ASSISTED`、`EXTENDED_TEXT` 和开放翻译/造句只能进入 `PRACTICE_ONLY`。
+11. AI 建议的 `validationLevel` 不是发布凭证；本地门禁强制 `SELF_REPORT`、`EXTENDED_TEXT` 和开放翻译/造句只能进入 `PRACTICE_ONLY`。0.0.1 的 AI 只参与离线候选生成，不进入用户 Attempt 自动评分。
 12. 通过验证的 `MICRO_STORY` 作为 `StimulusBlock(MATERIAL)` 引用 immutable material revision，并绑定同一 Sense Objective 的 `SENTENCE_PRODUCTION`；不得复制 story blocks 到 stimulus。精确 Objective/Exercise 不存在时 rich target 构建失败。
 
-有道/source exercise、确定性 lexicon template 和 AI 生成统一进入 `EXERCISE_CANDIDATE` schema。答案由正式 lexical subject/accepted response 支撑；生成模型不得既创造答案事实又充当唯一 verifier。通过后的 Objective、Stimulus、Exercise 和 Blueprint 全部写入同一个 artifact，importer 不再调用 AI。
+有道/source exercise、确定性 lexicon template 和 AI 生成统一进入 `EXERCISE_CANDIDATE` schema。答案由正式 lexical subject/accepted response 支撑；生成模型不得既创造答案事实又充当唯一 verifier。通过后的 Objective、Stimulus、Exercise 和 Blueprint 全部写入同一个 Artifact，Publisher 不再调用 AI。
 
 ## 8. Candidate、BuildRun 与执行状态
 
-每个 AI task 都先创建不可变输入快照和 candidate identity；执行状态只由关联 BackgroundJob/Compiler checkpoint 持有。Candidate 自身只表达内容审核生命周期：
+每个 AI task 都先创建不可变输入快照和 candidate identity；执行状态由 BuildRun 关联的 activation Job/JobAttempt 与 Compiler checkpoint 持有。Candidate 自身只表达内容审核生命周期：
 
 ```text
 PLANNED -> GENERATED -> AUTO_VALIDATED -> REVIEW_PENDING -> APPROVED -> PROMOTED
@@ -179,7 +172,7 @@ PROPOSED -> BUDGET_APPROVAL_PENDING -> APPROVED -> ARTIFACT_PUBLISHED
     +--------------------+-----------------> REJECTED
 ```
 
-每个执行 attempt 由 `BuildRun.jobId` 唯一关联的 `BackgroundJob` 表达；PREFLIGHT、PILOT、RUNNING、VALIDATING 等是 `JobProgressEvent.stage`，不是第二套状态机。预算不足时 Job 进入 `PAUSED/BUDGET_APPROVAL_REQUIRED`；追加预算产生新的 append-only approval/reservation，再通过 resume command 重新排队并从 checkpoint 恢复。只有 Job `SUCCEEDED` 且 artifact 回读、global validation 和双 hash 都完成，BuildRun 才能进入 `ARTIFACT_PUBLISHED`。
+BuildRun 的初始执行、预算批准后恢复和 User retry 各创建新的 activation Job；同一次 activation 的临时重试创建新 JobAttempt。PREFLIGHT、PILOT、RUNNING、VALIDATING 等只是 `JobProgressEvent.stage`。Model Gateway 只有在单个 BuildRun owner budget 超限时返回 typed `MODEL_PERMIT_BUDGET_EXCEEDED`；Builder 以条件更新把 BuildRun 退回 `BUDGET_APPROVAL_PENDING`，当前 Job 以 `BUILD_BUDGET_APPROVAL_REQUIRED` 失败。全局 BudgetPolicy/Quota 超限不得走追加单 Run 预算。追加预算继续绑定该 BuildRun 已固定的 forecast，批准后新建 Job，从兼容 checkpoint 恢复。只有最后一个 Job `SUCCEEDED` 且 Artifact 回读、global validation 和双 hash 都完成，BuildRun 才能进入 `ARTIFACT_PUBLISHED`。
 
 ## 9. 重试、限流和缓存
 
@@ -190,8 +183,8 @@ PROPOSED -> BUDGET_APPROVAL_PENDING -> APPROVED -> ARTIFACT_PUBLISHED
 - 每次 cache miss 在 provider 调用前按受限输入 bytes、provider envelope allowance 和 `maxTokens` 保守预留预算，完成后以 provider usage 结算，失败释放预留；并发 reservation 后超过 hard budget 的任务不得发出。费用记录 pricing snapshot，达到 hard budget 立即停止新任务。
 - 加密 candidate cache 允许并发读取，但本地 envelope 通过串行原子 rename 写入，不能让并发任务互相覆盖或丢失已付费响应。
 - pilot 完成后按 task mix、cache miss、重试和 p95 token 计算全量预测；默认 hard cap 为预测值 125% 与 `LEXICON_AI_BUDGET_USD` 中的较低值。
-- full run 必须引用 `BudgetApproval { runId, approvedUsd, forecastHash, actor, approvedAt }`；不能靠环境变量存在就自动获批。
-- reservation 使用 decimal money + pricing snapshot；并发 worker 通过原子 ledger reservation 防止总额竞态超支。
+- full run 必须引用 `BudgetApproval { runId, approvedUsd, forecastHash, actionDigest, actor, reason, approvedAt, idempotencyKey, requestHash }`；preview digest 必须绑定锁定后的 BuildRun request/status/current budget，不能靠环境变量存在就自动获批。
+- reservation 使用 decimal money + pricing snapshot；并发任务通过原子 ledger reservation 防止总额竞态超支。
 
 ## 10. 质量门禁
 

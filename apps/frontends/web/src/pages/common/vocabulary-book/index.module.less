@@ -1,0 +1,242 @@
+// ==================== VocabularyBook Page Styles ====================
+
+.vocabularyBookPage {
+  :global(.viewBody) {
+    padding: var(--spacing-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+  }
+}
+
+// ==================== Stats Section ====================
+
+.statsSection {
+  margin-top: var(--spacing-4);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4) 0;
+  line-height: var(--line-height-tight);
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+  transition: all var(--duration-normal) var(--ease-out);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.statIcon {
+  font-size: var(--font-size-2xl);
+  flex-shrink: 0;
+}
+
+.statContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.statValue {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--spacing-1);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+// ==================== Header Search Bar ====================
+
+.headerSearchBar {
+  width: 100%;
+  max-width: 280px;
+
+  :global(.adm-search-bar) {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-base);
+    border: 1px solid var(--color-border-primary);
+    height: 36px;
+
+    .adm-search-bar-input {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      height: 36px;
+
+      &::placeholder {
+        color: var(--color-text-tertiary);
+      }
+    }
+
+    .adm-search-bar-suffix {
+      padding: 0 var(--spacing-2);
+    }
+  }
+}
+
+.actionButton {
+  margin-left: var(--spacing-2);
+}
+
+.filterBtn {
+  padding: var(--spacing-2);
+  border-radius: var(--radius-base);
+  color: var(--color-text-secondary);
+
+  &:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-primary-500);
+  }
+}
+
+// ==================== Action Bar ====================
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.selectionInfo {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+// ==================== Words Section ====================
+
+.wordsSection {
+  overflow: hidden;
+}
+
+.wordsHeader {
+  padding: var(--spacing-4) var(--spacing-4) 0;
+  border-bottom: 1px solid var(--color-border-primary);
+  margin-bottom: var(--spacing-4);
+}
+
+// ==================== Empty State ====================
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-20) var(--spacing-4);
+  text-align: center;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--spacing-6);
+  opacity: 0.6;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.emptyTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+}
+
+.emptyDesc {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+  margin-bottom: var(--spacing-6);
+}
+
+// ==================== Animations ====================
+
+.vocabularyBookPage {
+  .animate-fadeIn();
+}
+
+.statCard {
+  animation: fadeInUp var(--duration-normal) var(--ease-out);
+  animation-fill-mode: both;
+
+  &:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  &:nth-child(2) {
+    animation-delay: 100ms;
+  }
+  &:nth-child(3) {
+    animation-delay: 200ms;
+  }
+  &:nth-child(4) {
+    animation-delay: 300ms;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.quickActionBtn {
+  animation: fadeInScale var(--duration-normal) var(--ease-out);
+  animation-fill-mode: both;
+
+  &:nth-child(1) {
+    animation-delay: 400ms;
+  }
+  &:nth-child(2) {
+    animation-delay: 500ms;
+  }
+  &:nth-child(3) {
+    animation-delay: 600ms;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -5,21 +5,30 @@ import { basename, dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
-import type { StructuredGenerationRequest } from "@sylis/ai-provider";
-import { FakeStructuredGenerationPort } from "@sylis/ai-provider/testing";
-import { describe, expect, it } from "vitest";
-
-import { compileLexicon, compileLexiconInternal } from "../src/compiler";
-import { MemoryCandidateCache } from "../src/enrich/candidate-cache";
-import { enrichLearningContent } from "../src/enrich/learning-enricher";
-import { StructuredTaskExecutor } from "../src/enrich/structured-task-executor";
-import { sortArtifactArrays } from "../src/export/artifact-order";
-import { validateArtifactStream } from "../src/export/artifact-stream-validator";
-import { readArtifact } from "../src/export/artifact-writer";
 import {
   canonicalContentHash,
   canonicalJsonChunks,
-} from "../src/export/canonicalize";
+  sortArtifactArrays,
+  validateArtifactStream,
+  validationSummaryContentHash,
+} from "@sylis/lexicon-artifact";
+import { describe, expect, it } from "vitest";
+
+import {
+  LexicalCandidateDisposition,
+  type LexicalCandidatePort,
+  type LexicalCandidateSubmission,
+  LexicalCandidateTaskType,
+} from "../src/candidates/lexical-candidate";
+import {
+  compileLexicon,
+  compileLexiconInternal,
+  CompileProfile,
+} from "../src/compiler";
+import { MemoryCandidateCache } from "../src/enrich/candidate-cache";
+import { enrichLearningContent } from "../src/enrich/learning-enricher";
+import { StructuredTaskExecutor } from "../src/enrich/structured-task-executor";
+import { readArtifact } from "../src/export/artifact-writer";
 import { createSingleFrameZstdCompress } from "../src/export/zstd-envelope";
 import {
   type HeadwordSelector,
@@ -27,13 +36,16 @@ import {
   loadRichTargetSet,
   parseHeadwordSet,
   parseSourceManifest,
+  PedagogicalMaterialKind,
   type RichTargetSet,
   type SourceManifest,
   sha256File,
 } from "../src/manifest/source-manifest";
 import { silentProgress } from "../src/progress/reporter";
 import { resolveFormStatus } from "../src/resolve/form";
-import { validationSummaryContentHash } from "../src/validate/validation-summary";
+import { stableId } from "../src/sources/source-context";
+import type { StructuredGenerationRequest } from "../src/ports/structured-generation";
+import { FakeStructuredGenerationPort } from "./fake-generation";
 
 const fixtureRoot = resolve(import.meta.dirname, "fixtures");
 const pilotHeadwordSetPath = resolve(
@@ -93,15 +105,20 @@ async function createManifest(
     fixtureNames.map(async ([key, filename, adapter]) => ({
       key,
       version: "fixture-1",
+      retrievedAt: "2026-08-07T00:00:00.000Z",
       uri: join(fixtureRoot, filename),
       sha256: await sha256File(join(fixtureRoot, filename)),
       adapter,
       homepageUri: `https://example.com/${key}`,
-      rights: options.rights ?? {
-        mayBuild: true,
-        mayServe: true,
-        mayExport: true,
-        requiresAttribution: false,
+      rights: {
+        effectiveFrom: "2026-08-07T00:00:00.000Z",
+        effectiveTo: null,
+        ...(options.rights ?? {
+          mayBuild: true,
+          mayServe: true,
+          mayExport: true,
+          requiresAttribution: false,
+        }),
       },
     })),
   );
@@ -299,20 +316,20 @@ describe("lexicon compiler", () => {
     ).toBe("INDEPENDENT_ONLY");
   });
 
-  it("compiles all source adapters into a deterministic validated artifact", async () => {
+  it("LEXICON-001-INTEGRATION compiles all source adapters into a deterministic validated artifact", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-compiler-"));
     const manifestPath = await createManifest(root);
     const firstOutput = join(root, "first.json.zst");
     const secondOutput = join(root, "second.json.zst");
     const first = await compileLexicon({
       manifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: firstOutput,
       workRoot: join(root, "work-1"),
     });
     const second = await compileLexicon({
       manifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: secondOutput,
       workRoot: join(root, "work-2"),
     });
@@ -321,7 +338,7 @@ describe("lexicon compiler", () => {
     await compileLexicon(
       {
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: resumedOutput,
         workRoot: join(root, "work-1"),
         resumeRunId: first.runId,
@@ -336,6 +353,10 @@ describe("lexicon compiler", () => {
     );
 
     expect(first.contentHash).toBe(second.contentHash);
+    expect(first.artifactSha256).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(first.artifactManifest.counts["/lexicon/senseRevisions"]).toBe(
+      first.artifactManifest.counts["/lexicon/senseConceptMemberships"],
+    );
     expect(first.artifactManifest).toMatchObject({
       build: {
         compileProfile: "fixture",
@@ -380,12 +401,12 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(root, "incompatible-resume.json.zst"),
         workRoot: join(root, "work-1"),
         resumeRunId: first.runId,
       }),
-    ).rejects.toThrow("CHECKPOINT_INPUT_MISMATCH:LEARNING_CONTENT");
+    ).rejects.toThrow("CHECKPOINT_INPUT_MISMATCH:EXERCISES_BLUEPRINTS");
 
     const streamed = await validateArtifactStream(firstOutput, {
       expectedContentHash: first.contentHash,
@@ -493,8 +514,9 @@ describe("lexicon compiler", () => {
     );
 
     const missingReferenceArtifact = structuredClone(artifact);
+    const missingProvenanceId = "00000000-0000-4000-8000-ffffffffffff";
     missingReferenceArtifact.lexicon.definitions[0]!.provenanceId =
-      "provenance_missing";
+      missingProvenanceId;
     sortArtifactArrays(missingReferenceArtifact);
     missingReferenceArtifact.manifest.contentHash = canonicalContentHash(
       missingReferenceArtifact,
@@ -502,7 +524,7 @@ describe("lexicon compiler", () => {
     const missingReferencePath = join(root, "missing-reference.json.zst");
     await writeCompressedJson(missingReferencePath, missingReferenceArtifact);
     await expect(validateArtifactStream(missingReferencePath)).rejects.toThrow(
-      "Artifact missing reference provenance_missing",
+      `Artifact missing reference ${missingProvenanceId}`,
     );
 
     const unstableOrderArtifact = structuredClone(artifact);
@@ -587,7 +609,7 @@ describe("lexicon compiler", () => {
       Buffer.concat([compressed, Buffer.from([0])]),
     );
     await expect(validateArtifactStream(trailingPath)).rejects.toThrow(
-      "trailing data or multiple zstd frames",
+      "ARTIFACT_ZSTD_TRAILING_DATA",
     );
 
     const multipleFramesPath = join(root, "multiple-frames.json.zst");
@@ -596,13 +618,13 @@ describe("lexicon compiler", () => {
       Buffer.concat([compressed, compressed]),
     );
     await expect(validateArtifactStream(multipleFramesPath)).rejects.toThrow(
-      "trailing data or multiple zstd frames",
+      "ARTIFACT_ZSTD_TRAILING_DATA",
     );
     await expect(
       validateArtifactStream(firstOutput, {
         maxCompressedBytes: compressed.length - 1,
       }),
-    ).rejects.toThrow("compressed byte limit");
+    ).rejects.toThrow("ARTIFACT_COMPRESSED_LIMIT_EXCEEDED");
     await expect(
       validateArtifactStream(firstOutput, { maxCompressionRatio: 1 }),
     ).rejects.toThrow("compression ratio limit");
@@ -737,13 +759,17 @@ describe("lexicon compiler", () => {
           relation.targetId === departmentEntryId,
       ),
     ).toBe(true);
+    const helpfulEntryId = entryIdFor("helpful");
+    const unhelpfulEntryId = entryIdFor("unhelpful");
     expect(
       artifact.lexicon.entryRelations.some(
         (relation) =>
           relation.relationType === "DERIVATIONALLY_RELATED" &&
-          relation.sourceId === entryIdFor("helpful") &&
-          relation.targetId === entryIdFor("unhelpful") &&
-          relation.direction === "SYMMETRIC",
+          relation.direction === "SYMMETRIC" &&
+          ((relation.sourceId === helpfulEntryId &&
+            relation.targetId === unhelpfulEntryId) ||
+            (relation.sourceId === unhelpfulEntryId &&
+              relation.targetId === helpfulEntryId)),
       ),
     ).toBe(true);
 
@@ -890,6 +916,30 @@ describe("lexicon compiler", () => {
       sourceChoices.some((choice) => choice.id === sourceAnswer.choiceId),
     ).toBe(true);
     expect(artifact.learning.exerciseItems.length).toBeGreaterThan(0);
+    const selfReportedTextExercises =
+      artifact.learning.exerciseRevisions.filter(
+        (exercise) =>
+          exercise.responseKind === "SHORT_TEXT" &&
+          exercise.gradingMode === "SELF_REPORT",
+      );
+    expect(selfReportedTextExercises.length).toBeGreaterThan(0);
+    for (const exercise of selfReportedTextExercises) {
+      expect(
+        artifact.learning.exerciseResponseConfigs.find(
+          (config) => config.exerciseRevisionId === exercise.id,
+        ),
+      ).toMatchObject({
+        responseKind: "SHORT_TEXT",
+        capturePolicy: "OPTIONAL",
+      });
+      expect(
+        artifact.learning.exerciseStimulusRefs.some(
+          (reference) =>
+            reference.exerciseRevisionId === exercise.id &&
+            reference.role === "REVEAL",
+        ),
+      ).toBe(true);
+    }
     expect(artifact.learning.assessmentBlueprints).toHaveLength(1);
   }, 90_000);
 
@@ -899,7 +949,7 @@ describe("lexicon compiler", () => {
     const workRoot = join(root, "work");
     const noAiResult = await compileLexicon({
       manifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: join(root, "no-ai.json.zst"),
       workRoot,
     });
@@ -1037,10 +1087,28 @@ describe("lexicon compiler", () => {
     );
     const outputPath = join(root, "ai.json.zst");
     const progressEvents: Array<{ stage: string; message?: string }> = [];
+    const lexicalCandidates: LexicalCandidatePort = {
+      async resolve<T>() {
+        return null;
+      },
+      async submit<T>(candidate: LexicalCandidateSubmission<T>) {
+        return {
+          disposition: LexicalCandidateDisposition.APPROVED,
+          candidateRevisionId: stableId(
+            "lexicalCandidateRevision",
+            candidate.candidateKey,
+          ),
+          payload: candidate.payload,
+        };
+      },
+      async finalizeReviewBatch() {
+        return { reviewBatchId: null, pendingCount: 0 };
+      },
+    };
     const aiResult = await compileLexiconInternal(
       {
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath,
         workRoot,
         ai: {
@@ -1058,6 +1126,12 @@ describe("lexicon compiler", () => {
       {
         structuredGeneration: generation,
         candidateCache: new MemoryCandidateCache(),
+        lexicalCandidates,
+        sourceRecords: {
+          async register() {
+            return;
+          },
+        },
         progress: {
           report(event) {
             progressEvents.push(event);
@@ -1093,18 +1167,21 @@ describe("lexicon compiler", () => {
       generation.requests.map((request) => request.taskType),
     );
     for (const taskType of [
-      "SENSE_ALIGNMENT",
-      "RELATION_RESOLUTION",
-      "LEARNER_DEFINITION",
-      "EXAMPLE_GENERATION",
-      "COLLOCATION_ENRICHMENT",
-      "SYNSEM_FRAME",
+      LexicalCandidateTaskType.SENSE_ALIGNMENT,
+      LexicalCandidateTaskType.RELATION_RESOLUTION,
+      LexicalCandidateTaskType.LEARNER_DEFINITION,
+      LexicalCandidateTaskType.EXAMPLE_GENERATION,
+      LexicalCandidateTaskType.COLLOCATION_ENRICHMENT,
+      LexicalCandidateTaskType.SYNSEM_FRAME,
       "PEDAGOGICAL_MATERIAL_GENERATION",
       "PEDAGOGICAL_MATERIAL_VERIFICATION",
       "STUDY_HINT",
       "EXERCISE_VERIFICATION",
     ]) {
-      expect(taskTypes.has(taskType)).toBe(true);
+      expect(
+        taskTypes.has(taskType),
+        `Missing ${taskType}; received ${[...taskTypes].sort().join(", ")}`,
+      ).toBe(true);
     }
     expect(
       artifact.provenance.evidence.some(
@@ -1190,7 +1267,7 @@ describe("lexicon compiler", () => {
       compileLexicon(
         {
           manifestPath,
-          profile: "fixture",
+          profile: CompileProfile.FIXTURE,
           outputPath: join(root, "artifact.json.zst"),
           workRoot: join(root, "work"),
           ai: {
@@ -1219,7 +1296,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(root, "artifact.json.zst"),
         workRoot: join(root, "work"),
       }),
@@ -1358,7 +1435,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath: changedManifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(changedRoot, "artifact.json.zst"),
         workRoot: join(changedRoot, "work"),
       }),
@@ -1376,7 +1453,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath: missingManifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(missingRoot, "artifact.json.zst"),
         workRoot: join(missingRoot, "work"),
       }),
@@ -1400,13 +1477,13 @@ describe("lexicon compiler", () => {
 
     const first = await compileLexicon({
       manifestPath: firstManifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: firstOutput,
       workRoot: join(firstRoot, "work"),
     });
     const second = await compileLexicon({
       manifestPath: secondManifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: secondOutput,
       workRoot: join(secondRoot, "work"),
     });
@@ -1446,7 +1523,7 @@ describe("lexicon compiler", () => {
     const first = await compileLexiconInternal(
       {
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(root, "first.json.zst"),
         workRoot,
       },
@@ -1460,7 +1537,7 @@ describe("lexicon compiler", () => {
     const second = await compileLexiconInternal(
       {
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(root, "second.json.zst"),
         workRoot,
       },
@@ -1506,7 +1583,7 @@ describe("lexicon compiler", () => {
 
     const result = await compileLexicon({
       manifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath: join(root, "materialized.json.zst"),
       workRoot: join(root, "work"),
     });
@@ -1523,7 +1600,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(root, "wrong-count.json.zst"),
         workRoot: join(root, "work"),
       }),
@@ -1538,7 +1615,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath: countManifestPath,
-        profile: "pilot-200",
+        profile: CompileProfile.PILOT_200,
         outputPath: join(countRoot, "artifact.json.zst"),
         workRoot: join(countRoot, "work"),
       }),
@@ -1553,7 +1630,7 @@ describe("lexicon compiler", () => {
     await expect(
       compileLexicon({
         manifestPath: subsetManifestPath,
-        profile: "fixture",
+        profile: CompileProfile.FIXTURE,
         outputPath: join(subsetRoot, "artifact.json.zst"),
         workRoot: join(subsetRoot, "work"),
       }),
@@ -1578,7 +1655,7 @@ describe("lexicon compiler", () => {
       await expect(
         compileLexicon({
           manifestPath,
-          profile: "fixture",
+          profile: CompileProfile.FIXTURE,
           outputPath: join(root, "artifact.json.zst"),
           workRoot: join(root, "work"),
         }),
@@ -1611,7 +1688,7 @@ describe("lexicon compiler", () => {
     const outputPath = join(root, "base.json.zst");
     await compileLexicon({
       manifestPath,
-      profile: "fixture",
+      profile: CompileProfile.FIXTURE,
       outputPath,
       workRoot: join(root, "work"),
     });
@@ -1644,7 +1721,7 @@ describe("lexicon compiler", () => {
       headword: "helpful",
       partOfSpeech: "lexinfo:adjective",
       senseDefinitionContains: "giving useful help",
-      materialKinds: [] as Array<"MNEMONIC" | "MICRO_STORY">,
+      materialKinds: [] as PedagogicalMaterialKind[],
       generateStudyHint: false,
       generateExercise: false,
     };
@@ -1663,7 +1740,7 @@ describe("lexicon compiler", () => {
         manifest,
         targetSet({
           ...baseTarget,
-          materialKinds: ["MNEMONIC"],
+          materialKinds: [PedagogicalMaterialKind.MNEMONIC],
         }),
         createLearningExecutor(materialGeneration),
         silentProgress,
@@ -1711,5 +1788,5 @@ describe("lexicon compiler", () => {
           revision.generatorVersion === "structured-ai/v1",
       ),
     ).toBe(true);
-  });
+  }, 15_000);
 });

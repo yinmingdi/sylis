@@ -1,31 +1,91 @@
 model Notebook {
-  id              String                 @id @default(uuid()) @db.Uuid
-  userId          String                 @db.Uuid
-  title           String
-  normalizedTitle String
-  description     String?
-  createdAt       DateTime               @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime               @updatedAt @db.Timestamptz(3)
-  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items           CollectedLexicalItem[]
+  id          String                 @id @default(uuid()) @db.Uuid
+  userId      String                 @db.Uuid
+  name        String
+  description String?
+  isDefault   Boolean                @default(false)
+  sortOrder   Int                    @default(0)
+  retiredAt   DateTime?              @db.Timestamptz(3)
+  createdAt   DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime               @updatedAt @db.Timestamptz(3)
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       CollectedLexicalItem[]
 
-  @@unique([userId, normalizedTitle])
+  @@index([userId, retiredAt, sortOrder])
 }
 
 model CollectedLexicalItem {
-  id             String   @id @default(uuid()) @db.Uuid
-  notebookId     String   @db.Uuid
-  releaseId      String   @db.Uuid
-  targetKind     String
-  targetId       String   @db.Uuid
-  noteCiphertext Bytes?
-  keyVersion     String?
-  position       Int
-  tags           Json
-  collectedAt    DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
-  notebook       Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  id                String                         @id @default(uuid()) @db.Uuid
+  notebookId        String                         @db.Uuid
+  currentRevisionId String?                        @unique @db.Uuid
+  position          Int
+  addedAt           DateTime                       @default(now()) @db.Timestamptz(3)
+  retiredAt         DateTime?                      @db.Timestamptz(3)
+  notebook          Notebook                       @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  revisions         CollectedLexicalItemRevision[] @relation("CollectedItemRevisions")
+  currentRevision   CollectedLexicalItemRevision?  @relation("CurrentCollectedItemRevision", fields: [id, currentRevisionId], references: [collectedItemId, id], onDelete: Restrict)
 
-  @@unique([notebookId, releaseId, targetKind, targetId])
   @@unique([notebookId, position])
+  @@unique([id, currentRevisionId])
+  @@index([notebookId, retiredAt])
+}
+
+model CollectedLexicalItemRevision {
+  id                  String                                           @id @default(uuid()) @db.Uuid
+  collectedItemId     String                                           @db.Uuid
+  revisionNo          Int
+  source              CollectedLexicalItemRevisionSource
+  context             String?
+  note                String?
+  tags                String[]
+  contentHash         String
+  createdBy           String
+  createdAt           DateTime                                         @default(now()) @db.Timestamptz(3)
+  collectedItem       CollectedLexicalItem                             @relation("CollectedItemRevisions", fields: [collectedItemId], references: [id], onDelete: Restrict)
+  currentFor          CollectedLexicalItem?                            @relation("CurrentCollectedItemRevision")
+  headwordTarget      CollectedRevisionHeadwordTarget?
+  entryTarget         CollectedRevisionEntryTarget?
+  senseTarget         CollectedRevisionSenseTarget?
+  collocationTarget   CollectedRevisionCollocationTarget?
+  supportGrantTargets SupportGrantCollectedLexicalItemRevisionTarget[]
+
+  @@unique([collectedItemId, revisionNo])
+  @@unique([collectedItemId, id])
+}
+
+model CollectedRevisionHeadwordTarget {
+  revisionId String                       @id @db.Uuid
+  headwordId String                       @db.Uuid
+  revision   CollectedLexicalItemRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  headword   Headword                     @relation(fields: [headwordId], references: [id], onDelete: Restrict)
+
+  @@index([headwordId])
+}
+
+model CollectedRevisionEntryTarget {
+  revisionId String                       @id @db.Uuid
+  entryId    String                       @db.Uuid
+  revision   CollectedLexicalItemRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  entry      LexicalEntry                 @relation(fields: [entryId], references: [id], onDelete: Restrict)
+
+  @@index([entryId])
+}
+
+model CollectedRevisionSenseTarget {
+  revisionId String                       @id @db.Uuid
+  senseId    String                       @db.Uuid
+  revision   CollectedLexicalItemRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  sense      LexicalSense                 @relation(fields: [senseId], references: [id], onDelete: Restrict)
+
+  @@index([senseId])
+}
+
+model CollectedRevisionCollocationTarget {
+  revisionId    String                       @id @db.Uuid
+  releaseId     String                       @db.Uuid
+  collocationId String                       @db.Uuid
+  revision      CollectedLexicalItemRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  collocation   Collocation                  @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@index([releaseId, collocationId])
 }

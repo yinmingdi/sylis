@@ -1,165 +1,129 @@
-# JSON 导入与 Lexicon Release
+# Artifact 发布与 LexiconRelease
 
-## 1. Importer 边界
+## 1. Lexicon Publisher 边界
 
-目标服务名为 `@sylis/lexicon-importer`，替代 `@sylis/vocabulary-importer`。它只接收：
+`apps/backends/lexicon-publisher` 是独立可部署应用，只接收：
 
 ```text
-artifact URL/path + expected SHA-256 + target lexicon/environment + mode
+artifact URI/path + expected SHA-256 + target lexicon/environment + PublishRun
 ```
 
-它不下载 ECDICT/Kaikki、不解析有道、不调用 AI、不选择 Sense，也不拥有业务 API credentials。
+它不下载 ECDICT/Kaikki、不解析有道、不调用模型、不选择 Sense、不生成练习，也不持有 User/API session secret。依赖限于 `@sylis/lexicon-artifact`、`@sylis/job-contracts`、`@sylis/job-runtime`、`@sylis/database` 和 `@sylis/utils`；禁止依赖 `@sylis/lexicon-compiler`、Model Gateway client 或 Provider SDK。
 
-它唯一的词典领域 package 依赖是 `@sylis/lexicon-contracts`；另外只允许依赖实现无关的 `@sylis/background-jobs`、server-only `@sylis/database` 与纯 `@sylis/utils`。它不得依赖 `@sylis/lexicon-compiler` 或 `@sylis/ai-provider`。数据库投影规则属于 importer，自然语言/source/AI 规则属于 compiler。
+Publisher 构建未激活 release。Activation 由 Admin API 的独立审批 command 完成，不能成为 PublishRun 的最后一步。
 
-## 2. 命令
+## 2. 正式职责命令
 
 ```bash
-# 完全离线验证，不读取 DATABASE_URL
-pnpm --filter @sylis/lexicon-importer validate-artifact \
+# 完全离线，不读取 DATABASE_URL
+pnpm --filter @sylis/lexicon-publisher artifact:validate \
   --artifact ./sylis-lexicon-v1.json.zst \
   --sha256 <expected>
 
-# 连接目标数据库但只读预演
-pnpm --filter @sylis/lexicon-importer start \
+# 连接目标数据库，只读预演
+pnpm --filter @sylis/lexicon-publisher release:plan \
   --artifact ./sylis-lexicon-v1.json.zst \
-  --sha256 <expected> \
-  --mode dry-run
+  --sha256 <expected>
 
-# 构建 DRAFT，不激活
-pnpm --filter @sylis/lexicon-importer start \
-  --job-id <background-job-id> \
-  --artifact ./sylis-lexicon-v1.json.zst \
-  --sha256 <expected> \
-  --mode import
-
-# 独立验证 DRAFT
-pnpm --filter @sylis/lexicon-importer validate \
-  --job-id <background-job-id> \
-  --release <release-id>
-
-# 受保护流程中的显式激活
-pnpm --filter @sylis/lexicon-importer activate \
-  --release <release-id> \
-  --expected-current <old-release-id> \
-  --reason <change-ticket>
+# 执行已创建的 PublishRun activation Job
+pnpm --filter @sylis/lexicon-publisher start
 ```
 
-写入模式必须由受保护 command 预先创建对应 `BackgroundJob` 和 typed `ImportJob`/`LexiconValidationRequest`，runner 只能 claim 传入 ID 且 kind/executor 匹配的 Job。`import` 和 `validate` 都永不隐式 activate。只读 dry-run 不创建 Job 或数据库行。
+不提供 Publisher CLI `activate`；activation 只能调用受保护 Admin command。命令不用 `phase1`、`importer start --mode` 等临时名称。
 
-## 3. 离线 Artifact validation
+## 3. Artifact preflight
 
-`validate-artifact` 在不读取 `DATABASE_URL` 的进程中完成：
+离线 validation 在不读取数据库的进程完成：
 
-1. artifact 下载/读取、压缩字节上限和外部 `.json.zst` checksum；
-2. 流式 zstd 解压、decompressed byte/ratio 上限、single frame/member 与 trailing-data 检查；
-3. schema major、manifest count 上限和 streaming JSON Schema；
-4. 解压后 canonical JSON 的 internal content hash；
-5. source/vocabulary/text profile；
-6. ID reference 和 array order；
-7. schema arrays 与 importer mapping registry 双向完备；
-8. artifact rights/export policy。
+1. 压缩字节上限和外部 SHA-256；
+2. 流式 zstd 解压、decompressed byte/ratio、single member 与 trailing-data；
+3. schema major、manifest count 与 streaming JSON Schema；
+4. canonical payload content hash；
+5. source/vocabulary/text profile 与 rights/export policy；
+6. ID/reference closure、stable array order；
+7. Artifact arrays 与 publisher mapping registry 双向完备。
 
-任何失败都不会建立数据库连接。Artifact row 如果出现 `releaseId`、未知字段、缺失 required/null 字段或未定义 typed discriminator，JSON Schema 直接拒绝。
+未知字段、缺 required/null、非法 discriminator、内嵌 releaseId 或未映射数组直接失败，且不建立数据库连接。
 
-## 4. 数据库只读 dry-run
+## 4. 数据库只读计划
 
-`start --mode dry-run` 先执行同一离线验证，再以数据库 read-only transaction 检查：
+`release:plan` 完成相同 preflight，再用 read-only transaction 检查 Prisma schema/invariant compatibility、目标 Lexicon/language、相同 Artifact 的幂等结果、extension/collation/空间/权限/advisory lock 和 mapping registry。
 
-1. migration/schema compatibility version；
-2. 目标 Lexicon 是否存在且语言一致；
-3. 相同 artifact hash/version 的幂等结果；
-4. extension、collation、可用空间、权限和 advisory lock 可用性；
-5. schema arrays 与当前 importer mapping registry 双向完备。
+只读计划不创建 PublishRun、Job、staging partition 或 LexiconRelease，不获取写锁；数据库写入计数必须为零。
 
-Dry-run 不创建 ImportJob、staging partition 或 LexiconRelease，也不取得写锁；数据库写入计数必须为零。
+## 5. Staging 与 COPY
 
-## 5. Staging
+所有 Artifact entity array 流入同一个 `UNLOGGED LexiconStagingRecord`，以闭合的 `collectionPath` 枚举、`publishRunId` 和 position 隔离；不为 108 个 collection 复制 108 套 staging DDL。Publisher：
 
-为每个顶层 entity array 建对应 unlogged staging table，并附 `importRunId`。流程：
+1. 获取 `lexiconId` advisory lock；
+2. 创建/清理本 Run partition；
+3. streaming parser 转换为 tabular rows；
+4. `COPY FROM STDIN` 批量写入；
+5. 执行 NOT NULL、duplicate、FK-like join、count/hash 检查；
+6. 建必要 index 后进入 release build。
 
-1. 取得 `(lexiconId)` transaction advisory lock。
-2. 创建/清理本 run staging partition。
-3. streaming parser 按数组转换为 tabular rows。
-4. `COPY FROM STDIN` 批量写入。
-5. 对 staging 执行 NOT NULL、duplicate、FK-like join 和 count 检查。
-6. 创建必要索引后再进入 release build。
+成功 validation 后，Publisher 在同一事务中把 PublishRun 标为 SUCCEEDED 并删除该 Run 的 staging；失败或取消时保留 staging 供同一 Run 按 checkpoint 恢复，Publisher 在后续 Job 启动时按 `LEXICON_STAGING_RETENTION_HOURS` 清理超期数据。PostgreSQL crash 导致 UNLOGGED 内容丢失时从固定 Artifact hash 重新 COPY，不把 staging 当成事实来源。
 
-PostgreSQL 官方建议大批量装载优先 COPY，并在数据载入后创建索引；具体顺序以目标表约束和恢复要求测试决定。[PostgreSQL populate](https://www.postgresql.org/docs/current/populate.html)
+禁止对每个词执行 Prisma `create/upsert` 循环。大批量 release 使用参数化 SQL/COPY，Prisma 用于普通请求和低量 User 写入。
 
 ## 6. Release build
 
-单次数据库事务内：
+在受控事务中：
 
-1. 以 `artifactHash` 查询已有 import result；已有 VALIDATED 相同 hash 时把当前 Job 以同一结果引用幂等完成。
-2. 创建 `LexiconRelease(status=DRAFT)`。
-3. 为 artifact 创建唯一数据库 `releaseId`，并在 staging projection 中注入；artifact row 本身不得提供或覆盖该值。
-4. 先写 stable identities，再写一一对应的 release revisions/facts；显示/POS/parent 等 release fact 不从 identity row 推断。
-5. 按 dependency order 用 `INSERT ... SELECT` 从 staging 集合式写入。
-6. 写 provenance/evidence，再补强 FK/关系；不得暂存正式空 target。
-7. 计算数据库侧 count/hash summary，与 manifest 对比。
-8. commit DRAFT；失败整笔回滚。
+1. 查询相同 Artifact hash 的既有成功结果并幂等返回；
+2. 创建 `LexiconRelease(DRAFT)` 与数据库生成的 releaseId；
+3. 先写 stable identities，再写 release revisions/facts；
+4. 按 dependency order `INSERT ... SELECT`；
+5. 写 provenance/evidence 和 typed relation；
+6. 计算数据库 count/content summary 并与 manifest 对比；
+7. commit DRAFT；失败整笔回滚。
 
-不要通过 Prisma 对每个词循环 `create/upsert`。Prisma 仅用于 API 普通查询和低量用户写入；bulk release build 使用参数化 SQL/COPY。
+Artifact 不提供或覆盖数据库 releaseId。正式表不允许 unresolved target 或临时空 FK。
 
-## 7. Validation
+Publisher 不把 Artifact payload 复制到永久 `ArtifactProjectionRecord`；无损交换事实只存在于 immutable Artifact，数据库保存正式关系模型、来源证据、manifest counts 和 validation summary。
 
-DRAFT 验证包括：
+## 7. 全局 validation
 
-- 所有普通/跨语言复合 FK；
-- Entry 至少一个 canonical Form 和 Sense；
-- Sense parent、translation、lineage、relation 图；
-- Concept canonical membership；
-- relation 对称/方向/层级；
-- morphology offset 和 SynSem mappings；
-- provenance/rights；
-- book edition 全覆盖；
-- PedagogicalMaterial primary target/block/mention/citation/material-as-stimulus、Objective primary subject、Exercise response/answer/validation level 和 blueprint selection；
-- `LEXICON_PUBLISHABLE`, `LEARNER_CORE`, `STUDY_READY` profiles；
-- 数据库 content summary 与 artifact manifest。
+DRAFT 进入 VALIDATING 后检查：
 
-开始全局校验前以受控转换把 DRAFT 标记为 VALIDATING；通过后在单独事务标记为 VALIDATED。失败保留 validation report，并以新 ImportJob 重建 release，不把 VALIDATING 倒改回 DRAFT。validator 版本写进 release。
+- release-scoped FK、Entry canonical Form/Sense、Sense parent/lineage/relation；
+- Concept membership、morphology offset、frame/SynSem mapping；
+- provenance、rights、book edition coverage；
+- PedagogicalMaterial target/block/citation、Objective primary subject；
+- Exercise response/answer/validation matrix 与 blueprint satisfiability；
+- `LEXICON_PUBLISHABLE`、`LEARNER_CORE`、`STUDY_READY` profiles；
+- 数据库 summary 与 Artifact manifest。
+
+全部通过后在单独事务转为 VALIDATED。失败保留 report，旧 active release 不受影响；不能把 VALIDATING 原地改回 DRAFT 后继续猜测。
 
 ## 8. Activation 与回滚
 
-activation 事务：
+Admin activation 绑定 User、MFA re-auth、policyVersion、action digest、expected current release、reason 和 approval。短事务锁定 active pointer、验证 target VALIDATED/unrestricted、追加 `LexiconReleaseActivation`，再 compare-and-swap `activeReleaseId`。
 
-```sql
-BEGIN;
-SELECT active_release_id FROM lexicon WHERE id = $1 FOR UPDATE;
--- compare-and-swap expected current
--- verify target VALIDATED and unrestricted
-INSERT INTO lexicon_release_activation (...);
-UPDATE lexicon SET active_release_id = $target WHERE id = $1;
-COMMIT;
-```
+回滚执行同一 command 指向上一 VALIDATED release；不逐表恢复、不重新 publish。Publisher 的数据库 role 无权更新 active pointer。
 
-回滚执行同一个命令，把 target 指向上一 VALIDATED release；不逐表恢复、不重新导入。
+## 9. Job、进度与恢复
 
-## 9. 进度与恢复
+PublishRun 的初始执行和 User retry 各创建 activation Job；临时失败在同一 Job 创建新 JobAttempt。Staging 以 `publishRunId/jobId` 隔离，只有当前 fencing token 可写 progress/checkpoint/result。
 
-阶段：`DOWNLOAD`, `ARTIFACT_VALIDATE`, `DB_DRY_RUN`, `STAGING_<ENTITY>`, `STAGING_VALIDATE`, `BUILD_IDENTITIES`, `BUILD_FACTS`, `GLOBAL_VALIDATE`, `COMMIT`。每 30 秒输出 processed/succeeded/failed/rate/ETA 和数据库 phase；长 SQL 每 15 秒 heartbeat。
+阶段：`ARTIFACT_VALIDATE`、`DB_PLAN`、`STAGING_<ENTITY>`、`STAGING_VALIDATE`、`BUILD_IDENTITIES`、`BUILD_FACTS`、`GLOBAL_VALIDATE`、`COMMIT`。每 30 秒追加 processed/total/rate/ETA reliability 和 heartbeat；长 SQL 至少每 15 秒 heartbeat。
 
-staging 以 `BackgroundJob.id` 隔离。runner 只凭当前 lease token 写 progress/checkpoint；崩溃后 lease 到期，另一个 Importer runner 从最新合法 checkpoint 接管，不另写 `RUNNING/INTERRUPTED` 状态。相同 artifactHash 的成功阶段只有在 checkpoint hash、handler version 和数据库 summary 全部匹配时才可复用，未 commit 的 release 不可见。完整规则见 [BackgroundJob、Worker 与进度协议](../architecture/background-jobs.md)。
+Checkpoint 固定 Artifact hash、handler/schema version、staging summary 和已提交边界。崩溃后新 Attempt 只有在这些值完全一致时恢复；Redis 仅唤醒，不保存状态。完整协议见 [Job 与执行协议](../architecture/background-jobs.md)。
 
-## 10. Railway 服务
+## 10. Railway
 
-- importer 是 job service，不对公网开放。
-- importer 只 claim `LEXICON_IMPORT`/`LEXICON_VALIDATE`，claim/lease/checkpoint/result 使用 `@sylis/background-jobs` contract；不从 API 源码复用 service/repository。
-- 只拥有 `DATABASE_URL`, artifact read token（如需要）和非敏感 run config。
-- 不拥有 `AI_*`、session/CSRF、field-encryption、SMTP、Reddit 或 Web 变量。
-- service source 固定为 GitHub Actions 构建、推送并解析出的私有 GHCR immutable digest；Railway 不在 Importer 部署阶段重新构建源码。
-- CPU 未满不代表逐行远程 SQL 快；COPY + set-based SQL 解决 network round trip 和 transaction overhead。
+Lexicon Publisher 不对公网开放，只暴露私网 `/live` 与 `/ready`。它使用最小数据库 role、private Bucket read credential 和自己的 service identity；不拥有模型、session/CSRF、SMTP、Reddit 或 User content key。
 
-## 11. 应用部署与内容发布分离
+GitHub Actions 构建并推送 private GHCR image，Railway 按 immutable digest 拉取；不在 deploy 阶段重新构建源码。CPU 未满不表示逐行 SQL 有效，COPY + set-based SQL 用于消除 network round trip 和 transaction overhead。
+
+## 11. 与应用发布分离
 
 ```text
-release/* -> main -> CI -> API/Web/Admin/Worker/Compiler Runner Railway deploy
+main -> immutable images -> staging -> protected release -> same images -> production
 
-protected build request -> Railway Compiler Runner -> verified GitHub Release JSON
-  -> manual importer dry-run/import
-  -> validate
-  -> protected activation
+manual BuildRun -> Lexicon Builder -> candidate JSON
+  -> Admin PublishRun -> Lexicon Publisher -> VALIDATED release
+  -> separate Admin activation
 ```
 
-应用代码发布不得自动执行完整词典构建或导入；词典激活也不要求重新部署 API/Web/Admin/Worker/Compiler Runner。
+应用部署不自动 build/publish/activate Lexicon；Lexicon activation 也不重新部署十二个 app。

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "requirements": [
+    {
+      "id": "IDENTITY-001",
+      "owner": "IDENTITY",
+      "risk": "CRITICAL",
+      "requiredLayers": ["INTEGRATION", "BROWSER_E2E"],
+      "ciLanes": ["PULL_REQUEST", "MAIN"],
+      "evidence": [
+        {
+          "layer": "INTEGRATION",
+          "path": "identity.integration.fixture.ts",
+          "testId": "IDENTITY-001-INTEGRATION",
+          "runner": "VITEST",
+          "projects": ["@sylis/test-support"],
+          "tags": ["CORE"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Persists an identity registration transaction"
+        },
+        {
+          "layer": "BROWSER_E2E",
+          "path": "registration.fixture.ts",
+          "testId": "IDENTITY-001-E2E",
+          "runner": "PLAYWRIGHT",
+          "projects": ["web:desktop"],
+          "tags": ["BROWSER"],
+          "ciLanes": ["PULL_REQUEST", "MAIN"],
+          "behavior": "Registers through the delivered email challenge"
+        }
+      ]
+    }
+  ]
+}

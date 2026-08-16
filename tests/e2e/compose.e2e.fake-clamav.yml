@@ -1,0 +1,13 @@
+services:
+  clamav:
+    image: caddy:2.10.2-alpine
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - nc -lk -p 3310 -e /fixtures/fake-clamd.sh
+    volumes:
+      - ./fixtures/clamav/fake-clamd.sh:/fixtures/fake-clamd.sh:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "3310"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

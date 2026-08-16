@@ -1,0 +1,1398 @@
+{
+  "operations": [
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminAgentsController_releases",
+      "path": "/api/admin/v1/agents/releases"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_releasePreview",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/action-previews"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_approve",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/approvals"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_candidate",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/candidates"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_evaluate",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/evaluations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_promote",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/promotions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_revoke",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/revocations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_rollback",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/rollbacks"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_validate",
+      "path": "/api/admin/v1/agents/releases/{releaseKind}/{releaseId}/validations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminAgentsController_runs",
+      "path": "/api/admin/v1/agents/runs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_terminationPreview",
+      "path": "/api/admin/v1/agents/runs/{runId}/termination-previews"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminAgentsController_terminate",
+      "path": "/api/admin/v1/agents/runs/{runId}/terminations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AssetsController_list",
+      "path": "/api/admin/v1/assets"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AssetsController_detail",
+      "path": "/api/admin/v1/assets/{assetId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_createArchive",
+      "path": "/api/admin/v1/audit/archives"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_purgeArchive",
+      "path": "/api/admin/v1/audit/archives/{archiveId}/purges"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_dataAccessEvents",
+      "path": "/api/admin/v1/audit/data-access-events"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_exports",
+      "path": "/api/admin/v1/audit/exports"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_createExport",
+      "path": "/api/admin/v1/audit/exports"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_exportArtifact",
+      "path": "/api/admin/v1/audit/exports/{exportId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_legalHolds",
+      "path": "/api/admin/v1/audit/legal-holds"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_createLegalHold",
+      "path": "/api/admin/v1/audit/legal-holds"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_releaseLegalHold",
+      "path": "/api/admin/v1/audit/legal-holds/{holdId}/releases"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_retention",
+      "path": "/api/admin/v1/audit/retention"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AuditController_createRetentionPolicy",
+      "path": "/api/admin/v1/audit/retention-policies"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AuditController_securityEvents",
+      "path": "/api/admin/v1/audit/security-events"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "AdminIdentityController_challenge",
+      "path": "/api/admin/v1/auth/challenges"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "DELETE",
+      "operationId": "AdminIdentityController_logout",
+      "path": "/api/admin/v1/auth/session"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminIdentityController_session",
+      "path": "/api/admin/v1/auth/session"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminIdentityController_reauthenticate",
+      "path": "/api/admin/v1/auth/session/reauthentication"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminIdentityController_beginReauthentication",
+      "path": "/api/admin/v1/auth/session/reauthentication/challenges"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "AdminIdentityController_login",
+      "path": "/api/admin/v1/auth/sessions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "DeploymentController_list",
+      "path": "/api/admin/v1/deployment-releases"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminJobsController_list",
+      "path": "/api/admin/v1/jobs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminJobsController_detail",
+      "path": "/api/admin/v1/jobs/{jobId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminJobsController_cancel",
+      "path": "/api/admin/v1/jobs/{jobId}/cancel"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminJobsController_retry",
+      "path": "/api/admin/v1/jobs/{jobId}/retry"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_decide",
+      "path": "/api/admin/v1/lexicon/activation-requests/{approvalId}/decisions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "LexiconOperationsController_builds",
+      "path": "/api/admin/v1/lexicon/build-runs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_createBuild",
+      "path": "/api/admin/v1/lexicon/build-runs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_previewBuildBudget",
+      "path": "/api/admin/v1/lexicon/build-runs/{runId}/budget-approval-previews"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_approveBuildBudget",
+      "path": "/api/admin/v1/lexicon/build-runs/{runId}/budget-approvals"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "LexiconOperationsController_publishRuns",
+      "path": "/api/admin/v1/lexicon/publish-runs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_createPublish",
+      "path": "/api/admin/v1/lexicon/publish-runs"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "LexiconOperationsController_releases",
+      "path": "/api/admin/v1/lexicon/releases"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_activate",
+      "path": "/api/admin/v1/lexicon/releases/{releaseId}/activate"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "LexiconOperationsController_preview",
+      "path": "/api/admin/v1/lexicon/releases/{releaseId}/activation-preview"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_requestActivation",
+      "path": "/api/admin/v1/lexicon/releases/{releaseId}/activation-requests"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "LexiconOperationsController_validateRelease",
+      "path": "/api/admin/v1/lexicon/releases/{releaseId}/validations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_createBudget",
+      "path": "/api/admin/v1/models/budget-policies"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_validateCredential",
+      "path": "/api/admin/v1/models/credential-revisions/{revisionId}/validations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminModelsController_credentials",
+      "path": "/api/admin/v1/models/credentials"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_createCredential",
+      "path": "/api/admin/v1/models/credentials"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_quarantineCredential",
+      "path": "/api/admin/v1/models/credentials/{profileId}/quarantines"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_restoreCredential",
+      "path": "/api/admin/v1/models/credentials/{profileId}/restorations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_revokeCredential",
+      "path": "/api/admin/v1/models/credentials/{profileId}/revocations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_rotateCredential",
+      "path": "/api/admin/v1/models/credentials/{profileId}/rotations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_createQuota",
+      "path": "/api/admin/v1/models/quota-policies"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminModelsController_routes",
+      "path": "/api/admin/v1/models/routes"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_probeRoute",
+      "path": "/api/admin/v1/models/routes/{routeReleaseId}/health-probes"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_restoreRoute",
+      "path": "/api/admin/v1/models/routes/{routeReleaseId}/restorations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminModelsController_revokeRoute",
+      "path": "/api/admin/v1/models/routes/{routeReleaseId}/security-revocations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminModelsController_usage",
+      "path": "/api/admin/v1/models/usage"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminOperatorRolesController_operators",
+      "path": "/api/admin/v1/operator-roles"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminOperatorRolesController_grant",
+      "path": "/api/admin/v1/operator-roles"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminOperatorRolesController_revoke",
+      "path": "/api/admin/v1/operator-roles/{assignmentId}/revocations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "OverviewController_get",
+      "path": "/api/admin/v1/overview"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "ReviewController_batches",
+      "path": "/api/admin/v1/reviews/batches"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "ReviewController_batch",
+      "path": "/api/admin/v1/reviews/batches/{batchId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "ReviewController_decide",
+      "path": "/api/admin/v1/reviews/batches/{batchId}/decisions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "PATCH",
+      "operationId": "ReviewController_revise",
+      "path": "/api/admin/v1/reviews/candidates/{candidateId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "SourceRegistryController_list",
+      "path": "/api/admin/v1/source-datasets"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "SourceRegistryController_policies",
+      "path": "/api/admin/v1/source-datasets/rights-policies"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "SourceRegistryController_register",
+      "path": "/api/admin/v1/source-datasets/versions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "SourceRegistryController_rights",
+      "path": "/api/admin/v1/source-datasets/versions/{versionId}/rights-decisions"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "SourceRegistryController_synchronizations",
+      "path": "/api/admin/v1/source-datasets/versions/{versionId}/synchronizations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "SourceRegistryController_synchronize",
+      "path": "/api/admin/v1/source-datasets/versions/{versionId}/synchronizations"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminUserSecurityController_lock",
+      "path": "/api/admin/v1/user-security-locks/{userId}"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminUserSupportController_accessGrant",
+      "path": "/api/admin/v1/user-support/support-grants/{grantId}/access"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "GET",
+      "operationId": "AdminUserSupportController_users",
+      "path": "/api/admin/v1/user-support/users"
+    },
+    {
+      "audience": "ADMIN",
+      "authentication": "ADMIN_SESSION",
+      "method": "POST",
+      "operationId": "AdminUserSupportController_revokeSessions",
+      "path": "/api/admin/v1/user-support/users/{userId}/session-revocations"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_artifacts",
+      "path": "/api/agent/v1/artifacts"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_artifact",
+      "path": "/api/agent/v1/artifacts/{artifactId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicArtifactAssetsOpenApiController_preview",
+      "path": "/api/agent/v1/artifacts/{artifactId}/accept-as-asset"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicArtifactAssetsOpenApiController_accept",
+      "path": "/api/agent/v1/artifacts/{artifactId}/accept-as-asset"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_reviseArtifact",
+      "path": "/api/agent/v1/artifacts/{artifactId}/revisions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAssetsOpenApiController_list",
+      "path": "/api/agent/v1/assets"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "PublicAssetsOpenApiController_deleteAsset",
+      "path": "/api/agent/v1/assets/{assetId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAssetsOpenApiController_asset",
+      "path": "/api/agent/v1/assets/{assetId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAssetsOpenApiController_finalize",
+      "path": "/api/agent/v1/assets/{assetId}/finalize"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAssetsOpenApiController_revision",
+      "path": "/api/agent/v1/assets/{assetId}/revisions/{revisionId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAssetsOpenApiController_createUploadIntent",
+      "path": "/api/agent/v1/assets/upload-intents"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_capabilities",
+      "path": "/api/agent/v1/capabilities"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicDiagnosticBundlesOpenApiController_list",
+      "path": "/api/agent/v1/diagnostic-bundles"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicDiagnosticBundlesOpenApiController_create",
+      "path": "/api/agent/v1/diagnostic-bundles"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicDiagnosticBundlesOpenApiController_bundle",
+      "path": "/api/agent/v1/diagnostic-bundles/{bundleId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicDiagnosticBundlesOpenApiController_revise",
+      "path": "/api/agent/v1/diagnostic-bundles/{bundleId}/revisions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicDiagnosticBundlesOpenApiController_confirm",
+      "path": "/api/agent/v1/diagnostic-bundles/{bundleId}/revisions/{revisionId}/confirm"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_memoryCards",
+      "path": "/api/agent/v1/memory-cards"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "PublicAgentOpenApiController_suppressMemoryCard",
+      "path": "/api/agent/v1/memory-cards/{memoryCardId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "PublicAgentOpenApiController_updateMemoryCard",
+      "path": "/api/agent/v1/memory-cards/{memoryCardId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "PublicAgentOpenApiController_deleteModelExchange",
+      "path": "/api/agent/v1/model-exchanges/{exchangeId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_proposal",
+      "path": "/api/agent/v1/proposals/{proposalId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_decideProposal",
+      "path": "/api/agent/v1/proposals/{proposalId}/decisions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_run",
+      "path": "/api/agent/v1/runs/{runId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_cancelRun",
+      "path": "/api/agent/v1/runs/{runId}/cancel"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_retryRun",
+      "path": "/api/agent/v1/runs/{runId}/retry"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_respondToWait",
+      "path": "/api/agent/v1/runs/{runId}/wait-conditions/{waitId}/responses"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_listSessions",
+      "path": "/api/agent/v1/sessions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_createSession",
+      "path": "/api/agent/v1/sessions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "PublicAgentOpenApiController_deleteSession",
+      "path": "/api/agent/v1/sessions/{sessionId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_session",
+      "path": "/api/agent/v1/sessions/{sessionId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "PublicAgentOpenApiController_updateSession",
+      "path": "/api/agent/v1/sessions/{sessionId}"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_streamEvents",
+      "path": "/api/agent/v1/sessions/{sessionId}/events"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "PublicAgentOpenApiController_submitInstruction",
+      "path": "/api/agent/v1/sessions/{sessionId}/instructions"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_messages",
+      "path": "/api/agent/v1/sessions/{sessionId}/messages"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_runs",
+      "path": "/api/agent/v1/sessions/{sessionId}/runs"
+    },
+    {
+      "audience": "AGENT",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "PublicAgentOpenApiController_usage",
+      "path": "/api/agent/v1/usage"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "AssessmentsController_blueprints",
+      "path": "/api/v1/assessments/blueprints"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "AssessmentsController_history",
+      "path": "/api/v1/assessments/history"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "AssessmentsController_create",
+      "path": "/api/v1/assessments/sessions"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "AssessmentsController_session",
+      "path": "/api/v1/assessments/sessions/{sessionId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "AssessmentsController_respond",
+      "path": "/api/v1/assessments/sessions/{sessionId}/responses"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "AssessmentsController_result",
+      "path": "/api/v1/assessments/sessions/{sessionId}/result"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "AssessmentsController_submit",
+      "path": "/api/v1/assessments/sessions/{sessionId}/submit"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_beginTotp",
+      "path": "/api/v1/auth/mfa/totp/enrollments"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_verifyTotp",
+      "path": "/api/v1/auth/mfa/totp/enrollments/{credentialId}/verify"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_beginWebAuthn",
+      "path": "/api/v1/auth/mfa/webauthn/enrollments"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_verifyWebAuthn",
+      "path": "/api/v1/auth/mfa/webauthn/enrollments/verify"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "IdentityController_passwordRecoveryChallenge",
+      "path": "/api/v1/auth/password-recovery-challenges"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "IdentityController_resetPassword",
+      "path": "/api/v1/auth/password-resets"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "IdentityController_register",
+      "path": "/api/v1/auth/register"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "IdentityController_registrationChallenge",
+      "path": "/api/v1/auth/registration-challenges"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "IdentityController_logout",
+      "path": "/api/v1/auth/session"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "IdentityController_session",
+      "path": "/api/v1/auth/session"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_reauthenticate",
+      "path": "/api/v1/auth/session/re-authentication"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "POST",
+      "operationId": "IdentityController_login",
+      "path": "/api/v1/auth/sessions"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "RedditController_feed",
+      "path": "/api/v1/explore/reddit/feed"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "RedditController_post",
+      "path": "/api/v1/explore/reddit/posts/{externalId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "JobsController_cancel",
+      "path": "/api/v1/jobs/{jobId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "JobsController_get",
+      "path": "/api/v1/jobs/{jobId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "JobsController_events",
+      "path": "/api/v1/jobs/{jobId}/events"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_entry",
+      "path": "/api/v1/lexicon/entries/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_entryMaterials",
+      "path": "/api/v1/lexicon/entries/{id}/materials"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_headword",
+      "path": "/api/v1/lexicon/headwords/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_search",
+      "path": "/api/v1/lexicon/search"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_sense",
+      "path": "/api/v1/lexicon/senses/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "PUBLIC",
+      "method": "GET",
+      "operationId": "LexiconController_senseMaterials",
+      "path": "/api/v1/lexicon/senses/{id}/materials"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "LexiconController_translate",
+      "path": "/api/v1/lexicon/translate"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "NotebooksController_list",
+      "path": "/api/v1/notebooks"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "NotebooksController_create",
+      "path": "/api/v1/notebooks"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "NotebooksController_remove",
+      "path": "/api/v1/notebooks/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "NotebooksController_get",
+      "path": "/api/v1/notebooks/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "NotebooksController_update",
+      "path": "/api/v1/notebooks/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "NotebooksController_items",
+      "path": "/api/v1/notebooks/{id}/items"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "NotebooksController_add",
+      "path": "/api/v1/notebooks/{id}/items"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "NotebooksController_removeItem",
+      "path": "/api/v1/notebooks/{id}/items/{itemId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "NotebooksController_updateItem",
+      "path": "/api/v1/notebooks/{id}/items/{itemId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ReadingController_activity",
+      "path": "/api/v1/reading/activities"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ReadingController_library",
+      "path": "/api/v1/reading/collections/library/items"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ReadingController_save",
+      "path": "/api/v1/reading/collections/library/items"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "ReadingController_unsave",
+      "path": "/api/v1/reading/collections/library/items/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ReadingController_document",
+      "path": "/api/v1/reading/documents/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ReadingController_history",
+      "path": "/api/v1/reading/history"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ReadingController_annotations",
+      "path": "/api/v1/reading/revisions/{id}/annotations"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ReadingController_resolve",
+      "path": "/api/v1/reading/revisions/{id}/resolve-selection"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ReadingController_targets",
+      "path": "/api/v1/reading/revisions/{id}/targets"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ReadingController_selectTargets",
+      "path": "/api/v1/reading/revisions/{id}/targets/select"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ExercisesController_create",
+      "path": "/api/v1/study/attempts"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ExercisesController_respond",
+      "path": "/api/v1/study/attempts/{attemptId}/responses"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "BooksController_enrollments",
+      "path": "/api/v1/study/enrollments"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "BooksController_enroll",
+      "path": "/api/v1/study/enrollments"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "BooksController_update",
+      "path": "/api/v1/study/enrollments/{id}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "BooksController_migrate",
+      "path": "/api/v1/study/enrollments/{id}/migrate"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "StudyController_objective",
+      "path": "/api/v1/study/objectives/{objectiveId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "StudyController_progress",
+      "path": "/api/v1/study/plan-items/{planItemId}/progress"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "StudyController_review",
+      "path": "/api/v1/study/reviews"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "StudyController_stats",
+      "path": "/api/v1/study/stats"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "StudyController_today",
+      "path": "/api/v1/study/today"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "IdentityController_me",
+      "path": "/api/v1/users/me"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "IdentityController_updateMe",
+      "path": "/api/v1/users/me"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_createConsent",
+      "path": "/api/v1/users/me/consent-records"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "IdentityController_consents",
+      "path": "/api/v1/users/me/consents"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_requestDataExport",
+      "path": "/api/v1/users/me/data-exports"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "IdentityController_dataExport",
+      "path": "/api/v1/users/me/data-exports/{requestId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "IdentityController_requestAccountDeletion",
+      "path": "/api/v1/users/me/deletion-requests"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "ModelCredentialsController_list",
+      "path": "/api/v1/users/me/model-credentials"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ModelCredentialsController_create",
+      "path": "/api/v1/users/me/model-credentials"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "ModelCredentialsController_revoke",
+      "path": "/api/v1/users/me/model-credentials/{profileId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "ModelCredentialsController_rotate",
+      "path": "/api/v1/users/me/model-credentials/{profileId}/rotations"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "PATCH",
+      "operationId": "IdentityController_changePassword",
+      "path": "/api/v1/users/me/password"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "IdentityController_sessions",
+      "path": "/api/v1/users/me/sessions"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "IdentityController_revokeSession",
+      "path": "/api/v1/users/me/sessions/{sessionId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "SupportGrantsController_list",
+      "path": "/api/v1/users/me/support-grants"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "SupportGrantsController_create",
+      "path": "/api/v1/users/me/support-grants"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "DELETE",
+      "operationId": "SupportGrantsController_revoke",
+      "path": "/api/v1/users/me/support-grants/{grantId}"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "POST",
+      "operationId": "SupportGrantsController_preview",
+      "path": "/api/v1/users/me/support-grants/previews"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "BooksController_list",
+      "path": "/api/v1/vocabulary-books"
+    },
+    {
+      "audience": "USER",
+      "authentication": "USER_SESSION",
+      "method": "GET",
+      "operationId": "BooksController_edition",
+      "path": "/api/v1/vocabulary-books/{bookId}/editions/{editionId}"
+    }
+  ],
+  "schemaVersion": 1
+}

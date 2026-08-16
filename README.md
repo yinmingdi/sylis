@@ -30,8 +30,8 @@ cd sylis
 pnpm install
 
 # 配置环境变量（详见配置指南）
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+cp apps/backends/api/.env.example apps/backends/api/.env
+cp apps/frontends/web/.env.example apps/frontends/web/.env
 
 # 启动所有服务
 pnpm start

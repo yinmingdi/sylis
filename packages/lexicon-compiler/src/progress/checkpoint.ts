@@ -1,8 +1,9 @@
-import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-contracts";
+import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-artifact";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
+import { CompileStage } from "./reporter";
 import type { NormalizedSourceRecord } from "../candidates/candidate-v1";
 
 interface CompilerCheckpointBase {
@@ -16,17 +17,17 @@ interface CompilerCheckpointBase {
 }
 
 export interface SourceRecordsCheckpoint extends CompilerCheckpointBase {
-  stage: "SOURCE_RECORDS";
+  stage: CompileStage.SOURCE_RECORDS;
   records: NormalizedSourceRecord[];
 }
 
 export interface RelationResolutionCheckpoint extends CompilerCheckpointBase {
-  stage: "RELATION_RESOLUTION";
+  stage: CompileStage.RELATION_RESOLUTION;
   records: NormalizedSourceRecord[];
 }
 
 export interface LearningContentCheckpoint extends CompilerCheckpointBase {
-  stage: "LEARNING_CONTENT";
+  stage: CompileStage.EXERCISES_BLUEPRINTS;
   artifact: SylisLexiconArtifactV1;
 }
 
@@ -50,13 +51,13 @@ function isCompilerCheckpoint(value: unknown): value is CompilerCheckpoint {
     typeof checkpoint.handlerVersion === "string";
   if (!baseValid) return false;
   if (
-    checkpoint.stage === "SOURCE_RECORDS" ||
-    checkpoint.stage === "RELATION_RESOLUTION"
+    checkpoint.stage === CompileStage.SOURCE_RECORDS ||
+    checkpoint.stage === CompileStage.RELATION_RESOLUTION
   ) {
     return Array.isArray(checkpoint.records);
   }
   return (
-    checkpoint.stage === "LEARNING_CONTENT" &&
+    checkpoint.stage === CompileStage.EXERCISES_BLUEPRINTS &&
     typeof checkpoint.artifact === "object" &&
     checkpoint.artifact !== null &&
     !Array.isArray(checkpoint.artifact)

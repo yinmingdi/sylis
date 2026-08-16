@@ -2,7 +2,7 @@
   "name": "@sylis/lexicon-compiler",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "files": [
     "dist",
     "data"
@@ -13,11 +13,11 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run --maxWorkers=2",
@@ -34,8 +34,8 @@
     "@aws-sdk/lib-storage": "3.1103.0",
     "@smithy/node-http-handler": "4.9.13",
     "@streamparser/json": "0.0.22",
-    "@sylis/ai-provider": "workspace:*",
-    "@sylis/lexicon-contracts": "workspace:*",
+    "@sylis/lexicon-artifact": "workspace:*",
+    "@sylis/utils": "workspace:*",
     "ajv": "^8.17.1",
     "ajv-formats": "3.0.1",
     "csv-parse": "^5.6.0",
@@ -43,7 +43,6 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "tsdown": "0.22.14",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

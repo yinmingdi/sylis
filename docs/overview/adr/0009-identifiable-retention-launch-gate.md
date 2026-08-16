@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: superseded by ADR-0015
 ---
 
 # Requested indefinite identifiable retention

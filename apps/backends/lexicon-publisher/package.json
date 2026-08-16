@@ -1,0 +1,40 @@
+{
+  "name": "@sylis/lexicon-publisher",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --passWithNoTests",
+    "artifact:validate": "tsx src/cli.ts artifact:validate",
+    "release:plan": "tsx src/cli.ts release:plan",
+    "dev": "tsx src/main.ts",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1103.0",
+    "@streamparser/json": "0.0.22",
+    "@sylis/job-contracts": "workspace:*",
+    "@sylis/job-runtime": "workspace:*",
+    "@sylis/database": "workspace:*",
+    "@sylis/lexicon-artifact": "workspace:*",
+    "@sylis/utils": "workspace:*",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "pg": "8.16.3",
+    "pg-copy-streams": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "8.15.5",
+    "@types/pg-copy-streams": "1.2.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

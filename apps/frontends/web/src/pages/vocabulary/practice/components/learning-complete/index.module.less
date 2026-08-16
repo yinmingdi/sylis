@@ -1,0 +1,161 @@
+// 学习完成页面 - 参考me页面设计
+.completeContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--spacing-8) var(--spacing-4);
+}
+
+.completeContent {
+  text-align: center;
+  color: var(--color-text-primary);
+  max-width: 400px;
+  width: 100%;
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8) var(--spacing-6);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--color-border-focus);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+.completeIcon {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-6);
+  color: var(--color-success);
+  animation: bounce var(--duration-slow) infinite;
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.completeTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-3);
+  line-height: var(--line-height-tight);
+}
+
+.completeSubtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-8);
+  line-height: var(--line-height-relaxed);
+}
+
+.completeStats {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-8);
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statNumber {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-500);
+  margin-bottom: var(--spacing-2);
+}
+
+.statLabel {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.completeMessage {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--spacing-10);
+}
+
+.completeActions {
+  display: flex;
+  justify-content: center;
+}
+
+.completeButton {
+  padding: var(--spacing-4) var(--spacing-12);
+  background: var(--color-primary-500);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--color-primary-600);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .completeContent {
+    box-shadow: var(--shadow-elevated);
+  }
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+  .completeContainer {
+    padding: var(--spacing-8) var(--spacing-4);
+  }
+
+  .completeContent {
+    padding: var(--spacing-8) var(--spacing-6);
+  }
+
+  .completeIcon {
+    font-size: var(--font-size-3xl);
+  }
+
+  .completeTitle {
+    font-size: var(--font-size-2xl);
+  }
+
+  .completeSubtitle {
+    font-size: var(--font-size-base);
+  }
+
+  .statNumber {
+    font-size: var(--font-size-3xl);
+  }
+
+  .completeButton {
+    padding: var(--spacing-3) var(--spacing-8);
+    font-size: var(--font-size-base);
+  }
+}

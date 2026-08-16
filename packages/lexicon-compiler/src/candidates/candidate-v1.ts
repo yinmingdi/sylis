@@ -1,10 +1,68 @@
-import type { JsonValue } from "@sylis/lexicon-contracts";
+import type { JsonValue } from "@sylis/lexicon-artifact";
 
-export type SourceAdapterKind =
-  | "ECDICT"
-  | "WIKTEXTRACT_EN"
-  | "WN_LMF"
-  | "YOUDAO_NDJSON";
+export enum SourceAdapterKind {
+  ECDICT = "ECDICT",
+  WIKTEXTRACT_EN = "WIKTEXTRACT_EN",
+  WN_LMF = "WN_LMF",
+  YOUDAO_NDJSON = "YOUDAO_NDJSON",
+}
+
+export enum CandidateSenseRelationType {
+  SYNONYM = "SYNONYM",
+  ANTONYM = "ANTONYM",
+  HYPERNYM = "HYPERNYM",
+  HYPONYM = "HYPONYM",
+  RELATED = "RELATED",
+}
+
+export enum CandidateEntryRelationType {
+  ABBREVIATION_OF = "ABBREVIATION_OF",
+  VARIANT_OF = "VARIANT_OF",
+  DERIVATIONALLY_RELATED = "DERIVATIONALLY_RELATED",
+}
+
+export enum CandidateUsageType {
+  REGISTER = "REGISTER",
+  DOMAIN = "DOMAIN",
+  REGION = "REGION",
+  TEMPORAL = "TEMPORAL",
+  OTHER = "OTHER",
+}
+
+export enum CandidateCollocationComponentRole {
+  HEAD = "HEAD",
+  PARTNER = "PARTNER",
+  FUNCTION = "FUNCTION",
+}
+
+export enum CandidateCollocationType {
+  FREE = "FREE",
+  RESTRICTED = "RESTRICTED",
+  IDIOMATIC = "IDIOMATIC",
+  UNKNOWN = "UNKNOWN",
+}
+
+export enum CandidateMorphemeRole {
+  ROOT = "ROOT",
+  PREFIX = "PREFIX",
+  SUFFIX = "SUFFIX",
+  LINK = "LINK",
+  OTHER = "OTHER",
+}
+
+export enum CandidateFormationType {
+  DERIVATION = "DERIVATION",
+  COMPOUNDING = "COMPOUNDING",
+  CONVERSION = "CONVERSION",
+  OTHER = "OTHER",
+}
+
+export enum CandidateFormType {
+  CANONICAL = "CANONICAL",
+  INFLECTED = "INFLECTED",
+  VARIANT = "VARIANT",
+  ABBREVIATED = "ABBREVIATED",
+}
 
 export interface CandidateText {
   languageTag: string;
@@ -37,35 +95,36 @@ export interface CandidateExample {
 }
 
 export interface CandidateRelation {
-  relationType: "SYNONYM" | "ANTONYM" | "HYPERNYM" | "HYPONYM" | "RELATED";
+  relationType: CandidateSenseRelationType;
   targetText: string;
   targetExternalId?: string;
   resolvedTargetSourceRecordId?: string;
   resolvedTargetSourceSenseKey?: string;
   resolutionCandidateKey?: string;
+  resolutionCandidateRevisionId?: string;
 }
 
 export interface CandidateEntryRelation {
-  relationType: "ABBREVIATION_OF" | "VARIANT_OF" | "DERIVATIONALLY_RELATED";
+  relationType: CandidateEntryRelationType;
   targetText: string;
   targetPartOfSpeech?: string;
 }
 
 export interface CandidateUsage {
-  usageType: "REGISTER" | "DOMAIN" | "REGION" | "TEMPORAL" | "OTHER";
+  usageType: CandidateUsageType;
   value?: string;
   text?: string;
 }
 
 export interface CandidateCollocationComponent {
   surfaceText: string;
-  role: "HEAD" | "PARTNER" | "FUNCTION";
+  role: CandidateCollocationComponentRole;
   targetText?: string;
 }
 
 export interface CandidateCollocation {
   text: string;
-  relationType: "FREE" | "RESTRICTED" | "IDIOMATIC" | "UNKNOWN";
+  relationType: CandidateCollocationType;
   components: CandidateCollocationComponent[];
   translations?: CandidateText[];
 }
@@ -90,12 +149,12 @@ export interface CandidateMorphemeSegment {
   surfaceText: string;
   startOffset: number;
   endOffset: number;
-  role: "ROOT" | "PREFIX" | "SUFFIX" | "LINK" | "OTHER";
+  role: CandidateMorphemeRole;
   morphemeKey: string;
 }
 
 export interface CandidateWordFormation {
-  formationType: "DERIVATION" | "COMPOUNDING" | "CONVERSION" | "OTHER";
+  formationType: CandidateFormationType;
   ruleKey: string;
   inputPattern: string;
   outputPattern: string;
@@ -107,6 +166,8 @@ export interface CandidateSense {
   parentSourceSenseKey?: string;
   alignmentKey?: string;
   alignmentCandidateKey?: string;
+  alignmentCandidateRevisionId?: string;
+  alignmentCandidateLocalId?: string;
   partOfSpeech: string;
   definitions: CandidateText[];
   translations: CandidateText[];
@@ -124,7 +185,7 @@ export interface CandidateSense {
 
 export interface CandidateForm {
   text: string;
-  formType: "CANONICAL" | "INFLECTED" | "VARIANT" | "ABBREVIATED";
+  formType: CandidateFormType;
   features: Array<{ feature: string; value: string }>;
   formOf?: string;
 }
@@ -162,8 +223,9 @@ export interface NormalizedSourceRecord {
   wordFormations?: CandidateWordFormation[];
 }
 
-export type FormResolutionStatus =
-  | "INFLECTED_ONLY"
-  | "INDEPENDENT_ONLY"
-  | "BOTH"
-  | "UNRESOLVED";
+export enum FormResolutionStatus {
+  INFLECTED_ONLY = "INFLECTED_ONLY",
+  INDEPENDENT_ONLY = "INDEPENDENT_ONLY",
+  BOTH = "BOTH",
+  UNRESOLVED = "UNRESOLVED",
+}

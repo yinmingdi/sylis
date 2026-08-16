@@ -39,7 +39,7 @@ Sylis 不把任何一套规范误当成可直接复制的 PostgreSQL schema。�
 | [JSON Schema 2020-12](https://json-schema.org/draft/2020-12/json-schema-core) | artifact、candidate 和 AI task 都有版本化 schema；consumer 先校验再处理                            |
 | [RFC 8785 JCS](https://www.rfc-editor.org/rfc/rfc8785)                        | object key 和 primitive serialization 使用 JCS；领域数组先按稳定业务键排序                         |
 | [SLSA provenance](https://slsa.dev/spec/v1.0/provenance)                      | artifact manifest 记录 builder、source digests、Git commit 和构建参数，但不宣称未达到的 SLSA level |
-| [PostgreSQL COPY](https://www.postgresql.org/docs/current/sql-copy.html)      | importer 使用流式解析、COPY staging 和集合式 SQL，不逐词远程 insert                                |
+| [PostgreSQL COPY](https://www.postgresql.org/docs/current/sql-copy.html)      | Lexicon Publisher 使用流式解析、COPY staging 和集合式 SQL，不逐词远程 insert                       |
 
 JCS 不会替 Sylis 做 Unicode normalization，也不会重排数组。因此 compiler 必须先按版本化 text profile 产生 NFC 字段并按业务键排序，再进行 JCS serialization/hash。
 
@@ -57,15 +57,15 @@ Sylis 只采用 QTI 的信息分离思想，不在首期实现 QTI XML 导入导
 
 ## 6. API、发布与安全
 
-| 依据                                                                                                                             | 设计决定                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html)                                                                         | API contract 与 JSON Schema 语义对齐，CI 检查生成文档和 breaking changes                                        |
-| [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457)                                                               | 所有非 2xx 错误返回统一 `application/problem+json`                                                              |
-| [Railway services](https://docs.railway.com/services)                                                                            | Railway 运行 CI 已构建并固定 digest 的 API/Web/Admin/Worker/Compiler Runner/Importer 镜像；数据库是独立 service |
-| [Railway environments](https://docs.railway.com/environments)                                                                    | staging/production 完全隔离，分别绑定分支、变量、数据库和 AI key                                                |
-| [Railway variables](https://docs.railway.com/variables)                                                                          | 业务密钥使用 service-scoped sealed variables；不通过源码、Vite 或 artifact 传递                                 |
-| [GitHub protected environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | production deploy 和 lexicon activation 使用 environment protection、branch restriction 和 concurrency          |
-| [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)                   | 最小权限、集中管理、轮换、撤销、审计；每个进程只得到它需要的密钥                                                |
+| 依据                                                                                                                             | 设计决定                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [OpenAPI 3.1](https://spec.openapis.org/oas/v3.1.1.html)                                                                         | API contract 与 JSON Schema 语义对齐，CI 检查生成文档和 breaking changes                               |
+| [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457)                                                               | 所有非 2xx 错误返回统一 `application/problem+json`                                                     |
+| [Railway services](https://docs.railway.com/services)                                                                            | Railway 运行 CI 已构建并固定 digest 的十二个 app 镜像；PostgreSQL、Redis 和三类 Bucket 按环境隔离      |
+| [Railway environments](https://docs.railway.com/environments)                                                                    | staging/production 完全隔离，分别绑定分支、变量、数据库和 AI key                                       |
+| [Railway variables](https://docs.railway.com/variables)                                                                          | 业务密钥使用 service-scoped sealed variables；不通过源码、Vite 或 artifact 传递                        |
+| [GitHub protected environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) | production deploy 和 lexicon activation 使用 environment protection、branch restriction 和 concurrency |
+| [OWASP Secrets Management](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)                   | 最小权限、集中管理、轮换、撤销、审计；每个进程只得到它需要的密钥                                       |
 
 ## 7. 规范冲突时的优先级
 

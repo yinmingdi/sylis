@@ -1,8 +1,42 @@
+import {
+  EXERCISE_DISTRACTOR_KINDS,
+  type ExerciseDistractorKind,
+} from "@sylis/lexicon-artifact";
+
+import { PedagogicalMaterialKind } from "../../manifest/source-manifest";
+
+export enum CandidateMaterialBlockRole {
+  EXPLANATION = "EXPLANATION",
+  STORY = "STORY",
+  TRANSLATION = "TRANSLATION",
+  TAKEAWAY = "TAKEAWAY",
+}
+
+export enum CandidateMaterialLanguageTag {
+  EN = "en",
+  ZH_CN = "zh-CN",
+}
+
+export enum CandidateVerificationVerdict {
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
+export enum CandidateExerciseTaskKind {
+  FORM_MEANING_MAPPING = "FORM_MEANING_MAPPING",
+}
+
+export enum CandidateDifficultyTier {
+  FOUNDATION = "FOUNDATION",
+  DEVELOPING = "DEVELOPING",
+  ADVANCED = "ADVANCED",
+}
+
 export interface PedagogicalMaterialGenerationCandidate {
-  materialKind: "MNEMONIC" | "MICRO_STORY";
+  materialKind: PedagogicalMaterialKind;
   blocks: Array<{
-    role: "EXPLANATION" | "STORY" | "TRANSLATION" | "TAKEAWAY";
-    languageTag: "en" | "zh-CN";
+    role: CandidateMaterialBlockRole;
+    languageTag: CandidateMaterialLanguageTag;
     text: string;
   }>;
 }
@@ -12,7 +46,10 @@ export const pedagogicalMaterialGenerationCandidateSchema = {
   additionalProperties: false,
   required: ["materialKind", "blocks"],
   properties: {
-    materialKind: { type: "string", enum: ["MNEMONIC", "MICRO_STORY"] },
+    materialKind: {
+      type: "string",
+      enum: Object.values(PedagogicalMaterialKind),
+    },
     blocks: {
       type: "array",
       minItems: 1,
@@ -24,9 +61,12 @@ export const pedagogicalMaterialGenerationCandidateSchema = {
         properties: {
           role: {
             type: "string",
-            enum: ["EXPLANATION", "STORY", "TRANSLATION", "TAKEAWAY"],
+            enum: Object.values(CandidateMaterialBlockRole),
           },
-          languageTag: { type: "string", enum: ["en", "zh-CN"] },
+          languageTag: {
+            type: "string",
+            enum: Object.values(CandidateMaterialLanguageTag),
+          },
           text: { type: "string", minLength: 1, maxLength: 800 },
         },
       },
@@ -35,7 +75,7 @@ export const pedagogicalMaterialGenerationCandidateSchema = {
 } as const;
 
 export interface CandidateVerification {
-  verdict: "APPROVED" | "REJECTED";
+  verdict: CandidateVerificationVerdict;
   reasonCodes: string[];
 }
 
@@ -44,7 +84,10 @@ export const candidateVerificationSchema = {
   additionalProperties: false,
   required: ["verdict", "reasonCodes"],
   properties: {
-    verdict: { type: "string", enum: ["APPROVED", "REJECTED"] },
+    verdict: {
+      type: "string",
+      enum: Object.values(CandidateVerificationVerdict),
+    },
     reasonCodes: {
       type: "array",
       maxItems: 12,
@@ -54,19 +97,19 @@ export const candidateVerificationSchema = {
 } as const;
 
 export interface ExerciseGenerationCandidate {
-  exerciseTaskKind: "FORM_MEANING_MAPPING";
+  exerciseTaskKind: CandidateExerciseTaskKind;
   prompt: string;
   choices: Array<{
     localId: string;
     text: string;
     correct: boolean;
-    distractorKind: string | null;
+    distractorKind: ExerciseDistractorKind | null;
     rationale: string;
   }>;
   correctResponse: string;
   feedbackCorrect: string;
   feedbackIncorrect: string;
-  authoredDifficultyTier: "FOUNDATION" | "DEVELOPING" | "ADVANCED";
+  authoredDifficultyTier: CandidateDifficultyTier;
 }
 
 export const exerciseGenerationCandidateSchema = {
@@ -82,7 +125,10 @@ export const exerciseGenerationCandidateSchema = {
     "authoredDifficultyTier",
   ],
   properties: {
-    exerciseTaskKind: { type: "string", const: "FORM_MEANING_MAPPING" },
+    exerciseTaskKind: {
+      type: "string",
+      const: CandidateExerciseTaskKind.FORM_MEANING_MAPPING,
+    },
     prompt: { type: "string", minLength: 3, maxLength: 300 },
     choices: {
       type: "array",
@@ -98,7 +144,7 @@ export const exerciseGenerationCandidateSchema = {
           correct: { type: "boolean" },
           distractorKind: {
             anyOf: [
-              { type: "string", minLength: 1, maxLength: 80 },
+              { type: "string", enum: EXERCISE_DISTRACTOR_KINDS },
               { type: "null" },
             ],
           },
@@ -111,7 +157,7 @@ export const exerciseGenerationCandidateSchema = {
     feedbackIncorrect: { type: "string", minLength: 1, maxLength: 300 },
     authoredDifficultyTier: {
       type: "string",
-      enum: ["FOUNDATION", "DEVELOPING", "ADVANCED"],
+      enum: Object.values(CandidateDifficultyTier),
     },
   },
 } as const;

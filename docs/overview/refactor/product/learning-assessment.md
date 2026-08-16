@@ -173,31 +173,31 @@ identity/revision
 
 `validationLevel` 是递进资格：
 
-- `PRACTICE_ONLY`：只用于学习；允许 reveal、自评或 AI 辅助反馈。
+- `PRACTICE_ONLY`：只用于学习；允许 reveal 和自评。
 - `FORMATIVE_VERIFIED`：答案与反馈已验证，可用于形成性检查，但不用于高风险分数。
 - `SUMMATIVE_VERIFIED`：题目、答案、刺激材料、评分和歧义门禁均通过，可进入 diagnostic/placement/checkpoint。
 
-`SELF_REPORT`、开放翻译、自由造句以及以 AI 判断为唯一评分依据的题不得标记为 `SUMMATIVE_VERIFIED`。
+`SELF_REPORT`、开放翻译和自由造句不得标记为 `SUMMATIVE_VERIFIED`。
 
 ## 7. 应准备的题型
 
 ### 7.1 ExerciseTaskKind 与允许的响应
 
-| `exerciseTaskKind`                 | 用户任务                                          | primary facet                    | v1 允许的 response profile                              |
-| ---------------------------------- | ------------------------------------------------- | -------------------------------- | ------------------------------------------------------- |
-| `FORM_MEANING_MAPPING`             | 看词选义/回忆词义；看义选词/拼词                  | `MEANING_FORM_MEANING`           | CHOICE/SINGLE；SHORT_TEXT/SINGLE；可 SELF_REPORT        |
-| `SPOKEN_FORM_MAPPING`              | 听音选词或听写                                    | `FORM_SPOKEN`                    | CHOICE/SINGLE；SHORT_TEXT/SINGLE                        |
-| `SPOKEN_FORM_PRODUCTION`           | 看到词形后朗读，揭示可靠发音/IPA 后自评           | `FORM_SPOKEN`                    | NO_CAPTURE/SINGLE/BLOCK + SELF_REPORT                   |
-| `CONTEXTUAL_SENSE_INTERPRETATION`  | 根据例句或语境识别、解释目标词的具体义项          | `MEANING_CONCEPT_REFERENT`       | CHOICE/SINGLE；SHORT_TEXT/SINGLE + SELF_REPORT          |
-| `CONTEXTUAL_FORM_COMPLETION`       | 在语境中填写 canonical/inflected form             | `FORM_WRITTEN`                   | SHORT_TEXT/SINGLE/INLINE                                |
-| `COLLOCATION_RECALL`               | 选择或填写搭配 partner                            | `USE_COLLOCATION`                | CHOICE/SINGLE；SHORT_TEXT/SINGLE BLOCK/INLINE           |
-| `FRAME_COMPLETION`                 | 补全介词、补语、marker 或句型                     | `USE_GRAMMATICAL_FUNCTION`       | CHOICE/SINGLE；SHORT_TEXT/SINGLE BLOCK/INLINE           |
-| `SEMANTIC_RELATION_DISCRIMINATION` | Sense 级同义、反义、上下位关系辨析                | `MEANING_ASSOCIATIONS`           | CHOICE/SINGLE 或 MULTIPLE                               |
-| `MORPHEME_ANALYSIS`                | 识别词根、前缀、后缀和构词作用                    | `FORM_WORD_PARTS`                | CHOICE/SINGLE 或 MULTIPLE                               |
-| `WORD_FORMATION`                   | 生成派生词或正确屈折形式                          | `FORM_WORD_PARTS`/`FORM_WRITTEN` | SHORT_TEXT/SINGLE BLOCK/INLINE                          |
-| `USAGE_CONSTRAINT_DISCRIMINATION`  | 判断 register/domain/region/temporal 场景是否合适 | `USE_CONSTRAINTS`                | CHOICE/SINGLE 或 MULTIPLE                               |
-| `SENTENCE_TRANSLATION`             | 使用目标词完成受约束翻译                          | 按 primary Objective             | EXTENDED_TEXT/SINGLE/BLOCK + SELF_REPORT 或 AI_ASSISTED |
-| `SENTENCE_PRODUCTION`              | 使用目标词自主造句                                | 按 primary Objective             | EXTENDED_TEXT/SINGLE/BLOCK + SELF_REPORT 或 AI_ASSISTED |
+| `exerciseTaskKind`                 | 用户任务                                          | primary facet                    | v1 允许的 response profile                       |
+| ---------------------------------- | ------------------------------------------------- | -------------------------------- | ------------------------------------------------ |
+| `FORM_MEANING_MAPPING`             | 看词选义/回忆词义；看义选词/拼词                  | `MEANING_FORM_MEANING`           | CHOICE/SINGLE；SHORT_TEXT/SINGLE；可 SELF_REPORT |
+| `SPOKEN_FORM_MAPPING`              | 听音选词或听写                                    | `FORM_SPOKEN`                    | CHOICE/SINGLE；SHORT_TEXT/SINGLE                 |
+| `SPOKEN_FORM_PRODUCTION`           | 看到词形后朗读，揭示可靠发音/IPA 后自评           | `FORM_SPOKEN`                    | NO_CAPTURE/SINGLE/BLOCK + SELF_REPORT            |
+| `CONTEXTUAL_SENSE_INTERPRETATION`  | 根据例句或语境识别、解释目标词的具体义项          | `MEANING_CONCEPT_REFERENT`       | CHOICE/SINGLE；SHORT_TEXT/SINGLE + SELF_REPORT   |
+| `CONTEXTUAL_FORM_COMPLETION`       | 在语境中填写 canonical/inflected form             | `FORM_WRITTEN`                   | SHORT_TEXT/SINGLE/INLINE                         |
+| `COLLOCATION_RECALL`               | 选择或填写搭配 partner                            | `USE_COLLOCATION`                | CHOICE/SINGLE；SHORT_TEXT/SINGLE BLOCK/INLINE    |
+| `FRAME_COMPLETION`                 | 补全介词、补语、marker 或句型                     | `USE_GRAMMATICAL_FUNCTION`       | CHOICE/SINGLE；SHORT_TEXT/SINGLE BLOCK/INLINE    |
+| `SEMANTIC_RELATION_DISCRIMINATION` | Sense 级同义、反义、上下位关系辨析                | `MEANING_ASSOCIATIONS`           | CHOICE/SINGLE 或 MULTIPLE                        |
+| `MORPHEME_ANALYSIS`                | 识别词根、前缀、后缀和构词作用                    | `FORM_WORD_PARTS`                | CHOICE/SINGLE 或 MULTIPLE                        |
+| `WORD_FORMATION`                   | 生成派生词或正确屈折形式                          | `FORM_WORD_PARTS`/`FORM_WRITTEN` | SHORT_TEXT/SINGLE BLOCK/INLINE                   |
+| `USAGE_CONSTRAINT_DISCRIMINATION`  | 判断 register/domain/region/temporal 场景是否合适 | `USE_CONSTRAINTS`                | CHOICE/SINGLE 或 MULTIPLE                        |
+| `SENTENCE_TRANSLATION`             | 使用目标词完成受约束翻译                          | 按 primary Objective             | EXTENDED_TEXT/SINGLE/BLOCK + SELF_REPORT         |
+| `SENTENCE_PRODUCTION`              | 使用目标词自主造句                                | 按 primary Objective             | EXTENDED_TEXT/SINGLE/BLOCK + SELF_REPORT         |
 
 不是每个词强制生成 13 种题。compiler 只为 Objective subject 有足够可靠定义、翻译、例句、发音、搭配、Frame、Relation 或 Morphology 的 task 生成候选；缺依据时标记 coverage `MISSING/NOT_APPLICABLE/REJECTED`，不能用 AI 填满题数。`SPOKEN_FORM_PRODUCTION` 只做 reveal + self-report：不录音、不上传、不调用 ASR、不自动给发音打分；没有可公开的可靠音频/IPA 时不生成。
 
@@ -224,9 +224,11 @@ identity/revision
 | `responseKind`        | `CHOICE/SHORT_TEXT/EXTENDED_TEXT/NO_CAPTURE` | 响应的数据形状；NO_CAPTURE 只保存 reveal 后的 self-report |
 | `responseCardinality` | `SINGLE/MULTIPLE`                            | 响应元素数量；MULTIPLE 首期只允许 CHOICE                  |
 | `responsePlacement`   | `BLOCK/INLINE`                               | 独立作答区或嵌入 stimulus；INLINE 首期只允许 SHORT_TEXT   |
-| `gradingMode`         | `EXACT/WEIGHTED/SELF_REPORT/AI_ASSISTED`     | 服务端精确判分、加权、用户自评或只用于练习的 AI 辅助反馈  |
+| `gradingMode`         | `EXACT/WEIGHTED/SELF_REPORT`                 | 服务端精确判分、加权或用户自评                            |
 
-每个 revision 恰好一行 typed response config：Choice 配置 min/max selections；ShortText 配置 normalization 和 `REQUIRED/OPTIONAL` capture policy；ExtendedText 配置语言、字符/词数边界与 rubric；NoCapture 不接收正文，只允许 `SINGLE/BLOCK + SELF_REPORT + PRACTICE_ONLY`，且必须通过 `ExerciseStimulusRef(role=REVEAL)` 引用揭示内容。`SELF_REPORT` 可以不持久化输入正文，但必须在 reveal 后保存用户 outcome；`AI_ASSISTED` 不能充当 summative truth。
+每个 revision 恰好一行 typed response config：Choice 配置 min/max selections；ShortText 配置 normalization 和 `REQUIRED/OPTIONAL` capture policy；ExtendedText 配置语言、字符/词数边界、capture policy 与 rubric；NoCapture 不接收正文，只允许 `SINGLE/BLOCK + SELF_REPORT + PRACTICE_ONLY`，且必须通过 `ExerciseStimulusRef(role=REVEAL)` 引用揭示内容。`SELF_REPORT` 的参考内容或 rubric 在学习者先完成响应后才揭示；提交必须保存用户 outcome 与 reveal acknowledgement。文本响应始终保存不可逆 normalized hash；只有 `ENCRYPTED_CONTENT` 模式保存密文正文并绑定有效 consent，`HASH_ONLY` 不保存可恢复正文。
+
+0.0.1 不发布 `AI_ASSISTED` grading mode。可靠的 AI 反馈需要独立的 durable evaluation request/result、模型与 rubric 版本、consent、预算、超时/重试和人工可解释的失败状态；在这些运行时事实尚未实现前，把模型判断伪装成同步 Attempt 分数会破坏评分契约。未来引入时必须新增异步评估模型和 API 状态，而不是扩展现有 `SELF_REPORT` 行。
 
 `MATCHING`、`TOKEN_ASSEMBLY` 和 `AUDIO_RECORDING` 以后用新 response kind + typed tables 实现，不在 v1 放无版本 payload JSON。`NO_CAPTURE` 明确不是录音：音频播放是 stimulus modality，不需要新建音频 response 或上传对象。
 
@@ -239,7 +241,7 @@ identity/revision
 | `ExerciseCorrectChoice`       | revisionId、choiceId、weight                                                            | choice 必须属于同 revision；不存 position/index             |
 | `ExerciseAcceptedText`        | revisionId、languageTag、text、normalizedText、weight                                   | normalization policy 来自 response config；合法别名逐行保存 |
 | `ExerciseFeedback`            | revision、outcome/choice、text                                                          | 解释具体混淆，不只显示“错误”                                |
-| `ExerciseRubricCriterion`     | revision、criterionKey、description、maxScore、displayOrder                             | 用于 EXTENDED_TEXT 的 SELF_REPORT/AI_ASSISTED 反馈          |
+| `ExerciseRubricCriterion`     | revision、criterionKey、description、maxScore、displayOrder                             | 用于 EXTENDED_TEXT 的 SELF_REPORT 反馈                      |
 
 运行时 shuffle 只改变 `ExerciseAttemptPresentedChoice.presentationOrder`。正确答案永远通过 choice ID 或 typed accepted response 判定。
 
@@ -284,7 +286,7 @@ flowchart LR
 2. 确定性模板优先负责答案可从结构事实直接推导的 spelling、inflection、relation、collocation 题。
 3. AI 适合生成自然场景、改写 prompt、候选干扰项和纠正反馈；正式答案首先来自 lexicon facts。
 4. 三路都进入同一 candidate schema、质量门禁和 semantic signature；相同题只发布一个 revision并合并 evidence。
-5. 最终发布题目全部进入单一 JSON；importer 只投影，不再次生成或“智能修复”。
+5. 最终发布题目全部进入单一 JSON；Lexicon Publisher 只投影，不再次生成或“智能修复”。
 
 ### 9.2 AI 选项生成规则
 
@@ -377,8 +379,8 @@ flowchart LR
 | `ExerciseAttempt`                | id、userId、exerciseRevisionId、contextKind、dailyPlanItemId?、assessmentSessionItemId?、attemptNo、status、outcome、score、maxScore、hintUsed、revealUsed、inputMode、durationMs、scoringVersion、idempotencyKey、presentedAt、submittedAt | STUDY/ASSESSMENT 二选一；PRESENTED 只可终结为 SUBMITTED/ABANDONED/EXPIRED；终态不可变 |
 | `ExerciseAttemptPresentedChoice` | attemptId、choiceId、presentationOrder                                                                                                                                                                                                      | 固定实际展示顺序；choice 属于同 ExerciseRevision                                      |
 | `ExerciseAttemptSelectedChoice`  | attemptId、choiceId                                                                                                                                                                                                                         | selected choice 必须存在于 presented choices                                          |
-| `ExerciseAttemptTextArtifact`    | attemptId、encryptedText、keyVersion、retentionPolicy、consentScope                                                                                                                                                                         | 捕获 SHORT/EXTENDED_TEXT 时建立；完整留存受 owner、加密、读取审计和上线法律门禁约束   |
-| `ExerciseAttemptSelfReport`      | attemptId、reportedOutcome、reportedAt                                                                                                                                                                                                      | 仅保存本次 SELF_REPORT 作答的用户判断；一个 attempt 至多一行                          |
+| `ExerciseAttemptTextArtifact`    | attemptId、retentionMode、encryptedText?、keyVersion?、normalizedHash、consentRecordId?                                                                                                                                                     | 文本响应始终建立；HASH_ONLY 不含正文，ENCRYPTED_CONTENT 必须绑定有效 consent          |
+| `ExerciseAttemptSelfReport`      | attemptId、reportedOutcome、revealAcknowledgedAt、reportedAt                                                                                                                                                                                | SELF_REPORT 必须先揭示参考/rubric；一个 attempt 恰好一行                              |
 | `AssessmentResult`               | sessionId、rawScore、maxScore、domainBreakdown、resultVersion                                                                                                                                                                               | 只聚合 ASSESSMENT attempts；不输出能力/词汇量/CEFR 估计                               |
 
 每个 Attempt 恰好关联一个 `DailyStudyPlanItem` 或一个 `AssessmentSessionItem`。创建 Attempt 时由服务器选择/固定 ExerciseRevision 与 presented choice order，并返回不含答案的题目；提交时客户端只发送 attempt ID 和 typed response，不提交 `answerWordId`、`correctIndex` 或 `isCorrect`。服务器从 immutable revision 判分并以 compare-and-set 将 Attempt 终结，重复提交按 idempotency contract 返回同一结果。`ExerciseAttemptSelfReport.reportedOutcome` 是用户对该次练习答案的判断；它不是稍后提交给 FSRS 的 recall rating，不能直接创建 `ReviewEvent` 或更新 `UserObjectiveMemoryState`。

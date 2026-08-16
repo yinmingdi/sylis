@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { ARTIFACT_VALIDATOR_VERSION } from "@sylis/lexicon-artifact";
 
+import {
+  CandidateSenseRelationType,
+  SourceAdapterKind,
+} from "../src/candidates/candidate-v1";
 import type { NormalizedSourceRecord } from "../src/candidates/candidate-v1";
 import type {
   ResolvedSource,
@@ -12,9 +17,11 @@ const checksum = "0".repeat(64);
 const source: ResolvedSource = {
   key: "kaikki-en",
   version: "fixture-1",
-  adapter: "WIKTEXTRACT_EN",
+  retrievedAt: "2026-08-07T00:00:00.000Z",
+  adapter: SourceAdapterKind.WIKTEXTRACT_EN,
   path: "fixture.jsonl",
   sourceUri: "https://example.com/fixture.jsonl",
+  parserVersion: "wiktextract-en-parser/1",
   uri: "https://example.com/fixture.jsonl",
   checksum,
   sha256: checksum,
@@ -23,6 +30,8 @@ const source: ResolvedSource = {
     mayServe: true,
     mayExport: true,
     requiresAttribution: false,
+    effectiveFrom: "2026-08-07T00:00:00.000Z",
+    effectiveTo: null,
   },
 };
 const manifest: SourceManifest = {
@@ -46,12 +55,43 @@ const disabledAi = {
   resolvedIdentity: null,
 } as const;
 
+describe("artifact source version metadata", () => {
+  it("carries the parser, schema, validation, and lifecycle facts required by the publisher", () => {
+    const artifact = buildArtifact(
+      manifest,
+      [source],
+      [hierarchicalRecord(false, "To move.", "To move toward a place.")],
+      {
+        compileProfile: "fixture",
+        headwordSet: null,
+        richTargetSet: null,
+        ai: disabledAi,
+      },
+    );
+
+    expect(artifact.sources.datasetVersions).toEqual([
+      expect.objectContaining({
+        adapter: "WIKTEXTRACT_EN",
+        parserVersion: "wiktextract-en-parser/1",
+        schemaVersion: "sylis.lexicon-candidate/1",
+        status: "VALIDATED",
+        validationSummary: {
+          recordCount: 1,
+          errorCount: 0,
+          warningCount: 0,
+          validatorVersion: ARTIFACT_VALIDATOR_VERSION,
+        },
+      }),
+    ]);
+  });
+});
+
 function hierarchicalRecord(
   reverse: boolean,
   parentText: string,
   childText: string,
 ): NormalizedSourceRecord {
-  const record = sourceContext(source, "WIKTEXTRACT_EN", {
+  const record = sourceContext(source, SourceAdapterKind.WIKTEXTRACT_EN, {
     sourceKey: "go:verb",
     rawPayload: {},
     languageTag: "en",
@@ -113,7 +153,7 @@ function branchedHierarchyRecord(): NormalizedSourceRecord {
     relations: [],
     tags: [],
   });
-  return sourceContext(source, "WIKTEXTRACT_EN", {
+  return sourceContext(source, SourceAdapterKind.WIKTEXTRACT_EN, {
     sourceKey: "run:verb",
     rawPayload: {},
     languageTag: "en",
@@ -142,7 +182,11 @@ function branchedHierarchyRecord(): NormalizedSourceRecord {
 }
 
 function duplicateRelationRecords(): NormalizedSourceRecord[] {
-  const relation = (relationType: "HYPERNYM" | "SYNONYM") => ({
+  const relation = (
+    relationType:
+      | CandidateSenseRelationType.HYPERNYM
+      | CandidateSenseRelationType.SYNONYM,
+  ) => ({
     relationType,
     targetText: "target",
   });
@@ -152,7 +196,7 @@ function duplicateRelationRecords(): NormalizedSourceRecord[] {
     conceptExternalId: string,
     relations: ReturnType<typeof relation>[],
   ) =>
-    sourceContext(source, "WIKTEXTRACT_EN", {
+    sourceContext(source, SourceAdapterKind.WIKTEXTRACT_EN, {
       sourceKey,
       rawPayload: {},
       languageTag: "en",
@@ -178,17 +222,17 @@ function duplicateRelationRecords(): NormalizedSourceRecord[] {
     });
   return [
     record("source", "source", "concept-source", [
-      relation("HYPERNYM"),
-      relation("HYPERNYM"),
-      relation("SYNONYM"),
-      relation("SYNONYM"),
+      relation(CandidateSenseRelationType.HYPERNYM),
+      relation(CandidateSenseRelationType.HYPERNYM),
+      relation(CandidateSenseRelationType.SYNONYM),
+      relation(CandidateSenseRelationType.SYNONYM),
     ]),
     record("target", "target", "concept-target", []),
   ];
 }
 
 function culturalContextRecord(text: string): NormalizedSourceRecord {
-  return sourceContext(source, "WIKTEXTRACT_EN", {
+  return sourceContext(source, SourceAdapterKind.WIKTEXTRACT_EN, {
     sourceKey: "history:noun",
     rawPayload: {},
     languageTag: "en",

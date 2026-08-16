@@ -5,8 +5,11 @@ The machine-readable dependency policy is `.harness/config.json`. The first enfo
 ## Workspace Groups
 
 - `root`: repository-level tooling and orchestration.
-- `shared`: `packages/*`, including reusable DTOs, utilities, and developer tooling.
-- `consumer`: `apps/*`, `services/*`, and `docs/*` deployable or user-facing workspaces.
+- `shared`: `packages/*`, including reusable contracts, domain libraries, and utilities.
+- `consumer`: `apps/frontends/*`, `apps/backends/*`, and `docs/*` deployable or user-facing workspaces.
+
+Repository-only tooling lives under `tools/*`; it does not count toward the
+twelve deployable apps or eleven reusable packages.
 
 ## Allowed Directions
 

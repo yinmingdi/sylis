@@ -1,159 +1,198 @@
-# 目标系统架构
+# Sylis 目标系统架构
 
-## 1. 边界与所有权
+## 1. 架构原则
 
-| 组件                             | 拥有                                                                                                                 | 明确不拥有                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `@sylis/lexicon-contracts`       | artifact JSON Schema、生成 TypeScript 类型、受控词表类型、纯结构/引用验证器                                          | source adapter、AI、Prisma、页面 DTO       |
-| `@sylis/lexicon-compiler`        | source adapters、candidate schema、identity resolver、词典/教学材料/题目 AI tasks、语义 validators、标准 JSON writer | Prisma client、用户数据、线上 release 激活 |
-| `@sylis/lexicon-compiler-runner` | Railway `LEXICON_BUILD` claim/lease、AI/来源/存储装配、checkpoint/progress、artifact upload                          | 编译规则、import、release 激活             |
-| `@sylis/lexicon-importer`        | artifact preflight、staging、COPY、release build、数据库全局验证、activation command                                 | 原始来源解析、AI 调用、页面 DTO            |
-| `@sylis/api`                     | User/Admin application contract、身份、词典查询、学习、阅读和任务命令                                                | 长任务执行、运行时词典补写、全量 JSON 生成 |
-| `@sylis/worker`                  | runtime AI、导出、来源同步、outbox/job 消费与 checkpoint                                                             | HTTP session、正式词典合并、release 激活   |
-| `@sylis/ai-provider`             | `StructuredGenerationPort`、`StreamingGenerationPort`、DeepSeek adapter 与 provider DTO 隔离                         | prompt policy、领域 Job、词典事实          |
-| `@sylis/database`                | Prisma schema/migration/generated client/connection factory 的唯一 owner                                             | 业务 repository、HTTP DTO、浏览器类型      |
-| `@sylis/background-jobs`         | JobKind、状态机、progress/checkpoint/result schema、handler/control interface                                        | Nest/Prisma/Redis/provider executor        |
-| `@sylis/components`              | tokens、icons、styles、无领域 React primitives                                                                       | Web/Admin 业务 module、API/query           |
-| `@sylis/utils`                   | 跨 runtime 的确定性纯函数                                                                                            | 领域归一化、框架/I/O、secret               |
-| `@sylis/web`                     | User Web 查询状态、展示、学习、阅读和 AI 交互                                                                        | 业务密钥、FSRS 真相、离线答案事实          |
-| `@sylis/admin`                   | 独立运营 UI、Admin query cache、审批和进度交互                                                                       | 权限判定、用户 session、secret value       |
-| PostgreSQL                       | release-scoped 正式事实、用户状态、审计                                                                              | 原始大文件仓库、AI prompt 临时工作目录     |
-| GitHub Release                   | 以 hash 寻址且禁止覆盖的标准 `.json.zst` 制品                                                                        | 生产数据库凭据、AI key                     |
+Sylis `0.0.1` 采用一个 pnpm + Turborepo monorepo、两个 frontend、十个 backend、若干深模块和隔离的数据基础设施。十二个应用都可独立部署。当前没有生产用户，因此直接迁到最终契约，不建立旧 DTO、旧表或旧路由兼容层。
 
-边界直接消除当前两个问题：API 读取时不再生成内容；Railway importer 不再同时承担下载 ECDICT、解析有道、合并词义和写生产库。
+核心规则：
 
-compiler 和 importer 都依赖 `lexicon-contracts`，两者互不依赖。这样 importer 不会为了读取 JSON 顺带安装 source adapter、AI SDK 或 compiler 工作流，第三方也可只使用 JSON Schema。纯 compiler 不连接生产数据库；独立 Compiler Runner 负责把 Railway executor、AI provider、对象存储和 BackgroundJob 接到 compiler public API。
+1. PostgreSQL 是在线事实源；标准 JSON 是离线交换与重建制品。
+2. 同步应用只鉴权、校验并提交 command/query；长执行由专用 executor 完成。
+3. 每个领域关系只有一个 owner；模型、executor、Publisher 和页面都不能绕过 owner 写表。
+4. Redis 只负责唤醒与短期 delta；Bucket 保存不可变大对象；两者都不是关系真相。
+5. `apps/**` 必须可部署，`packages/**` 必须隐藏复杂实现并暴露小型 interface。
+6. 应用 DeploymentRelease 与词典 LexiconRelease 独立演进。
 
-## 2. 构建面与服务面
+## 2. Workspace 顶层
+
+```text
+apps/
+  frontends/
+    web/
+    admin/
+  backends/
+    api/
+    admin-api/
+    agent-api/
+    model-gateway/
+    agent-executor/
+    agent-evaluator/
+    asset-processor/
+    automation-executor/
+    lexicon-builder/
+    lexicon-publisher/
+packages/
+  api-client/
+  agent-contracts/
+  agent-runtime/
+  components/
+  content-crypto/
+  database/
+  job-contracts/
+  job-runtime/
+  lexicon-artifact/
+  lexicon-compiler/
+  test-support/
+  utils/
+tools/
+  engineering-harness/
+```
+
+不再使用 `services/`、generic `worker`、`user-api`、`admin-web`、`compiler-runner`、`lexicon-importer`、Nx、tsup、tsdown 或 `packages/shared`。TypeScript 源码导入省略 `.js` 后缀；可执行应用由 Vite、Nest/SWC 或 `tsc` 直接构建。
+
+## 3. 应用和包所有权
+
+| 模块                  | 拥有                                                                                                 | 明确不拥有                                                            |
+| --------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `api`                 | Identity、User、AuthSession、Credential、Grant；学习/阅读同步 command/query                          | Agent loop、后台执行                                                  |
+| `admin-api`           | ADMIN audience、Platform Operations command/projection、跨 owner 控制面编排                          | Identity/Agent/Model owner 表、executor implementation、deploy secret |
+| `agent-api`           | Learning Agent Run/Step/Call/MessageBlock 关系真相、完整 Step preflight、SSE 与 typed action ingress | 模型 loop、产品表直接写入                                             |
+| `model-gateway`       | ProviderRoute/Credential/Invocation/Exchange/usage 与 Provider adapter                               | Agent loop、业务 Run、任意领域写入                                    |
+| `agent-executor`      | Agent activation Job、Runtime composition root、Model/Step/Tool adapter 与进程生命周期               | Provider key/SDK、User session、Agent loop、领域表直接写入            |
+| `agent-evaluator`     | 隔离的 offline Eval、independent Judge 和 release evidence                                           | production Session、release activation                                |
+| `asset-processor`     | quarantine scan、文件解析/OCR/index 与按需 vision/embedding                                          | Agent loop、用户会话、任意未扫描内容发布                              |
+| `automation-executor` | 导出、同步、清理等后台 Job                                                                           | Agent、Lexicon compile                                                |
+| `lexicon-builder`     | BuildRun 装配、来源/AI/storage/progress                                                              | 正式 release 写入                                                     |
+| `lexicon-publisher`   | Artifact preflight、staging、release validation                                                      | 来源解析、AI、隐式 activation                                         |
+| `api-client`          | Web/Admin 所需的生成 transport clients                                                               | 领域逻辑                                                              |
+| `agent-contracts`     | Agent Step/action/receipt、MessageBlock/event、tool 与 artifact schema                               | persistence、provider adapter                                         |
+| `agent-runtime`       | Capability 路由、Turn/Step loop、ordered block 组装、有界工具调度与上下文预算                        | HTTP、数据库、Provider SDK、Cordis                                    |
+| `components`          | 无领域 React primitives、tokens、icons、styles                                                       | 页面和业务 module                                                     |
+| `content-crypto`      | envelope encryption、key version、redaction interface                                                | Credential 业务策略                                                   |
+| `database`            | Prisma schema/SQL-only invariants/client/connection                                                  | 业务 repository 和 DTO                                                |
+| `job-contracts`       | Job kind/state/progress/checkpoint/result schema                                                     | claim loop、Nest/Redis                                                |
+| `job-runtime`         | claim、lease、heartbeat、fencing、drain lifecycle                                                    | 领域 handler                                                          |
+| `lexicon-artifact`    | 标准 JSON Schema、类型、受控词表和纯验证                                                             | source adapter、AI、DB import                                         |
+| `lexicon-compiler`    | 解析、去重、词形归并、Sense 对齐、候选与 JSON writer                                                 | Railway、生产 DB、activation                                          |
+| `test-support`        | E2E 环境、覆盖矩阵、OpenAPI 覆盖和确定性测试运行时                                                   | 生产业务逻辑、部署产物                                                |
+| `utils`               | 跨 runtime、确定性、无 I/O 纯函数                                                                    | 领域归一化、框架、secret                                              |
+
+详细 Learning Agent 所有权见 [Learning Agent 系统架构](./learning-agent-system.md)，目录和依赖图见 [Workspace 项目图](../implementation/workspace-projects.md)。
+
+## 4. 在线请求面
 
 ```mermaid
-flowchart TB
-    subgraph Build[离线构建面]
-      BR[Compiler Runner] --> M[Source manifest]
-      M --> N[Normalize]
-      N --> R[Identity resolution]
-      R --> E[AI enrichment candidates]
-      E --> Q[Quality gates]
-      Q --> J[Canonical JSON.ZST]
-    end
-    subgraph Serve[线上服务面]
-      J --> ST[Importer staging]
-      ST --> LR[LexiconRelease]
-      LR --> LQ[Lexicon query]
-      LQ --> P[Product projection]
-      P --> W[Web]
-      LR --> SC[Learning objectives / materials / exercises]
-      SC --> U[Exercise attempts / review / assessment]
-    end
+flowchart LR
+  U[User Browser] --> WEB[Web]
+  O[Operator Browser] --> ADMIN[Admin]
+  WEB --> API[api]
+  WEB --> AG[agent-api]
+  ADMIN --> AAPI[admin-api]
+  API --> PG[(PostgreSQL)]
+  AG --> PG
+  AAPI --> PG
+  AAPI -->|Identity/support typed interface| API
+  AAPI -->|Agent run/release typed interface| AG
+  AAPI -->|Model route/credential typed interface| MG
+  API -->|short AccessGrant| AG
+  AG -. wakeup .-> AE[agent-executor]
+  AE --> AR[agent-runtime]
+  AR --> MG[model-gateway]
+  MG --> PV[model providers]
+  AAPI -. wakeup .-> AU[automation-executor]
 ```
 
-构建面可以失败、重试或等待人工抽检而不影响线上 active release。服务面只读取已验证 release，并允许用户域持续写入学习事件。
+`api` 独占 User、认证、AuthSession、SupportGrant 和 OperatorRole transaction；`agent-api` 独占 AgentRun/Release；`model-gateway` 独占 ProviderRoute/Credential/Invocation/usage。`admin-api` 只直接写 Platform Operations owner 数据，跨上下文操作使用 service grant 与 typed internal command/query，不通过共享 Prisma repository 绕过 owner。
 
-## 3. 数据生命周期
+普通 User、Agent 和 Admin browser 路由使用不同 audience。浏览器不持有 service credential、provider key 或 GitHub/Railway deploy token；executor 不接收 browser cookie。DeploymentRelease 由 CI service identity 写 internal ingestion，Admin browser projection 只读。
 
-1. `SourceDatasetVersion` 固定来源 URI、版本、checksum、rights policy 和获取时间。
-2. adapter 将每条原始记录转换为 `SourceRecord` 与 typed candidate，不创建正式 ID。
-3. resolver 依次处理 Headword、Entry、Form、Sense、Concept、内容和关系。
-4. AI 只针对明确 target/kind 生成 candidate-local nodes；词典、PedagogicalMaterial 和 Exercise 各走自己的 schema、引用、事实边界和抽检门禁。
-5. validator 生成 profile coverage 和问题列表；任何 ERROR 阻止 artifact 发布。
-6. writer 以稳定业务键排序，流式写出一个 JSON object 并 zstd 压缩，计算物理文件和 canonical payload 两种 hash。
-7. importer 流式解压并校验 schema/hash/source manifest 后 COPY 到 unlogged staging。
-8. set-based SQL 构建 DRAFT release；开始全局校验时转为 VALIDATING，通过后转为 VALIDATED。
-9. activation 在短事务中追加审计并切换 active pointer；旧 release 保持可回滚。
+GET 请求只读请求开始时固定的 release 和 projection，不因缺字段触发 AI 或写入。跨上下文写入使用 typed command，跨上下文读取使用 release/scope 限定的 query interface。
 
-## 4. 运行时请求原则
+## 5. Learning Agent 面
 
-- `GET /lexicon/**` 只读一个请求开始时固定的 active release。
-- 需要跨语言 relation 时，每端都携带明确 release ID，不临时读取目标语言最新 release。
-- 页面聚合由 query service 完成，不建立重复的“聚合事实表”。必要的物化视图只做可重建缓存。
-- 缺失值使用 `PRESENT / MISSING / NOT_APPLICABLE / REJECTED`，不能都显示成“暂无数据”。
-- PedagogicalMaterial 是 release-scoped 教学内容，不是词典事实；临时翻译、Tutor、语法诊断和 AI Reading generation 属于运行时 AI 能力，也不得伪装成词典事实。
+Learning Agent 用 `AgentSession -> AgentRun -> AgentRunStep -> AgentToolCall` 表达模型循环，以 `AgentSession -> AgentMessage -> AgentMessageBlock` 表达 Notion-inspired 的可见内容树，以 `AgentEvent/Artifact/Proposal` 表达时间线和结果，用 activation `Job -> JobAttempt` 表达执行。Executor 装配框架无关的 `@sylis/agent-runtime`，并且只用一次性 `ModelExecutionPermit` 访问 `model-gateway`；它既不加载 Provider adapter，也不读取 key。Runtime 内部 BlockAssembler 把 Provider-neutral output block 转成 closed Message Block proposal，在模型 terminal frame 后提交完整 `AgentStepProposal`；Agent API 先整步 preflight 再返回 execution plan。只有 Agent API 能创建 Step、ToolCall、MessageBlock 和 AgentEvent。每个调用独立终止，结果按模型顺序回到下一次 ModelInvocation；Provider transport retry 只新增 ModelInvocationAttempt。
 
-## 5. 一致性策略
+模型输出首先是 User 内容或 Proposal，不是词典事实、正式题目、评分或 FSRS 状态。详情见 [Learning Agent 系统架构](./learning-agent-system.md)、[Agent 会话 Block](./agent-conversation-blocks.md)、[Model Gateway](./model-gateway.md)、[文件与模型交换](./agent-files-and-exchanges.md) 和 [Job 与执行协议](./background-jobs.md)。
 
-- 词典实体使用跨 release 稳定 UUID，事实 revision 使用 `(releaseId, entityId)` 复合身份。
-- API 每个响应回显 `releaseId`，支持 `ETag`；一次响应不能混用两个 source release。
-- objective、exercise、book edition 与 assessment blueprint 都固定到 release 或明确的稳定身份 + revision。
-- 发布后 revision 不更新；内容改变创建新 revision，split/merge 通过 typed lineage 表表达。
-- 删除受限来源时创建新 release，不在 active release 中逐行修改。
-
-## 6. 故障隔离
-
-| 故障                       | 处理                                                   |
-| -------------------------- | ------------------------------------------------------ |
-| 来源下载中断/checksum 不符 | 构建 run 失败，不产生 artifact                         |
-| AI 超时、429 或预算耗尽    | candidate 队列可恢复；已有 active release 不受影响     |
-| 单词无法对齐 Sense         | 保留 unresolved candidate 和 QA issue，不挂首义项      |
-| artifact 引用断裂          | importer preflight 失败，数据库零写入                  |
-| staging/构建中断           | BackgroundJob 按 retry policy 恢复或终结；DRAFT 不可见 |
-| 新 release 验证失败        | 不激活，线上继续使用旧 active release                  |
-| 新 release 上线后异常      | 原子切回上一 VALIDATED release                         |
-
-## 7. 可观察性
-
-所有长任务每 30 秒输出一条结构化 progress event：
-
-```json
-{
-  "runId": "run_...",
-  "stage": "sense_alignment",
-  "status": "running",
-  "processed": 12500,
-  "succeeded": 12180,
-  "failed": 44,
-  "pending": 776,
-  "ratePerSecond": 38.4,
-  "etaSeconds": 1210,
-  "inputTokens": 1200000,
-  "outputTokens": 240000,
-  "cost": { "currency": "USD", "amount": "0.24" },
-  "heartbeatAt": "2026-08-04T10:00:00Z"
-}
-```
-
-日志不输出 raw Authorization header、连接串、用户原始答案或完整 prompt 中可能存在的受限原文。
-
-## 8. 全产品运行拓扑
+## 6. 词典构建与发布面
 
 ```mermaid
-flowchart TB
-  U[User Browser] --> GW[User Web same-origin gateway]
-  O[Operator Browser] --> AW[Admin Web same-origin gateway]
-  GW -->|/api and /events| API[Modular NestJS API]
-  AW -->|/api/admin/v1| API
-  API --> DB[(PostgreSQL)]
-  API --> R[(Redis)]
-  API -->|outbox / relay events| W[Worker]
-  W --> R
-  W --> DB
-  W --> P[AI / Reddit / Mail providers]
-  CR[Railway Compiler Runner] --> C[Pure Lexicon Compiler]
-  CR --> P
-  CR --> DB
-  C --> A[LexiconArtifact]
-  A --> I[Ephemeral Importer Job]
-  I --> DB
+flowchart LR
+  S[ECDICT / Kaikki-Wiktextract / OEWN / 有道制品]
+  B[lexicon-builder]
+  C[lexicon-compiler]
+  J[sylis-lexicon-v1.json.zst]
+  P[lexicon-publisher]
+  D[(DRAFT release)]
+  V[VALIDATED release]
+  A[Admin activation]
+
+  S --> B --> C --> J --> P --> D --> V --> A
 ```
 
-User Web、Admin Web、API、Worker 和 Compiler Runner 是独立 Railway service；PostgreSQL/Redis 是独立托管 service；纯 Compiler 可在本地/CI pilot 运行，全量长构建由 Runner 执行；Importer 按 artifact 启动专用 job。用户请求不等待词典构建、批量导入或长内容生成。
+1. `SourceDatasetVersion` 固定 URI、版本、checksum、rights policy 与获取时间。
+2. Adapter 转为 immutable source record 和 typed candidate，不直接创建正式关系。
+3. Compiler 解析、归一化、去重、判断 Form 与独立 Entry、对齐 Sense/Concept 并合并来源。
+4. AI 只补明确 schema 的 candidate；来源型事实没有证据时不得由模型伪造。
+5. Writer 稳定排序后流式输出一个逻辑 JSON 并 zstd 压缩，计算 compressed/content hash。
+6. Publisher 流式 preflight、COPY staging、set-based build 和全局验证，得到未激活 release。
+7. Admin 单独批准 activation；旧 VALIDATED release 始终可原子回滚。
 
-PostgreSQL 的 `BackgroundJob` 是全部异步执行的唯一状态机，Redis 只发送可丢失、可重复的 wake-up。Worker、受保护的 Compiler runner 和一次性 Importer runner 各自只 claim 注册给自己的 JobKind，详见 [BackgroundJob、Worker 与进度协议](./background-jobs.md)。
+Builder 失败、AI 限流或 Publisher 校验失败都不影响当前 active release。缺失数据使用 `PRESENT | MISSING | NOT_APPLICABLE | REJECTED`，不能都折叠为“暂无数据”。
 
-## 9. 模块化单体边界
+## 7. 数据与一致性
 
-API 内部按 [Bounded Contexts](./bounded-contexts.md) 分 Nest module。Controller 只处理 HTTP/auth/DTO，use-case service 持有流程/事务，repository 位于拥有它的业务 module；跨 module 只通过显式 exported provider token/interface 或 outbox event，不 deep import 实现。一次事务只能有一个 owner，Worker consumer 按 event/job ID 幂等。精确结构见 [后端目录与 NestJS 模块边界](../implementation/backend-structure.md)。
+- 词典实体使用跨 release 稳定 ID，事实 revision 用 release-scoped 身份。
+- Objective、Exercise、BookEdition、Reading annotation 和 Assessment blueprint 引用明确 release/revision。
+- 发布后的 revision 不更新；变化创建新 revision，split/merge 使用 typed lineage。
+- 一次响应不混用两个 release，并回显 `releaseId`/ETag。
+- 页面聚合由 query module 组装；物化视图只能是可重建缓存，不建立第二份领域真相。
+- User、Attempt、Review、Agent、Job、Audit 和密钥永不进入公开 lexicon artifact。
 
-模块化单体是当前规模的部署选择，不是取消边界。任何未来服务拆分都必须先证明独立扩缩容、故障隔离或团队所有权需求，并保持既有 contract 与事件语义。
+关系表设计见 [关系模型](../data/relational-schema.md)，标准 Artifact 见 [标准 JSON](../data/standard-json.md)。
 
-## 10. 应用与数据 release
+## 8. 故障隔离
 
-`DeploymentRelease` 由 commit、构建证明和 Railway deployment 标识；`LexiconRelease` 由 artifact hash、source manifest 和 validation report 标识。两者独立发布，但应用声明可读取的 schema/release compatibility range；activation preflight 在切换前验证兼容。
+| 故障                             | 结果                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| 来源下载/checksum 错误           | BuildRun 失败，不发布 Artifact                                           |
+| 模型 timeout、429、额度耗尽      | 当前 activation 按 policy 重试/失败；已发布内容可用                      |
+| Model Gateway 或 Provider 不可用 | 不改变固定 route/credential；调用明确失败或按同一路由重试，不静默切换    |
+| 文件恶意、类型错误或解析超限     | 保持 REJECTED/QUARANTINED，不进入 clean Bucket、Agent context 或领域数据 |
+| Agent 等待批准或 User 输入       | Run WAITING，当前 Job 结束；满足条件后新建 Job                           |
+| Agent 一个 ToolCall 失败         | 只失败该调用；无关 sibling 继续，完整有序结果返回下一模型 Step           |
+| Agent executor 在副作用中断      | started call 按证据收敛或进入 UNKNOWN_OUTCOME；未启动 call 为 CANCELLED  |
+| Redis 丢失/重启                  | PostgreSQL polling 恢复，不改变领域状态                                  |
+| executor 崩溃或 deploy           | lease 过期后用新 Attempt/fencing token 接管                              |
+| Artifact 引用断裂                | Publisher preflight 失败，正式 release 零写入                            |
+| release 全局验证失败             | 不激活，线上继续读取旧 release                                           |
+| 新数据异常                       | 原子切回上一 VALIDATED release                                           |
 
-回滚应用不得隐式回滚数据，回滚数据也不得回写用户事件。若旧应用不支持当前 LexiconRelease，Railway 不得把它设为 production active；需选择兼容 deployment 或先显式激活兼容数据 release。
+## 9. 可观察性
 
-## 11. 外部边界
+长任务至少每 30 秒追加安全进度：runId/jobId、stage、processed/total、吞吐、ETA reliability、token/cost、warning 和 heartbeat。AgentEvent 与 JobProgressEvent 都有单调 sequence 和 SSE `Last-Event-ID`。
 
-- DeepSeek、Reddit、邮件和未来 provider 统一通过 adapter，响应先进入 provider DTO，再转换为领域 contract。
-- 外部正文、prompt 和 tool output 都是不可信输入，必须限制大小、校验 schema、转义展示并隔离日志。
-- provider 超时或额度不足只影响对应 capability；Lexicon、Study、Assessment 和本地已发布阅读内容继续可用。
-- sealed secrets 只注入拥有该 provider adapter 的 service；Web、Admin、artifact、build arg 和 OpenAPI 不包含 secret。
+日志禁止输出 Authorization、cookie、连接串、密钥、完整 prompt、完整聊天、User 原始答案和 provider raw body。Admin 默认只看到状态、成本、hash 和 redacted error；明文支持访问需要 User 的短期 SupportGrant。
+
+## 10. Railway 拓扑
+
+staging 与 production 完全隔离。每个环境均包含：
+
+- 十二个应用：Web、Admin、API、Admin API、Agent API、Model Gateway、Agent Executor、Agent Evaluator、Asset Processor、Automation Executor、Lexicon Builder、Lexicon Publisher；
+- 一个 PostgreSQL；
+- 一个 Redis；
+- 三类 private S3-compatible Bucket：quarantine、clean user assets 和 system artifacts。
+
+Railway GitHub source autodeploy 关闭。GitHub Actions 构建 Docker image 并推送 GHCR，staging 和 production 通过 digest 拉取；production 只提升 staging 已验证的同一 digest，不重新构建。完整流程见 [CI/CD、Railway 与密钥](../delivery/cicd-security.md)。
+
+## 11. 完成定义
+
+- 十二个 app 均可独立 build/deploy，package graph 没有 app-to-app deep import。
+- Web/Admin bundle 不包含 database、crypto implementation、executor、compiler 或 provider adapter。
+- Executor 数据库角色不能直接写 Agent/产品领域表。
+- Provider key 只由 Model Gateway 解密；每次调用固定 route/credential revision 并消费一次性 permit。
+- 未扫描文件无法离开 quarantine；所有正文、文件和交换内容遵守 owner、consent、revision pinning 与删除期限。
+- 空数据库可由 Prisma schema + SQL-only invariants + 固定 LexiconArtifact 构建同一 active release。
+- Agent、练习、阅读、词典和学习状态使用明确实体，不存在 `Word/Card/Article/Task` 聚合模型。
+- CI 无业务 secret、无付费模型调用即可完成 lint、typecheck、test、build、contract 与 docs。
+- protected `main` 自动部署 staging；production 从手工受保护 release 提升不可变 digest。

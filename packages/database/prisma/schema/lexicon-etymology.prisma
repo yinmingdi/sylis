@@ -2,7 +2,7 @@ model Etymon {
   id           String           @id @default(uuid()) @db.Uuid
   lexiconId    String           @db.Uuid
   identityKey  String
-  artifactRole String           @default("CURRENT")
+  artifactRole LexiconArtifactRole @default(CURRENT)
   lexicon      Lexicon          @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
   revisions    EtymonRevision[]
 
@@ -10,45 +10,90 @@ model Etymon {
 }
 
 model EtymonRevision {
-  id           String     @id @default(uuid()) @db.Uuid
-  releaseId    String     @db.Uuid
-  etymonId     String     @db.Uuid
-  languageTag  String
-  form         String
-  gloss        String?
-  provenanceId String     @db.Uuid
-  etymon       Etymon     @relation(fields: [etymonId], references: [id], onDelete: Restrict)
-  provenance   Provenance @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  id                   String                      @id @default(uuid()) @db.Uuid
+  releaseId            String                      @db.Uuid
+  etymonId             String                      @db.Uuid
+  languageTag          String
+  form                 String
+  gloss                String?
+  provenanceId         String                      @db.Uuid
+  release              LexiconRelease              @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  etymon               Etymon                      @relation(fields: [etymonId], references: [id], onDelete: Restrict)
+  provenance           Provenance                  @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  sourceEtymologyLinks EtymologyLinkSourceEtymon[]
+  targetEtymologyLinks EtymologyLinkTargetEtymon[]
 
   @@unique([releaseId, etymonId])
 }
 
 model EtymologyHypothesis {
-  id             String          @id @default(uuid()) @db.Uuid
-  releaseId      String          @db.Uuid
-  subjectEntryId String          @db.Uuid
+  id             String               @id @default(uuid()) @db.Uuid
+  releaseId      String               @db.Uuid
+  subjectEntryId String               @db.Uuid
   hypothesisType String
-  status         String
-  provenanceId   String          @db.Uuid
-  provenance     Provenance      @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  status         EtymologyHypothesisStatus
+  provenanceId   String               @db.Uuid
+  subjectEntry   LexicalEntryRevision @relation(fields: [releaseId, subjectEntryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance     Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
   links          EtymologyLink[]
 
   @@unique([releaseId, id])
 }
 
 model EtymologyLink {
-  id           String              @id @default(uuid()) @db.Uuid
-  releaseId    String              @db.Uuid
-  hypothesisId String              @db.Uuid
-  linkType     String
-  sourceKind   String
-  sourceId     String              @db.Uuid
-  targetKind   String
-  targetId     String              @db.Uuid
-  position     Int
-  provenanceId String              @db.Uuid
-  hypothesis   EtymologyHypothesis @relation(fields: [hypothesisId], references: [id], onDelete: Restrict)
-  provenance   Provenance          @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  id            String                      @id @default(uuid()) @db.Uuid
+  releaseId     String                      @db.Uuid
+  hypothesisId  String                      @db.Uuid
+  linkType      String
+  position      Int
+  provenanceId  String                      @db.Uuid
+  hypothesis    EtymologyHypothesis         @relation(fields: [releaseId, hypothesisId], references: [releaseId, id], onDelete: Restrict)
+  provenance    Provenance                  @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  sourceEntries EtymologyLinkSourceEntry[]
+  sourceEtymons EtymologyLinkSourceEtymon[]
+  targetEntries EtymologyLinkTargetEntry[]
+  targetEtymons EtymologyLinkTargetEtymon[]
 
+  @@unique([releaseId, id])
   @@unique([releaseId, hypothesisId, position])
+}
+
+model EtymologyLinkSourceEntry {
+  releaseId String               @db.Uuid
+  linkId    String               @db.Uuid
+  entryId   String               @db.Uuid
+  link      EtymologyLink        @relation(fields: [releaseId, linkId], references: [releaseId, id], onDelete: Restrict)
+  entry     LexicalEntryRevision @relation("EtymologyLinkSourceEntry", fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, linkId])
+}
+
+model EtymologyLinkSourceEtymon {
+  releaseId String         @db.Uuid
+  linkId    String         @db.Uuid
+  etymonId  String         @db.Uuid
+  link      EtymologyLink  @relation(fields: [releaseId, linkId], references: [releaseId, id], onDelete: Restrict)
+  etymon    EtymonRevision @relation(fields: [releaseId, etymonId], references: [releaseId, etymonId], onDelete: Restrict)
+
+  @@id([releaseId, linkId])
+}
+
+model EtymologyLinkTargetEntry {
+  releaseId String               @db.Uuid
+  linkId    String               @db.Uuid
+  entryId   String               @db.Uuid
+  link      EtymologyLink        @relation(fields: [releaseId, linkId], references: [releaseId, id], onDelete: Restrict)
+  entry     LexicalEntryRevision @relation("EtymologyLinkTargetEntry", fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, linkId])
+}
+
+model EtymologyLinkTargetEtymon {
+  releaseId String         @db.Uuid
+  linkId    String         @db.Uuid
+  etymonId  String         @db.Uuid
+  link      EtymologyLink  @relation(fields: [releaseId, linkId], references: [releaseId, id], onDelete: Restrict)
+  etymon    EtymonRevision @relation(fields: [releaseId, etymonId], references: [releaseId, etymonId], onDelete: Restrict)
+
+  @@id([releaseId, linkId])
 }

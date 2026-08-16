@@ -1,438 +1,331 @@
-# 后端目录与 NestJS 模块边界
+# 后端目录与模块边界
 
-## 1. 目的与原则
+## 1. 总则
 
-本文定义 `apps/api`、`apps/worker`、`services/lexicon-compiler-runner` 与 `services/lexicon-importer` 的目标结构。API 和 Worker 采用 NestJS module-first 组织；Compiler 是纯 library/CLI；Compiler Runner 与 Importer 是长任务 executor，不进入用户请求路径。
+十个 backend 都在 `apps/backends`，且每个都是可独立部署产物。HTTP 应用采用 NestJS module-first；executor/processor 使用小型 composition root 和 `@sylis/job-runtime`。目录按真实实现创建，不建立空的 controller/service/repository 层。
 
-目标遵循 NestJS 的 module/provider 组合方式，而不是把每个业务模块强制拆成 `transport/application/domain/infrastructure` 四层。目录只在有实现时创建，复杂度通过清晰 provider 和用例服务拆分，不能通过空目录或一文件一层伪装边界。
+Controller 只处理 transport/auth/DTO；application module 持有用例和事务；repository 留在拥有领域的 module。跨 module 使用公开 interface/token 或 outbox，禁止 deep import 实现。
 
-## 2. API 完整目标树
+## 2. `api`
 
 ```text
-apps/api/
-  package.json
-  nest-cli.json
-  tsconfig.json
+apps/backends/api/
   src/
-    app.module.ts
     main.ts
+    app.module.ts
     config/
-      env.schema.ts
-      api.config.ts
     platform/
       auth/
-      http/
-      logging/
       database/
-      cache/
-      outbox/
+      encryption/
+      http/
       observability/
+      outbox/
     modules/
       identity/
-      health/
+        controllers/
+        dto/
+        services/
+        repositories/
+        identity.module.ts
+        index.ts
+      grants/
       lexicon/
       books/
-      study/
+      learning/
       exercises/
       assessments/
       notebooks/
       reading/
-      reddit/
-      ai-tutor/
-      jobs/
-      operations/
+      health/
   test/
-    architecture/
     contracts/
     integration/
     e2e/
 ```
 
-业务 module 的标准形状：
+`identity` 独占 User、Password/MFA Credential 和 AuthSession；`grants` 是同一 Identity 上下文中的 AccessGrant/service grant/SupportGrant 用例。Provider Credential 由 Model Gateway 独占。`api` 提供 User audience 与受限内部 command interface，不执行模型 loop 或长任务。
+
+## 3. `admin-api`
 
 ```text
-modules/<name>/
-  <name>.module.ts
-  controllers/       HTTP controller；User/Admin controller 可分文件
-  dto/               transport input/output 与 OpenAPI metadata
-  services/          command/query/use-case provider
-  repositories/      repository interface/token 与 Prisma implementation
-  entities/          module-owned entity/value object；需要时才创建
-  policies/          纯授权/业务 policy；需要时才创建
-  events/            domain/outbox event contract；需要时才创建
-  index.ts            跨 module 唯一 public surface
-```
-
-简单模块可以只有 module、controller 和 service，例如：
-
-```text
-modules/health/
-  health.module.ts
-  controllers/health.controller.ts
-  services/health.service.ts
-  index.ts
-```
-
-复杂 service 按用例拆分，例如 `create-assessment-session.service.ts`、`submit-exercise-response.service.ts`，不建立一个不断增长的 `AssessmentService`。Repository 属于业务 module，`@sylis/database` 只提供持久化基础设施，不拥有业务 repository。
-
-## 3. API module 所有权与公开接口
-
-| Module        | 所有权                                                      | 可跨 module 导出                                     |
-| ------------- | ----------------------------------------------------------- | ---------------------------------------------------- |
-| `identity`    | User、credential、session、consent、ADMIN actor/RBAC        | actor/session guard token、只读 user capability port |
-| `health`      | API liveness/readiness projection                           | 通常不导出 provider                                  |
-| `lexicon`     | release-pinned search 与 lexical entity/material 查询       | `LexiconQueryPort`、typed target resolver token      |
-| `books`       | stable book、edition、membership/enrollment command         | edition query port                                   |
-| `study`       | plan、Objective memory、ReviewEvent、FSRS                   | objective/memory query port、review command          |
-| `exercises`   | revision delivery、response validation、确定性评分          | exercise delivery/scoring port                       |
-| `assessments` | blueprint、session、response、result                        | assessment application service；不导出 repository    |
-| `notebooks`   | user-owned notebook 与 typed lexical target                 | notebook application API                             |
-| `reading`     | document/revision、annotation、activity、saved              | reading query/command ports                          |
-| `reddit`      | Reddit source adapter 与 experience projection              | Reddit application service；正文事实交给 reading     |
-| `ai-tutor`    | tutor、grammar、generation request 与安全 runtime contract  | 创建 AI Job 的 application service                   |
-| `jobs`        | enqueue/query/cancel、SSE projection、outbox wake           | `BackgroundJobClient`/token；不导出 executor 实现    |
-| `operations`  | Admin build/review/import/release/deployment/audit commands | 受权限保护的 application services                    |
-
-Nest provider 默认为 module-private。跨 module 使用必须同时满足：提供方在 `<name>.module.ts` 的 `exports` 明确导出 token，消费方 `imports` 对应 module，并从 `index.ts` 引入 token/interface。禁止从其他 module deep import service/repository/entity 实现。
-
-`AppModule` 只做 composition：注册配置、平台 module 和业务 module。它不放业务 provider、数据库查询、定时任务或 route 逻辑。
-
-## 4. 数据库 package
-
-```text
-packages/database/
-  package.json
-  prisma.config.ts
-  src/
-    client/
-      prisma-client.ts
-      prisma-lifecycle.ts
-    config/
-      database-config.ts
-    testing/
-      test-database.ts
-    index.ts
-  prisma/
-    schema/
-      platform.prisma
-      lexicon-core.prisma
-      lexicon-content.prisma
-      lexicon-synsem.prisma
-      lexicon-morphology.prisma
-      provenance.prisma
-      corpus.prisma
-      books.prisma
-      study.prisma
-      exercises.prisma
-      assessments.prisma
-      identity.prisma
-      notebooks.prisma
-      reading-core.prisma
-      reddit.prisma
-      ai-tutor.prisma
-      ai-operations.prisma
-      jobs.prisma
-      outbox.prisma
-      audit.prisma
-      operations.prisma
-    migrations/
-    seed/
-```
-
-`@sylis/database` 独占 Prisma schema、migration、generated client、连接配置与框架无关的 client lifecycle factory。它是 server-only package，不发布到浏览器，不导出带业务语义的 repository，也不隐藏 transaction boundary。API 在 `src/platform/database` 用一个 Nest module 包装该 factory；这个 wrapper 只负责 DI/lifecycle，不重新拥有 schema 或 repository。
-
-API/Worker/Runner/Importer 可以依赖数据库 package 的 client 和 generated types；业务查询仍由各自 module/adapter 实现。Migration 只有一个 owner，禁止在 app/service 下再放第二套 `prisma/**`。
-
-## 5. Background Jobs contract package
-
-```text
-packages/background-jobs/
-  package.json
-  src/
-    kinds/
-      job-kind.ts
-      executor-kind.ts
-    state/
-      job-state.ts
-      transitions.ts
-    contracts/
-      payloads.ts
-      progress.ts
-      checkpoint.ts
-      results.ts
-      events.ts
-    ports/
-      client.ts
-      handler.ts
-      control.ts
-    validation/
-      schemas.ts
-      validators.ts
-    testing/
-      contract-fixtures.ts
-    index.ts
-```
-
-`@sylis/background-jobs` 只定义 `JobKind`、状态机、payload/progress/checkpoint/result schema、handler/control interface 和纯验证器。它不得依赖 NestJS、Prisma、Redis、Railway、AI provider 或任何 app 源码。
-
-API `jobs` module 实现 enqueue/query/cancel/SSE adapter；Worker、Compiler Runner 和 Importer 实现 executor adapter。所有实现消费同一纯 contract，不复制状态枚举。
-
-## 6. Worker 完整目标树
-
-```text
-apps/worker/
-  package.json
-  nest-cli.json
-  tsconfig.json
+apps/backends/admin-api/
   src/
     main.ts
-    worker.module.ts
+    app.module.ts
+    platform/{auth,database,http,observability}/
+    integrations/{identity-api,agent-api,model-gateway}/
+    modules/
+      identity/
+      overview/
+      source-datasets/
+      rights-decisions/
+      build-runs/
+      reviews/
+      publish-runs/
+      lexicon-releases/
+      agent-runs/
+      agent-releases/
+      provider-routes/
+      credentials/
+      ai-usage/
+      assets/
+      jobs/
+      user-support/
+      operator-roles/
+      deployments/
+      audit/
+      health/
+  test/{contracts,integration,e2e}/
+```
+
+Admin API 使用独立 ADMIN audience、密码 + verified MFA re-auth、七种固定可组合角色、resource-state policy 和 deny-by-default command authorization。`ADMIN` 不是 role。它拥有 Platform Operations 的控制面 command/projection，但不拥有 Identity、Agent 或 Model Execution 的业务表。
+
+`identity-api` adapter 调用 `api` 的 ADMIN session、SupportGrant、User request、session revoke、SecurityLock 和 OperatorRole internal interface；`agent-api` adapter 调用 AgentRun/Release query 与 command；`model-gateway` adapter 调用 ProviderRoute、Credential、usage 和 budget query/command。adapter 使用 service grant 和 typed contract，不导入其他 app 的源码、Prisma repository 或 browser DTO。
+
+BuildRun、ReviewBatch、PublishRun、LexiconReleaseActivation、Job、Audit 与 DeploymentRelease 属于 Platform Operations，由 admin-api 的 owner module 提交 domain request、outbox 和 Job activation。CI 使用独立 token、模块内 Prisma provider 和 `sylis_ci_ingestor` role 写 internal DeploymentRelease ingestion；browser `/deployment-releases` 只有 GET，普通 `sylis_admin_api` 连接对该表只有 SELECT，不提供 deploy/rollback/write。
+
+Platform secret body 只从受保护 controller 流经不记录 body 的 model-gateway adapter；admin-api 不持久化、缓存、审计或回显 secret。Support private content 只通过 exact-resource SupportGrant 的 typed owner query 返回，并在每次读取时写 DataAccessAuditEvent。
+
+`v0.0.1` command policy 允许一个同时持有所需角色的 Operator；schema 保留 future quorum。所有高风险 command 固定 target revision、policyVersion 和服务端 canonical action digest。
+
+## 4. `agent-api`
+
+```text
+apps/backends/agent-api/
+  src/
+    main.ts
+    app.module.ts
+    platform/
+      auth/
+      database/
+      encryption/
+      http/
+      observability/
+      outbox/
+      sse/
+    modules/
+      sessions/
+      runs/
+      run-steps/
+      plans/
+      messages/
+        blocks/
+      events/
+      tools/
+      proposals/
+      artifacts/
+      memory/
+      capabilities/
+      releases/
+      assets/
+      health/
+  test/{contracts,integration,e2e}/
+```
+
+`agent-api` 是 Agent 关系表和 `AgentEvent` 的唯一写入口。User browser 使用 `api` 签发的 AGENT audience AccessGrant；executor 使用 service grant。`messages/blocks` 拥有 closed Block union、tree/order/lifecycle invariant、body/reference owner 校验和 snapshot projection；可见 delta 使用带稳定 message/block identity、model position、fragment sequence 与 opaque content ref 的独立 typed ingress。模型 response terminal 后，Executor 提交一个闭合 `AgentStepProposal`。`run-steps` 模块在任何副作用前整步校验 Run/Invocation/fencing token、CapabilityRelease、ToolRelease、ToolGrant、schema、provider call identity、action digest、owner、预算、组合策略和内容大小，原子创建 Step/action/call/reference-block 事实并返回 `AgentStepExecutionPlan`。结果通过覆盖所有 accepted action 的 ordered `AgentStepReceipt` 提交，不提供 generic `/actions` 或通用 Block mutation endpoint。
+
+当 Proposal 获准写入 Learning/Reading/Notebook 时，`agent-api` 调用 `api` 的 typed internal command；它不直接修改目标表。返回结果引用后，在同一 Agent 事务追加 Proposal result 和 AgentEvent。
+
+## 5. `model-gateway`
+
+```text
+apps/backends/model-gateway/
+  src/
+    main.ts
+    app.module.ts
     config/
+    platform/{auth,database,encryption,http,observability}/
+    modules/
+      provider-routes/
+      credentials/
+      permits/
+      invocations/
+      exchanges/
+      usage/
+      provider-health/
+    providers/
+      deepseek/
+      openai/
+      anthropic/
+      gemini/
     health/
-      health.module.ts
-      live.controller.ts
-      ready.controller.ts
-    runtime/
-      runtime.module.ts
-      claim.service.ts
-      lease.service.ts
-      heartbeat.service.ts
-      checkpoint.service.ts
-      shutdown.service.ts
-      handler-registry.ts
-    handlers/
-      tutor-message/
-      grammar-diagnosis/
-      reading-generation/
-      user-export/
-      source-sync/
-    adapters/
-      database/
-      redis-wakeup/
-      object-storage/
-      ai-provider/
-  test/
-    architecture/
-    contracts/
-    integration/
+  test/{contracts,integration,e2e}/
 ```
 
-Worker 是独立 Nest application。它只暴露 Railway 私网 `/live` 与 `/ready`，不暴露业务 HTTP API。它拥有 runtime AI、导出和同步 handler，不执行 `LEXICON_BUILD` 或 `LEXICON_IMPORT`。
+它是 ProviderRouteRelease、CredentialProfile/Revision、ModelExecutionPermit、Invocation/Exchange、usage 和 Provider adapter 的唯一 owner。它不运行 Agent loop，不解释 Agent control tool，不接受 browser cookie，不提供通用 OpenAI-compatible proxy，也不能写 Agent/产品表。所有调用消费一次性 permit；exact route/credential revision 固定且不静默 failover。Provider adapter 只输出 ordered content-block stream，并保证唯一 terminal frame。
 
-Worker 绝不能导入 `apps/api/src/**`。共享契约来自 packages；数据库表访问通过 `@sylis/database`；AI 通过 `@sylis/ai-provider`。Worker 自己组合 claim/lease/handler lifecycle，API 不充当 worker library。
-
-## 7. Compiler 与 Compiler Runner
-
-纯 compiler：
+## 6. `agent-executor`
 
 ```text
-packages/lexicon-compiler/
-  src/
-    cli/
-    candidates/
-    manifest/
-    sources/
-    normalize/
-    resolve/
-    enrich/
-    pedagogy/
-    learning/
-    validate/
-    export/
-    progress/
-  test/
-    fixtures/
-    golden/
-```
-
-Railway runner：
-
-```text
-services/lexicon-compiler-runner/
-  package.json
-  Dockerfile
-  tsconfig.json
+apps/backends/agent-executor/
   src/
     main.ts
-    runner.module.ts
     config/
     runtime/
-      claim.service.ts
-      lease.service.ts
-      checkpoint-store.ts
-      progress-reporter.ts
-      shutdown.service.ts
+      executor.ts
+      graceful-shutdown.ts
     handlers/
-      lexicon-build.handler.ts
+      activate-agent-run.ts
     adapters/
-      database/
-      object-storage/
-      ai-provider/
-      source-fetch/
-  test/
-    contracts/
-    integration/
+      agent-step-port.ts
+      model-gateway-port.ts
+      public-web-tools.ts
+      sylis-tools.ts
+    health/
 ```
 
-`@sylis/lexicon-compiler` 保持无 NestJS、Prisma、生产数据库和 Railway 依赖的纯 library/CLI。它通过注入的 progress/AI/clock port 工作，并只读取 manifest 指向的固定本地输入；Runner 负责把 source/cache/object-storage materialize 到工作目录。Compiler 可在本地 fixture/pilot 和 CI 中确定性验证。
+它只 claim Agent activation kinds，并作为 `@sylis/agent-runtime` 的部署 composition root。Executor 注入 Agent API Step port、Model Gateway Model port、受控 Tool port、并发配置与 `AbortSignal`；Runtime 内部按 modelPosition 执行 Agent API 返回的 plan，使用有界 rolling pool、exclusive barrier、逐调用 timeout/cancel/terminal result 和 ordered receipt。Executor 本身不拥有 Agent loop 或 scheduler policy，也不能创建 `AgentRunStep`、`AgentToolCall` 或 `AgentEvent`；它没有 User cookie、Provider key/SDK、正式领域 repository 或任意 SQL 写权限。Runtime 不依赖 NestJS、Cordis、数据库或 Provider SDK。v1 不装载本地 Connector、shell、任意 MCP、第三方 write 或 voice adapter；文件只通过 READY `ContentAssetRevision` 引用消费。
 
-Compiler Runner 是独立 Railway background service，只 claim `LEXICON_BUILD`，装配 DeepSeek/source/object storage/database adapter，调用 compiler public API，持久化 checkpoint/progress，并上传最终 `sylis-lexicon-v1.json.zst`。它不拥有词典解析/合并规则，也不激活 release。
-
-GitHub protected workflow 负责审核 manifest、预算与已验证 artifact 后发起/批准 publish；长时间计算运行在 Railway runner，避免把 GitHub Actions 当长期 batch host。
-
-## 8. Importer 完整目标树
+## 7. `agent-evaluator`
 
 ```text
-services/lexicon-importer/
-  package.json
-  Dockerfile
-  tsconfig.json
+apps/backends/agent-evaluator/
   src/
     main.ts
-    cli/
     config/
-    artifact/
-      reader.ts
-      preflight.ts
-      mapping-registry.ts
     runtime/
-      claim.ts
-      lease.ts
-      checkpoint.ts
-      progress.ts
-    staging/
-      copy-stream.ts
-      staging-schema.ts
-      validators.ts
-    build/
-      identities.ts
-      release-facts.ts
-      provenance.ts
-      summaries.ts
-    validate/
-      release-validator.ts
-    activate/
-      activate-release.ts
+    handlers/
+      evaluate-release.ts
+      judge-evaluation.ts
     adapters/
-      database/
-      object-storage/
-  test/
-    fixtures/
-    contracts/
-    integration/
+      model-gateway-client.ts
+      evaluation-storage.ts
+    health/
 ```
 
-Importer 是专门的 TypeScript batch service，不需要为贴合 API 而套 NestJS。它只消费已验证 artifact，使用 streaming parser、COPY 和 set-based SQL 构建 DRAFT/VALIDATED release。它不能解析 ECDICT/Kaikki/有道，不能调用 AI，不能依赖 compiler，也不能在导入完成时隐式激活。
+Evaluator 在与 production Session 隔离的输入、预算和数据库权限下运行 offline Eval 与 independent Judge，输出 immutable evidence。它不能读取 production chat、激活 release 或修改 Candidate；promotion 仍由 Admin API 审批 command 完成。
 
-Importer 可以依赖 `@sylis/lexicon-contracts`、`@sylis/background-jobs`、`@sylis/database` 与必要的流式/数据库库。CLI 的纯离线 `validate-artifact` 路径不得读取 `DATABASE_URL`。
-
-## 9. 允许与禁止依赖
-
-允许的核心方向：
+## 8. `asset-processor`
 
 ```text
-api -----------------------> database/background-jobs/utils
-worker --------------------> database/background-jobs/ai-provider/utils
-compiler-runner -----------> lexicon-compiler/background-jobs/database/ai-provider
-lexicon-compiler ----------> lexicon-contracts/ai-provider ports/utils
-lexicon-importer ----------> lexicon-contracts/background-jobs/database/utils
+apps/backends/asset-processor/
+  src/
+    main.ts
+    config/
+    runtime/
+    handlers/
+      scan-asset.ts
+      extract-document.ts
+      run-ocr.ts
+      build-lexical-index.ts
+      build-embedding.ts
+      analyze-image.ts
+    adapters/
+      quarantine-storage.ts
+      clean-storage.ts
+      clamav.ts
+      model-gateway-client.ts
+      vector-store.ts
+    health/
 ```
 
-额外规则：
+Processor 只 claim 文件处理 Job。所有上传先进入 quarantine；malware/type/structure validation 通过后才能写 clean Bucket。OCR/index 可自动运行，vision/embedding 必须引用 User 请求、预算和 ModelExecutionPermit。解析器无网络、低权限且有 CPU/内存/时间限制。
 
-- API module 之间只通过 exported Nest module/token/interface 协作。
-- `platform` 只提供横切基础设施；它不得成为业务 service 的堆放区。
-- `@sylis/ai-provider` 的 public contract 与 adapter 分开；compiler library 只见结构化生成 port，API 不依赖 provider package，只有 Worker/Runner composition 读取各自 sealed secret。
-- 只有 server project 可以依赖 `@sylis/database` 和 executor contract。
+## 9. `automation-executor`
 
-禁止：
+```text
+apps/backends/automation-executor/
+  src/
+    main.ts
+    config/
+    runtime/
+    handlers/
+      data-export.ts
+      source-sync.ts
+      retention-purge.ts
+    adapters/
+    health/
+```
 
-- 任意 project 导入另一个 app/service 的 `src/**`。
-- Worker、Runner、Importer 从 API module 复用 repository/service。
-- API 或 Worker 依赖 compiler/importer。
-- Compiler 依赖 NestJS、Prisma、生产数据库、Railway 或 importer。
-- Importer 依赖 compiler、source adapter 或 AI provider。
-- Database package 拥有业务 repository 或重新导出全部 server package。
-- Background Jobs package 依赖某个 queue/ORM/framework implementation。
-- `AppModule` 注册 batch compiler/importer handler 或执行长任务。
-- `@sylis/shared` 作为 DTO/Prisma/provider 聚合层；目标 workspace 删除它。
+它处理非 Agent、非 Lexicon build 的后台 Job。每个 handler 由 Job kind 注册表静态绑定，有明确 idempotency 和 side-effect reconciliation；不能成为“什么都塞进去”的通用 Worker。
 
-集中 package allowlist、exports 和 import architecture tests 执行跨 package 限制；API/Worker 内部的 module public surface 由 ESLint restricted imports 和 architecture tests 执行。
+## 10. `lexicon-builder`
 
-## 10. 当前路径迁移映射
+```text
+apps/backends/lexicon-builder/
+  src/
+    main.ts
+    config/
+    runtime/
+    handlers/build-lexicon.ts
+    adapters/
+      source-storage.ts
+      artifact-storage.ts
+      model-gateway-client.ts
+    health/
+```
 
-### 10.1 API 平台
+Builder 是 `@sylis/lexicon-compiler` 的部署 composition root：固定 source manifest、模型策略、预算、checkpoint 和 Artifact upload。Compiler package 仍是纯模块，不连接 production DB 或 Railway。Builder 只产出候选 `sylis-lexicon-v1.json.zst` 和报告。
 
-| 当前路径                                         | 目标                                                      |
-| ------------------------------------------------ | --------------------------------------------------------- |
-| `apps/api/src/main.ts`, `app.module.ts`          | bootstrap + composition-only `AppModule`                  |
-| `src/filter`, `interceptor`, `decorators`        | `src/platform/http`                                       |
-| `src/modules/logger`                             | `src/platform/logging`                                    |
-| `src/modules/prisma`                             | `src/platform/database` Nest wrapper + `@sylis/database`  |
-| `src/modules/redis`                              | `src/platform/cache`/outbox wake adapter；示例不进产物    |
-| `src/config`, `constants`, `third-party-modules` | typed config + composition；删除通用注册杂物层            |
-| `src/jobs/**`                                    | 离线 enrichment 删除；runtime handler 迁 Worker           |
-| `src/templates/**`                               | identity/mail adapter 私有 template 或专门通知 owner      |
-| `src/types/**`                                   | 对应 module/package owner；删除全 API 类型 barrel         |
-| `src/utils/proficiency-calculator.ts`            | 删除旧星级/词汇量估算                                     |
-| `src/utils/**` 其余纯函数                        | module-local 或 `@sylis/utils`，按 owner/跨 runtime 判定  |
-| `apps/api/scripts/**`                            | `tools/scripts`、database seed 或删除旧词典脚本           |
-| `apps/api/src/__test__`, `apps/api/test`         | 新 `test/{contracts,integration,e2e}` 或 module unit test |
-| `apps/api/prisma/**`                             | `packages/database/prisma/**`                             |
+## 11. `lexicon-publisher`
 
-### 10.2 API 业务模块
+```text
+apps/backends/lexicon-publisher/
+  src/
+    main.ts
+    config/
+    runtime/
+    handlers/
+      publish-release.ts
+      validate-release.ts
+    adapters/
+      artifact-storage.ts
+      staging-writer.ts
+    health/
+```
 
-| 当前 module           | 目标                                  |
-| --------------------- | ------------------------------------- |
-| `auth` + `user`       | `identity`                            |
-| `health`              | `health`                              |
-| `words`               | `lexicon`                             |
-| `books`               | `books`                               |
-| `learning`            | `study` + `books`                     |
-| `quiz`                | `exercises`                           |
-| `vocabulary-test`     | `assessments`                         |
-| `vocabulary-notebook` | `notebooks`                           |
-| `articles`            | `reading` + Worker generation handler |
-| `reddit`              | `reddit` + `reading`                  |
-| `ai` + `chat`         | `ai-tutor` + Worker runtime handlers  |
-| 新增                  | `jobs` + `operations`                 |
+Publisher 不依赖 compiler、Model Gateway 或 Provider SDK。它只流式读取标准 Artifact，执行 hash/schema/ref preflight、COPY staging、set-based release build 和全局 validation。成功结果是未激活 VALIDATED release；activation 只能由 Admin API 的独立 command 完成。
 
-每个当前 `*.controller.ts` 迁 `controllers/`，DTO 迁 `dto/`，用例逻辑拆入 `services/`，数据访问迁 `repositories/`。旧巨型 service/repository 不原样换目录；先按目标用例和 owner 拆分，再删除旧 module export。
+## 12. Job runtime interface
 
-### 10.3 共享包与 importer
+所有 executor 通过同一深模块使用执行协议：
 
-| 当前路径                                     | 目标                                                         |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| `packages/shared/dto/**`                     | 两套 OpenAPI generated client；领域 artifact 进 contracts    |
-| `packages/shared/configs/**`                 | root tooling config 或专门 config package（确有复用时）      |
-| `packages/shared` 根配置/README              | 删除；必要规范迁 root config/对应 package README             |
-| `packages/shared`                            | 删除                                                         |
-| `packages/utils/src/reg-exp.ts`              | 保留前先证明通用且 API 明确；否则迁使用方                    |
-| `packages/utils/src/validate.ts`             | 保留纯 validation primitive；业务 schema 迁 contracts/module |
-| `packages/utils` 根配置/README               | 保留并重写纯函数边界；不重新导出其他 package                 |
-| `services/vocabulary-importer/src/ecdict.ts` | compiler `sources/ecdict`                                    |
-| `src/youdao.ts`, `src/youdao-import.ts`      | compiler `sources/youdao`                                    |
-| `src/books.ts`                               | compiler source/content binding                              |
-| `src/bulk-import.ts`                         | importer streaming/COPY/set-based 实现的参考，不保留旧 SQL   |
-| `src/index.ts`                               | 新 importer CLI/runtime                                      |
+```typescript
+interface JobExecutor {
+  claim(kinds: readonly JobKind[]): Promise<ClaimedAttempt | null>;
+  heartbeat(attempt: ClaimedAttempt): Promise<void>;
+  checkpoint(attempt: ClaimedAttempt, value: JobCheckpointInput): Promise<void>;
+  progress(attempt: ClaimedAttempt, event: JobProgressInput): Promise<void>;
+  finish(attempt: ClaimedAttempt, result: JobResult): Promise<void>;
+}
+```
 
-## 11. 测试与门禁
+调用者不接触 lease SQL、fencing CAS 或 Redis 实现。每个领域 handler 只接收 typed input、checkpoint 和 control。完整规则见 [Job 与执行协议](../architecture/background-jobs.md)。
 
-- 每个业务 service 用 unit test 覆盖 policy、状态转换、事务前置条件和错误 mapping。
-- Repository 对真实 PostgreSQL 跑 integration test；不以 mock Prisma 代替 SQL/FK/transaction 验证。
-- User/Admin OpenAPI snapshot、generated client 与 RFC 9457 error 分别做 contract test。
-- API e2e 覆盖 session、CSRF、idempotency、RBAC、release pinning、并发与 SSE cursor。
-- BackgroundJob 状态机使用 property test；每个 JobKind 运行 shared contract suite。
-- Worker/Runner/Importer 对 claim 竞争、lease expiry、checkpoint resume、drain、重复投递和 terminal immutability 做 integration test。
-- Compiler 使用 fixture、golden、200 词 pilot 与 determinism test；Importer 从 artifact 在 fresh DB 做重建与 count/hash 验证。
-- Architecture test 禁止 app-to-app source import、module deep import、browser-to-server package import、compiler/importer 反向依赖。
-- Migration 在临时数据库执行 deploy + rollback rehearsal（数据 release 用 pointer rollback，不回滚已执行 schema migration）。
+## 13. 数据库角色
 
-## 12. 完成条件
+| App                   | 数据库权限                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `api`                 | Identity/Learning/Reading owner tables + outbox；Agent/Lexicon 正式表只读 projection |
+| `admin-api`           | 审核、审批、审计和发布 command tables；DeploymentRelease 只读；用户明文默认不可读    |
+| `agent-api`           | Agent tables + outbox；产品表只读 projection                                         |
+| `model-gateway`       | Model Execution/Credential/Exchange/usage owner tables；Agent/产品表禁止写           |
+| `agent-executor`      | Job/Attempt lease 与 progress 所需最小权限；Agent/产品表禁止写                       |
+| `agent-evaluator`     | EvalRun/Job/evidence；production Session 与 activation 禁止读写                      |
+| `asset-processor`     | Asset processing/derivative、Job 和 pgvector projection；Agent/产品正文禁止写        |
+| `automation-executor` | 自己 Job kinds 与明确 handler 所需表                                                 |
+| `lexicon-builder`     | BuildRun/Job/progress metadata；正式 Lexicon 表禁止写                                |
+| `lexicon-publisher`   | staging、release build/validation；active pointer 禁止写                             |
 
-1. API 所有业务代码位于明确 Nest module，`AppModule` 仅 composition。
-2. Prisma 唯一 owner 是 `@sylis/database`；repository 仍由业务 module/executor owner 持有。
-3. `BackgroundJob` contract 只有 `@sylis/background-jobs` 一份实现无关定义。
-4. Worker、Compiler Runner 与 Importer 是独立可部署 executor，且都不导入 API 源码。
-5. Compiler 仍能作为纯 library/CLI 在无 NestJS、Prisma、Railway 环境运行。
-6. pnpm/Turbo package graph、ESLint 与 architecture tests 自动拒绝全部禁止依赖。
+`sylis_ci_ingestor` 是 GitHub Actions release ingestion 的额外执行角色，不是第十一个 backend app role。它只拥有 `DeploymentRelease SELECT/INSERT` 与 `SecurityAuditEvent INSERT`，不拥有 UPDATE/DELETE 或其他 Platform Operations 表权限；deferred audit closure trigger 以受控 definer 读取审计行。
+
+应用层规则和 PostgreSQL role 双重强制，避免一次错误 import 变成越权写入。
+
+## 14. 配置与密钥
+
+每个 app 只校验自己需要的环境变量。Platform Provider key、Credential KEK、Model Content KEK 和 BYOK 解密只进入 Model Gateway；Executor/Builder/Evaluator/Processor 只持有 service identity 和短期 permit。API 缺少模型 key 仍可启动并提供非 AI 功能。
+
+Railway sealed variables 按环境分别保存 `CREDENTIAL_KEK_*`、`CREDENTIAL_INDEX_KEY_*` 与 `MODEL_CONTENT_KEK_*`，根 KEK 轮换是 Railway 运维操作而非 Admin 页面操作；旧版本保留到受控 rewrap 验证完成。恢复副本只在离线加密密码库。
+
+真实 key 不进入源码、文档、OpenAPI、Docker build arg、日志或测试 fixture。配置对象在 composition root 创建并注入，领域 module 不直接读取 `process.env`。
+
+## 15. 完成门禁
+
+- app 之间没有源码 import，只有生成 client、contract 或内部 HTTP interface。
+- module controller 无 Prisma/provider 逻辑；repository 不跨 owner 写表。
+- Agent executor 的静态依赖和数据库角色都不能写 Agent/产品真相。
+- 只有 Model Gateway 包含 Provider SDK、Provider key 解密、route release 和 invocation ledger。
+- Asset Processor 不能让未扫描 revision 离开 quarantine；Evaluator 不能访问 production Session 或激活 release。
+- 每个 executor 只 claim 注册给自己的 Job kinds，并通过共享 lease/fencing/drain contract tests。
+- 本地/CI fake adapter 可完成全部业务测试，不需要模型、Railway 或 User key。

@@ -1,0 +1,207 @@
+name: Nightly quality
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      run_deepseek_smoke:
+        description: Run the protected real DeepSeek protocol smoke
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: sylis-nightly-quality
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24.19.0"
+  PNPM_VERSION: "10.23.0"
+
+jobs:
+  browser-regression:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Firefox full browser regression
+            browser: firefox
+            project_arguments: --project=browser:firefox:nightly
+            shard: 1
+            artifact: firefox
+          - name: WebKit full browser regression
+            browser: webkit
+            project_arguments: --project=browser:webkit:nightly
+            shard: 2
+            artifact: webkit
+          - name: Chromium accessibility regression
+            browser: chromium
+            project_arguments: --project=web:accessibility --project=admin:accessibility
+            shard: 3
+            artifact: accessibility
+    env:
+      CI: "true"
+      E2E_SHARD_INDEX: ${{ matrix.shard }}
+      E2E_SHARD_TOTAL: "3"
+      E2E_CI_LANE: NIGHTLY
+      SYLIS_E2E_IMAGE_TAG: ${{ github.sha }}
+      SYLIS_E2E_PULL_POLICY: never
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm e2e:prepare
+      - name: Pull the immutable main image set
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          echo "SYLIS_E2E_IMAGE_PREFIX=ghcr.io/$owner/sylis" >> "$GITHUB_ENV"
+          for application in \
+            web admin api admin-api agent-api model-gateway agent-executor \
+            agent-evaluator asset-processor automation-executor lexicon-builder \
+            lexicon-publisher; do
+            docker pull "ghcr.io/$owner/sylis-$application:$GITHUB_SHA"
+          done
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Run the scheduled browser project
+        env:
+          PROJECT_ARGUMENTS: ${{ matrix.project_arguments }}
+        run: pnpm e2e:project -- $PROJECT_ARGUMENTS
+      - name: Upload the nightly browser report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-${{ matrix.artifact }}-report-${{ github.run_attempt }}
+          path: tests/e2e/blob-report
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Upload failed nightly diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: nightly-${{ matrix.artifact }}-diagnostics-${{ github.run_attempt }}
+          path: |
+            tests/e2e/test-results
+            tests/e2e/diagnostics
+          retention-days: 14
+          if-no-files-found: warn
+
+  focused-mutation:
+    name: Deterministic provider mutation score
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:mutation
+      - name: Upload the mutation report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mutation-report-${{ github.run_attempt }}
+          path: reports/mutation
+          retention-days: 30
+          if-no-files-found: warn
+
+  provider-evaluation:
+    name: Deterministic Provider contracts and Agent evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm e2e:prepare
+      - name: Run Provider adapter protocol contracts
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.artifacts/provider-evaluation"
+          pnpm --filter @sylis/model-gateway exec vitest run \
+            test/provider-http.contract.test.ts \
+            test/provider-adapters.contract.test.ts \
+            --retry=0 \
+            --reporter=json \
+            --outputFile="$GITHUB_WORKSPACE/.artifacts/provider-evaluation/provider-contracts.json"
+      - name: Run the versioned deterministic Agent evaluation gate
+        run: >-
+          pnpm --filter @sylis/agent-contracts exec vitest run
+          test/agent-evaluation.test.ts
+          --retry=0
+          --reporter=json
+          --outputFile="$GITHUB_WORKSPACE/.artifacts/provider-evaluation/agent-evaluation.json"
+      - name: Upload Provider and evaluation evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: provider-evaluation-${{ github.run_attempt }}
+          path: .artifacts/provider-evaluation
+          retention-days: 30
+          if-no-files-found: error
+
+  deepseek-provider-smoke:
+    name: Protected DeepSeek protocol smoke
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_deepseek_smoke }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sylis / provider-smoke
+    env:
+      RUN_DEEPSEEK_PROVIDER_SMOKE: "true"
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm e2e:prepare
+      - name: Run the explicitly authorized real Provider smoke
+        run: |
+          mkdir -p .artifacts/provider-smoke
+          pnpm ai:smoke:deepseek | tee .artifacts/provider-smoke/deepseek.json
+      - name: Upload redacted protocol evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deepseek-provider-smoke-${{ github.run_attempt }}
+          path: .artifacts/provider-smoke/deepseek.json
+          retention-days: 30
+          if-no-files-found: error

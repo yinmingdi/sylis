@@ -2,7 +2,7 @@
   "name": "@sylis/components",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "files": [
     "dist",
     "src/styles"
@@ -10,12 +10,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./styles.css": "./src/styles/index.css"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run --passWithNoTests"
@@ -32,7 +32,6 @@
     "@types/react-dom": "^19.1.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tsdown": "0.22.14",
     "typescript": "5.9.3",
     "vitest": "^3.2.4"
   }

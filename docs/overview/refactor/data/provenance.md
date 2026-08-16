@@ -32,6 +32,14 @@ raw 层忠实保存来源；candidate 层允许冲突、缺失和 unresolved tar
 
 一个 fact 可以有多条 evidence。相同正式内容来自有道多本书时不复制定义/例句，只追加对应 SourceRecord evidence 和各自 BookItem membership。
 
+三套 evidence 不混用：
+
+- `CandidateRevisionEvidence` 固定审核前 candidate 的输入证据，恰好指向 SourceRecord 或已闭合的上游 ContentProvenance；`evidenceSetHash` 由服务端按规范化 evidence 集计算，不接受客户端自报。
+- `ContentEvidence` 只属于正式 ContentProvenance；bundle 显式标记 `SOURCE/DERIVED/GENERATED/HUMAN`，证据 kind、target 和 bundle kind 必须匹配，图必须无环并递归闭合到 rights 允许的 SourceRecord。
+- `RightsDecisionEvidence` 固定 license text、terms、owner permission、legal review 或 policy document 的 URI 与 SHA-256，并通过复合 FK 绑定同一个 SourceDatasetVersion；任一 allow flag 为 true 时至少需要一条。
+
+正式词典、语料、词书与 proficiency fact 不接受 `GENERATED` provenance。AI 新写的教学内容只能进入 PedagogicalMaterial/Exercise 等明确允许生成的边界；source-backed AI 对齐或确定性合并使用 `DERIVED`，不能伪装成 `SOURCE`。
+
 ## 4. 去重键
 
 | 对象                | 语义去重键                                                                                                       |
@@ -58,7 +66,9 @@ raw 层忠实保存来源；candidate 层允许冲突、缺失和 unresolved tar
 
 ## 6. 权利和导出策略
 
-每个 `SourceRightsPolicy` 分开定义：
+Admin 先为精确 `SourceDatasetVersion` 创建 evidence-backed、versioned `RightsDecision`。Compiler 只能选择当前有效且证据完整的 Decision，并把决定中的权利字段 materialize 为 Artifact/Release 内不可变 `SourceRightsPolicy` snapshot；snapshot 保存 decision reference/hash，不能由 BuildRun 自行放宽。
+
+每个 `SourceRightsPolicy` snapshot 分开定义：
 
 - `mayBuild`: 是否可用于内部构建；
 - `mayServe`: 是否可经 API 展示；
@@ -75,7 +85,7 @@ DictionaryByGPT4 仅作为产品内容维度和人工评价参考，不登记为
 
 ## 7. 撤回流程
 
-1. 创建 `SourceRestrictionEvent`，不得直接删除 active facts。
+1. 创建新的 RightsDecision 或 `SourceRestrictionEvent`，不得覆盖原决定或直接删除 active facts。
 2. 沿 `ContentEvidence -> ContentProvenance -> facts/objectives/exercises/releases` 计算影响集。
 3. 阻止包含受限唯一证据的新 release 激活。
 4. 构建排除/替代这些事实的新 release。

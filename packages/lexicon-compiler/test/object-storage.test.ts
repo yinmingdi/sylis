@@ -85,6 +85,37 @@ describe("content-addressed object publisher", () => {
     });
   });
 
+  it("allows an HTTP endpoint only with an explicit insecure opt-in", () => {
+    const environment = {
+      AWS_ENDPOINT_URL: "http://minio:9000",
+      AWS_DEFAULT_REGION: "us-east-1",
+      AWS_S3_BUCKET_NAME: "bucket",
+      AWS_ACCESS_KEY_ID: "access",
+      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_S3_URL_STYLE: "path",
+    };
+
+    expect(() => s3ObjectStorageConfigFromEnv(environment)).toThrow(
+      "AWS_ENDPOINT_URL must use HTTPS.",
+    );
+    expect(
+      s3ObjectStorageConfigFromEnv({
+        ...environment,
+        AWS_ENDPOINT_ALLOW_INSECURE: "true",
+      }),
+    ).toMatchObject({
+      endpoint: "http://minio:9000/",
+      forcePathStyle: true,
+    });
+    expect(() =>
+      s3ObjectStorageConfigFromEnv({
+        ...environment,
+        AWS_ENDPOINT_URL: "ftp://minio:9000",
+        AWS_ENDPOINT_ALLOW_INSECURE: "true",
+      }),
+    ).toThrow("AWS_ENDPOINT_URL must use HTTPS.");
+  });
+
   it("uploads by digest and reuses only matching remote bytes", async () => {
     const root = await mkdtemp(join(tmpdir(), "sylis-object-publish-"));
     const inputPath = join(root, "source.jsonl.gz");

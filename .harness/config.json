@@ -1,5 +1,5 @@
 {
-  "$schema": "../packages/harness/schema/harness-config.schema.json",
+  "$schema": "../tools/engineering-harness/schema/harness-config.schema.json",
   "schemaVersion": 1,
   "project": {
     "name": "Sylis"
@@ -11,7 +11,7 @@
     "ARCHITECTURE.md",
     ".harness/config.json",
     ".harness/manifest.json",
-    "packages/harness/package.json",
+    "tools/engineering-harness/package.json",
     "docs/overview/agent-harness.md",
     "docs/overview/generated/project-profile.md",
     "docs/overview/generated/tool-capabilities.md",
@@ -40,7 +40,7 @@
     "groups": {
       "root": ["."],
       "shared": ["packages/*"],
-      "consumer": ["apps/*", "services/*", "docs/*"]
+      "consumer": ["apps/frontends/*", "apps/backends/*", "docs/*"]
     },
     "allowedEdges": ["root->shared", "shared->shared", "consumer->shared"],
     "requireWorkspaceProtocol": true

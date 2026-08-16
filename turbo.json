@@ -19,7 +19,11 @@
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "@sylis/database#typecheck": {
+      "dependsOn": ["^build", "build"],
       "outputs": []
     },
     "test": {
@@ -28,6 +32,8 @@
         "NODE_ENV",
         "PORT",
         "DATABASE_URL",
+        "DEPLOYMENT_INGEST_DATABASE_URL",
+        "DEPLOYMENT_INGEST_TOKEN",
         "TEST_DATABASE_URL",
         "REDIS_URL",
         "PUBLIC_ORIGIN",
@@ -46,30 +52,12 @@
         "SMTP_USER",
         "SMTP_PASSWORD",
         "SMTP_FROM",
-        "RUNTIME_AI_ENABLED",
-        "RUNTIME_AI_PROVIDER",
-        "RUNTIME_AI_API_KEY",
-        "RUNTIME_AI_BASE_URL",
-        "RUNTIME_AI_STRICT_BASE_URL",
-        "RUNTIME_AI_MODEL",
-        "RUNTIME_AI_INPUT_USD_PER_MILLION",
-        "RUNTIME_AI_OUTPUT_USD_PER_MILLION",
-        "RUNTIME_AI_CACHE_HIT_USD_PER_MILLION",
-        "LEXICON_AI_ENABLED",
-        "LEXICON_AI_API_KEY",
-        "LEXICON_AI_BASE_URL",
-        "LEXICON_AI_STRICT_BASE_URL",
-        "LEXICON_AI_MODEL",
-        "LEXICON_AI_CACHE_KEY",
-        "LEXICON_AI_MAX_ATTEMPTS",
-        "LEXICON_AI_RETRY_BASE_MS",
-        "LEXICON_AI_RETRY_MAX_MS",
         "JOB_CHECKPOINT_KEY_BASE64",
         "JOB_POLL_INTERVAL_MS",
         "JOB_LEASE_DURATION_MS",
         "RAILWAY_REPLICA_ID",
-        "LEXICON_RUNNER_WORK_ROOT",
-        "LEXICON_IMPORTER_WORK_ROOT",
+        "LEXICON_BUILDER_WORK_ROOT",
+        "LEXICON_PUBLISHER_WORK_ROOT",
         "LEXICON_ARTIFACT_ROOT",
         "LEXICON_ARTIFACT_ALLOW_FILE",
         "AWS_ENDPOINT_URL",
@@ -116,13 +104,24 @@
     "test:e2e": {
       "cache": false
     },
+    "//#e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": false
+    },
     "test:integration": {
       "cache": false
     },
     "prisma:generate": {
       "cache": false
     },
-    "prisma:migrate": {
+    "prisma:push": {
+      "cache": false
+    },
+    "prisma:reset": {
+      "cache": false
+    },
+    "database:install": {
       "cache": false
     },
     "compile": {

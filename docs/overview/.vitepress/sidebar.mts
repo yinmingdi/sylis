@@ -39,12 +39,29 @@ export function getRefactorSidebar() {
       items: [
         { text: "目标系统架构", link: "/refactor/architecture/system" },
         {
+          text: "Learning Agent",
+          link: "/refactor/architecture/learning-agent-system",
+        },
+        {
+          text: "Agent 会话 Block",
+          link: "/refactor/architecture/agent-conversation-blocks",
+        },
+        { text: "Model Gateway", link: "/refactor/architecture/model-gateway" },
+        {
+          text: "凭证与密钥管理",
+          link: "/refactor/architecture/credential-management",
+        },
+        {
+          text: "文件与模型交换",
+          link: "/refactor/architecture/agent-files-and-exchanges",
+        },
+        {
           text: "Bounded Contexts",
           link: "/refactor/architecture/bounded-contexts",
         },
         { text: "算法注册表", link: "/refactor/architecture/algorithms" },
         {
-          text: "BackgroundJob 与 Worker",
+          text: "Job 与执行协议",
           link: "/refactor/architecture/background-jobs",
         },
         { text: "标准与设计依据", link: "/refactor/architecture/standards" },
@@ -64,7 +81,7 @@ export function getRefactorSidebar() {
       ],
     },
     {
-      text: "构建与导入",
+      text: "构建与发布",
       collapsed: false,
       items: [
         {
@@ -72,7 +89,10 @@ export function getRefactorSidebar() {
           link: "/refactor/pipeline/lexicon-compiler",
         },
         { text: "AI Enrichment", link: "/refactor/pipeline/ai-enrichment" },
-        { text: "导入与 Release", link: "/refactor/pipeline/import-release" },
+        {
+          text: "Artifact 与 Release",
+          link: "/refactor/pipeline/import-release",
+        },
       ],
     },
     {
@@ -91,7 +111,7 @@ export function getRefactorSidebar() {
           text: "Reading Core 与内容体验",
           link: "/refactor/product/reading-experiences",
         },
-        { text: "在线 AI 导师", link: "/refactor/product/ai-tutor" },
+        { text: "Learning Agent", link: "/refactor/product/learning-agent" },
         { text: "独立 Admin", link: "/refactor/product/admin" },
         { text: "API 重构", link: "/refactor/product/api" },
         { text: "Web 重构", link: "/refactor/product/web" },
@@ -110,7 +130,7 @@ export function getRefactorSidebar() {
           link: "/refactor/implementation/backend-structure",
         },
         {
-          text: "Workspace 与 Nx 治理",
+          text: "Workspace 与 Turbo 治理",
           link: "/refactor/implementation/workspace-projects",
         },
         {

@@ -30,8 +30,8 @@ cd sylis
 pnpm install
 
 # Setup environment (see configuration guide)
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+cp apps/backends/api/.env.example apps/backends/api/.env
+cp apps/frontends/web/.env.example apps/frontends/web/.env
 
 # Start all services
 pnpm start

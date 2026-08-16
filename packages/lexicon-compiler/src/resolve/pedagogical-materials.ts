@@ -1,10 +1,11 @@
-import type { PedagogicalMaterialKindCode } from "@sylis/lexicon-contracts";
+import type { PedagogicalMaterialKindCode } from "@sylis/lexicon-artifact";
 
-export type MaterialPlanningStatus =
-  | "PRESENT"
-  | "MISSING"
-  | "NOT_APPLICABLE"
-  | "REJECTED";
+export enum MaterialPlanningStatus {
+  PRESENT = "PRESENT",
+  MISSING = "MISSING",
+  NOT_APPLICABLE = "NOT_APPLICABLE",
+  REJECTED = "REJECTED",
+}
 
 export interface MaterialPlanningInput {
   kind: PedagogicalMaterialKindCode;
@@ -30,7 +31,7 @@ export function planPedagogicalMaterial(
   if (input.hasTypedBlocks === false) {
     return {
       kind: input.kind,
-      status: "REJECTED",
+      status: MaterialPlanningStatus.REJECTED,
       reason: "TYPED_BLOCKS_REQUIRED",
     };
   }
@@ -39,48 +40,50 @@ export function planPedagogicalMaterial(
       return input.hasSenseEvidence
         ? {
             kind: input.kind,
-            status: "PRESENT",
+            status: MaterialPlanningStatus.PRESENT,
             reason: "SENSE_EVIDENCE_PRESENT",
           }
         : {
             kind: input.kind,
-            status: "MISSING",
+            status: MaterialPlanningStatus.MISSING,
             reason: "SENSE_EVIDENCE_MISSING",
           };
     case "MORPHOLOGY_WALKTHROUGH":
       return input.hasMorphologyGraph
         ? {
             kind: input.kind,
-            status: "PRESENT",
+            status: MaterialPlanningStatus.PRESENT,
             reason: "MORPHOLOGY_GRAPH_PRESENT",
           }
         : {
             kind: input.kind,
-            status: "NOT_APPLICABLE",
+            status: MaterialPlanningStatus.NOT_APPLICABLE,
             reason: "NO_VERIFIED_ANALYSIS",
           };
     case "CULTURAL_CONTEXT":
       return input.hasSourceBackedCulturalEvidence
         ? {
             kind: input.kind,
-            status: "PRESENT",
+            status: MaterialPlanningStatus.PRESENT,
             reason: "CITED_CULTURAL_EVIDENCE",
           }
         : {
             kind: input.kind,
-            status: "NOT_APPLICABLE",
+            status: MaterialPlanningStatus.NOT_APPLICABLE,
             reason: "NO_CULTURAL_EVIDENCE",
           };
     case "MNEMONIC":
       return input.generatedProvenance && input.passedSafetyCheck
         ? {
             kind: input.kind,
-            status: "PRESENT",
+            status: MaterialPlanningStatus.PRESENT,
             reason: "GENERATED_AND_VERIFIED",
           }
         : {
             kind: input.kind,
-            status: input.generatedProvenance ? "REJECTED" : "MISSING",
+            status: input.generatedProvenance
+              ? MaterialPlanningStatus.REJECTED
+              : MaterialPlanningStatus.MISSING,
             reason: input.generatedProvenance
               ? "SAFETY_CHECK_FAILED"
               : "GENERATION_REQUIRED",
@@ -92,12 +95,14 @@ export function planPedagogicalMaterial(
         input.passedSafetyCheck
         ? {
             kind: input.kind,
-            status: "PRESENT",
+            status: MaterialPlanningStatus.PRESENT,
             reason: "STORY_CONTRACT_SATISFIED",
           }
         : {
             kind: input.kind,
-            status: input.generatedProvenance ? "REJECTED" : "MISSING",
+            status: input.generatedProvenance
+              ? MaterialPlanningStatus.REJECTED
+              : MaterialPlanningStatus.MISSING,
             reason: input.generatedProvenance
               ? "STORY_CONTRACT_FAILED"
               : "GENERATION_REQUIRED",

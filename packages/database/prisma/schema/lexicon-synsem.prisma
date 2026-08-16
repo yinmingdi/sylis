@@ -1,16 +1,19 @@
 model SyntacticFrame {
-  id              String               @id @default(uuid()) @db.Uuid
-  releaseId       String               @db.Uuid
-  entryId         String               @db.Uuid
-  frameKey        String
-  frameTypeCode   String
-  languageTag     String
-  displayTemplate String
-  provenanceId    String               @db.Uuid
-  entry           LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
-  provenance      Provenance           @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
-  arguments       SyntacticArgument[]
-  senseLinks      SenseFrame[]
+  id                    String                                  @id @default(uuid()) @db.Uuid
+  releaseId             String                                  @db.Uuid
+  entryId               String                                  @db.Uuid
+  frameKey              String
+  frameTypeCode         String
+  languageTag           String
+  displayTemplate       String
+  provenanceId          String                                  @db.Uuid
+  entry                 LexicalEntryRevision                    @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+  provenance            Provenance                              @relation(fields: [provenanceId], references: [id], onDelete: Restrict)
+  arguments             SyntacticArgument[]
+  senseLinks            SenseFrame[]
+  objectiveSubjects     LearningObjectiveFrameSubject[]
+  materialMentions      PedagogicalMaterialMentionFrameTarget[]
+  exerciseChoiceTargets ExerciseChoiceFrameTarget[]
 
   @@unique([releaseId, id])
   @@unique([releaseId, entryId, frameKey])
@@ -80,12 +83,13 @@ model SenseFrame {
 }
 
 model ArgumentMapping {
+  releaseId           String            @db.Uuid
   senseFrameId        String            @db.Uuid
   syntacticArgumentId String            @db.Uuid
   semanticArgumentId  String            @db.Uuid
-  senseFrame          SenseFrame        @relation(fields: [senseFrameId], references: [id], onDelete: Restrict)
-  syntacticArgument   SyntacticArgument @relation(fields: [syntacticArgumentId], references: [id], onDelete: Restrict)
-  semanticArgument    SemanticArgument  @relation(fields: [semanticArgumentId], references: [id], onDelete: Restrict)
+  senseFrame          SenseFrame        @relation(fields: [releaseId, senseFrameId], references: [releaseId, id], onDelete: Restrict)
+  syntacticArgument   SyntacticArgument @relation(fields: [releaseId, syntacticArgumentId], references: [releaseId, id], onDelete: Restrict)
+  semanticArgument    SemanticArgument  @relation(fields: [releaseId, semanticArgumentId], references: [releaseId, id], onDelete: Restrict)
 
-  @@id([senseFrameId, syntacticArgumentId, semanticArgumentId])
+  @@id([releaseId, senseFrameId, syntacticArgumentId, semanticArgumentId])
 }

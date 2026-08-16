@@ -5,9 +5,9 @@ const protectedPilotPaths = [
   "pnpm-lock.yaml",
   "turbo.json",
   "eslint.config.js",
-  "packages/ai-provider",
-  "packages/lexicon-contracts",
+  "packages/lexicon-artifact",
   "packages/lexicon-compiler",
+  "packages/utils",
   "tools/lexicon",
 ];
 

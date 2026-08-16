@@ -10,10 +10,9 @@
 
 ```bash
 pnpm install
-cp apps/api/.env.example apps/api/.env
-docker compose -f apps/api/docker-compose.yml up -d
-pnpm --filter @sylis/api prisma:generate
-pnpm --filter @sylis/api exec prisma migrate deploy
+cp apps/backends/api/.env.example apps/backends/api/.env
+docker compose -f apps/backends/api/docker-compose.yml up -d
+pnpm db:install
 pnpm dev
 ```
 
@@ -22,10 +21,10 @@ Web 通过同源 `/api` 代理后端。浏览器端不需要也不允许配置 A
 ## 验证
 
 ```bash
-curl http://localhost:3000/health
+curl --fail http://localhost:3000/health/ready
 pnpm lint
-pnpm --filter @sylis/api test --runInBand
+pnpm --filter @sylis/api test
 pnpm --filter @sylis/web build
 ```
 
-Railway 部署参见仓库根目录的 `RAILWAY_DEPLOYMENT.md`。
+Railway 部署参见 [CI/CD、Railway 与密钥](../refactor/delivery/cicd-security.md)。

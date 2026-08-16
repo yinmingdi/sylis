@@ -1,102 +1,247 @@
+model DocumentOrigin {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  kind                DocumentOriginKind
+  sourceKey           String
+  rightsPolicy        DocumentRightsPolicy
+  rightsReferenceUrl  String?
+  retentionPolicy     DocumentRetentionPolicy
+  retentionDays       Int?
+  attributionRequired Boolean                 @default(false)
+  attributionText     String?
+  attributionUrl      String?
+  createdAt           DateTime                @default(now()) @db.Timestamptz(3)
+  retiredAt           DateTime?               @db.Timestamptz(3)
+  documents           ReadingDocument[]
+
+  @@unique([kind, sourceKey])
+}
+
 model ReadingDocument {
   id                 String                    @id @default(uuid()) @db.Uuid
+  originId           String                    @db.Uuid
   ownerUserId        String?                   @db.Uuid
-  sourceKind         String
   externalKey        String?
   currentRevisionId  String?                   @unique @db.Uuid
   status             ReadingDocumentStatus     @default(DRAFT)
+  visibility         ReadingDocumentVisibility @default(PRIVATE)
   createdAt          DateTime                  @default(now()) @db.Timestamptz(3)
+  retiredAt          DateTime?                 @db.Timestamptz(3)
+  origin             DocumentOrigin            @relation(fields: [originId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  owner              User?                     @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   revisions          ReadingDocumentRevision[] @relation("DocumentRevisions")
-  currentRevision    ReadingDocumentRevision?  @relation("CurrentDocumentRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
-  activities         ReadingActivity[]
-  activityEvents     ReadingActivityEvent[]
-  savedBy            SavedReading[]
+  currentRevision    ReadingDocumentRevision?  @relation("CurrentDocumentRevision", fields: [id, currentRevisionId], references: [documentId, id], onDelete: Restrict, onUpdate: Restrict)
+  collectionItems    ReadingCollectionItem[]
   redditMetadata     RedditDocumentMetadata?
   redditObservations RedditSourceObservation[]
-  generations        ReadingGeneration[]
 
-  @@unique([sourceKind, externalKey])
+  @@unique([originId, externalKey])
+  @@unique([id, currentRevisionId])
 }
 
 model ReadingDocumentRevision {
-  id                String              @id @default(uuid()) @db.Uuid
-  documentId        String              @db.Uuid
-  revisionNo        Int
-  languageTag       String
-  title             String
-  contentCiphertext Bytes
-  keyVersion        String
-  contentHash       String
-  wordCount         Int
-  publishedAt       DateTime?           @db.Timestamptz(3)
-  withdrawnAt       DateTime?           @db.Timestamptz(3)
-  document          ReadingDocument     @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Restrict)
-  currentFor        ReadingDocument?    @relation("CurrentDocumentRevision")
-  annotations       LexicalAnnotation[]
+  id                  String                                      @id @default(uuid()) @db.Uuid
+  documentId          String                                      @db.Uuid
+  revisionNo          Int
+  languageTag         String
+  title               String
+  contentCiphertext   Bytes
+  keyVersion          String
+  contentHash         String
+  wordCount           Int
+  createdAt           DateTime                                    @default(now()) @db.Timestamptz(3)
+  publishedAt         DateTime?                                   @db.Timestamptz(3)
+  withdrawnAt         DateTime?                                   @db.Timestamptz(3)
+  document            ReadingDocument                             @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Restrict)
+  currentFor          ReadingDocument?                            @relation("CurrentDocumentRevision")
+  annotations         LexicalAnnotation[]
+  activities          ReadingActivity[]
+  progress            ReadingProgress[]
+  readingTargets      ReadingTarget[]
+  supportGrantTargets SupportGrantReadingDocumentRevisionTarget[]
 
   @@unique([documentId, revisionNo])
   @@unique([documentId, contentHash])
+  @@unique([documentId, id])
+  @@unique([id, contentHash])
 }
 
 model LexicalAnnotation {
-  id               String                  @id @default(uuid()) @db.Uuid
-  revisionId       String                  @db.Uuid
-  startOffset      Int
-  endOffset        Int
-  selectedTextHash String
-  releaseId        String                  @db.Uuid
-  targetKind       String
-  targetId         String                  @db.Uuid
-  confidence       Float
-  revision         ReadingDocumentRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  id                  String                              @id @default(uuid()) @db.Uuid
+  revisionId          String                              @db.Uuid
+  revisionContentHash String
+  offsetUnit          TextOffsetUnit
+  startOffset         Int
+  endOffset           Int
+  exactTextHash       String
+  prefixLength        Int
+  prefixTextHash      String
+  suffixLength        Int
+  suffixTextHash      String
+  releaseId           String                              @db.Uuid
+  targetKind          LexicalAnnotationTargetKind
+  confidence          Float
+  revision            ReadingDocumentRevision             @relation(fields: [revisionId, revisionContentHash], references: [id, contentHash], onDelete: Restrict, onUpdate: Restrict)
+  release             LexiconRelease                      @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  headwordTarget      LexicalAnnotationHeadwordTarget?
+  entryTarget         LexicalAnnotationEntryTarget?
+  senseTarget         LexicalAnnotationSenseTarget?
+  collocationTarget   LexicalAnnotationCollocationTarget?
+  objectiveTarget     LexicalAnnotationObjectiveTarget?
+  readingTargets      ReadingTarget[]
 
-  @@unique([revisionId, startOffset, endOffset, targetKind, targetId])
+  @@unique([releaseId, id])
+  @@unique([revisionId, id])
+  @@unique([revisionId, releaseId, id])
+  @@index([revisionId, revisionContentHash, startOffset, endOffset])
+}
+
+model LexicalAnnotationHeadwordTarget {
+  releaseId        String            @db.Uuid
+  annotationId     String            @db.Uuid
+  headwordId       String            @db.Uuid
+  annotation       LexicalAnnotation @relation(fields: [releaseId, annotationId], references: [releaseId, id], onDelete: Cascade)
+  headwordRevision HeadwordRevision  @relation(fields: [releaseId, headwordId], references: [releaseId, headwordId], onDelete: Restrict)
+
+  @@id([releaseId, annotationId])
+  @@index([releaseId, headwordId])
+}
+
+model LexicalAnnotationEntryTarget {
+  releaseId     String               @db.Uuid
+  annotationId  String               @db.Uuid
+  entryId       String               @db.Uuid
+  annotation    LexicalAnnotation    @relation(fields: [releaseId, annotationId], references: [releaseId, id], onDelete: Cascade)
+  entryRevision LexicalEntryRevision @relation(fields: [releaseId, entryId], references: [releaseId, entryId], onDelete: Restrict)
+
+  @@id([releaseId, annotationId])
+  @@index([releaseId, entryId])
+}
+
+model LexicalAnnotationSenseTarget {
+  releaseId     String               @db.Uuid
+  annotationId  String               @db.Uuid
+  senseId       String               @db.Uuid
+  annotation    LexicalAnnotation    @relation(fields: [releaseId, annotationId], references: [releaseId, id], onDelete: Cascade)
+  senseRevision LexicalSenseRevision @relation(fields: [releaseId, senseId], references: [releaseId, senseId], onDelete: Restrict)
+
+  @@id([releaseId, annotationId])
+  @@index([releaseId, senseId])
+}
+
+model LexicalAnnotationCollocationTarget {
+  releaseId     String            @db.Uuid
+  annotationId  String            @db.Uuid
+  collocationId String            @db.Uuid
+  annotation    LexicalAnnotation @relation(fields: [releaseId, annotationId], references: [releaseId, id], onDelete: Cascade)
+  collocation   Collocation       @relation(fields: [releaseId, collocationId], references: [releaseId, id], onDelete: Restrict)
+
+  @@id([releaseId, annotationId])
+  @@index([releaseId, collocationId])
+}
+
+model LexicalAnnotationObjectiveTarget {
+  releaseId           String                    @db.Uuid
+  annotationId        String                    @db.Uuid
+  objectiveRevisionId String                    @db.Uuid
+  annotation          LexicalAnnotation         @relation(fields: [releaseId, annotationId], references: [releaseId, id], onDelete: Cascade)
+  objectiveRevision   LearningObjectiveRevision @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict)
+  readingTargets      ReadingTarget[]
+
+  @@id([releaseId, annotationId])
+  @@unique([releaseId, annotationId, objectiveRevisionId])
+  @@index([releaseId, objectiveRevisionId])
 }
 
 model ReadingActivity {
-  id          String          @id @default(uuid()) @db.Uuid
-  userId      String          @db.Uuid
-  documentId  String          @db.Uuid
-  progress    Float
-  lastOffset  Int
-  startedAt   DateTime        @default(now()) @db.Timestamptz(3)
-  lastReadAt  DateTime        @default(now()) @db.Timestamptz(3)
-  completedAt DateTime?       @db.Timestamptz(3)
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document    ReadingDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  id               String                  @id @default(uuid()) @db.Uuid
+  userId           String                  @db.Uuid
+  documentId       String                  @db.Uuid
+  revisionId       String                  @db.Uuid
+  kind             ReadingActivityKind
+  position         Int?
+  progress         Float?
+  learnedWordCount Int?
+  totalReadSeconds Int?
+  eventVersion     Int
+  occurredAt       DateTime                @default(now()) @db.Timestamptz(3)
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revision         ReadingDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: Restrict)
 
-  @@unique([userId, documentId])
-}
-
-model ReadingActivityEvent {
-  id         String          @id @default(uuid()) @db.Uuid
-  userId     String          @db.Uuid
-  documentId String          @db.Uuid
-  revisionId String?         @db.Uuid
-  eventKind  String
-  offset     Int?
-  progress   Float?
-  targetKind String?
-  targetId   String?         @db.Uuid
-  occurredAt DateTime        @default(now()) @db.Timestamptz(3)
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document   ReadingDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
-
+  @@unique([userId, documentId, eventVersion])
   @@index([userId, occurredAt])
   @@index([documentId, occurredAt])
 }
 
-model SavedReading {
-  id         String           @id @default(uuid()) @db.Uuid
-  userId     String           @db.Uuid
-  documentId String?          @db.Uuid
-  releaseId  String?          @db.Uuid
-  targetKind String?
-  targetId   String?          @db.Uuid
-  savedAt    DateTime         @default(now()) @db.Timestamptz(3)
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document   ReadingDocument? @relation(fields: [documentId], references: [id], onDelete: Restrict)
+model ReadingProgress {
+  userId           String                  @db.Uuid
+  documentId       String                  @db.Uuid
+  revisionId       String                  @db.Uuid
+  progress         Float
+  position         Int
+  learnedWordCount Int                     @default(0)
+  totalReadSeconds Int?
+  eventVersion     Int
+  startedAt        DateTime                @default(now()) @db.Timestamptz(3)
+  lastReadAt       DateTime                @default(now()) @db.Timestamptz(3)
+  completedAt      DateTime?               @db.Timestamptz(3)
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revision         ReadingDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([userId, documentId])
+  @@index([userId, lastReadAt])
+}
+
+model ReadingCollection {
+  id          String                  @id @default(uuid()) @db.Uuid
+  userId      String                  @db.Uuid
+  identityKey String
+  title       String
+  createdAt   DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime                @updatedAt @db.Timestamptz(3)
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       ReadingCollectionItem[]
+
+  @@unique([userId, identityKey])
+  @@unique([userId, id])
+}
+
+model ReadingCollectionItem {
+  id           String            @id @default(uuid()) @db.Uuid
+  userId       String            @db.Uuid
+  collectionId String            @db.Uuid
+  documentId   String            @db.Uuid
+  note         String?
+  thumbnailUrl String?
+  tags         String[]          @default([])
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection   ReadingCollection @relation(fields: [userId, collectionId], references: [userId, id], onDelete: Cascade, onUpdate: Restrict)
+  document     ReadingDocument   @relation(fields: [documentId], references: [id], onDelete: Restrict)
 
   @@unique([userId, documentId])
-  @@unique([userId, releaseId, targetKind, targetId])
+  @@index([collectionId, createdAt])
+}
+
+model ReadingTarget {
+  id                  String                           @id @default(uuid()) @db.Uuid
+  userId              String                           @db.Uuid
+  documentId          String                           @db.Uuid
+  revisionId          String                           @db.Uuid
+  releaseId           String                           @db.Uuid
+  annotationId        String                           @db.Uuid
+  objectiveRevisionId String                           @db.Uuid
+  policyVersion       String
+  rank                Int
+  reason              ReadingTargetReason
+  createdAt           DateTime                         @default(now()) @db.Timestamptz(3)
+  user                User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revision            ReadingDocumentRevision          @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, onUpdate: Restrict)
+  annotation          LexicalAnnotation                @relation(fields: [revisionId, releaseId, annotationId], references: [revisionId, releaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  objectiveRevision   LearningObjectiveRevision        @relation(fields: [releaseId, objectiveRevisionId], references: [releaseId, id], onDelete: Restrict, onUpdate: Restrict)
+  objectiveAnnotation LexicalAnnotationObjectiveTarget @relation(fields: [releaseId, annotationId, objectiveRevisionId], references: [releaseId, annotationId, objectiveRevisionId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, revisionId, objectiveRevisionId, policyVersion])
+  @@unique([userId, revisionId, policyVersion, rank])
+  @@index([revisionId, rank])
 }

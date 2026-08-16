@@ -4,6 +4,7 @@ import { builtinModules } from "node:module";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { parse as parseYaml } from "yaml";
 
 const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const workspacePackage = readJson(resolve(workspaceRoot, "package.json"));
@@ -11,55 +12,161 @@ const workspaceVersion = workspacePackage.version;
 
 const projects = [
   {
-    name: "@sylis/admin",
-    root: "apps/admin",
-    tags: ["type:app", "scope:operations", "runtime:browser"],
-    allow: ["@sylis/admin-api-client", "@sylis/components", "@sylis/utils"],
+    name: "@sylis/web",
+    root: "apps/frontends/web",
+    tags: ["type:app", "scope:platform", "runtime:browser"],
+    allow: [
+      "@sylis/api-client",
+      "@sylis/agent-contracts",
+      "@sylis/components",
+      "@sylis/job-contracts",
+      "@sylis/utils",
+    ],
   },
   {
-    name: "@sylis/web",
-    root: "apps/web",
-    tags: ["type:app", "scope:platform", "runtime:browser"],
+    name: "@sylis/admin",
+    root: "apps/frontends/admin",
+    tags: ["type:app", "scope:operations", "runtime:browser"],
     allow: ["@sylis/api-client", "@sylis/components", "@sylis/utils"],
   },
   {
     name: "@sylis/api",
-    root: "apps/api",
+    root: "apps/backends/api",
     tags: ["type:app", "scope:platform", "runtime:server"],
-    allow: ["@sylis/background-jobs", "@sylis/database", "@sylis/utils"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/utils",
+    ],
   },
   {
-    name: "@sylis/worker",
-    root: "apps/worker",
+    name: "@sylis/admin-api",
+    root: "apps/backends/admin-api",
+    tags: ["type:app", "scope:operations", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/api-client",
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/agent-api",
+    root: "apps/backends/agent-api",
+    tags: ["type:app", "scope:agent", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/content-crypto",
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/model-gateway",
+    root: "apps/backends/model-gateway",
+    tags: ["type:app", "scope:model-execution", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/content-crypto",
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/agent-executor",
+    root: "apps/backends/agent-executor",
+    tags: ["type:app", "scope:agent", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/agent-runtime",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/agent-evaluator",
+    root: "apps/backends/agent-evaluator",
+    tags: ["type:app", "scope:agent", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/asset-processor",
+    root: "apps/backends/asset-processor",
+    tags: ["type:app", "scope:content-assets", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/content-crypto",
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/automation-executor",
+    root: "apps/backends/automation-executor",
     tags: ["type:app", "scope:jobs", "runtime:server"],
-    allow: ["@sylis/ai-provider", "@sylis/background-jobs", "@sylis/database"],
+    allow: [
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/utils",
+    ],
   },
   {
-    name: "@sylis/admin-api-client",
-    root: "packages/admin-api-client",
-    tags: ["type:lib", "scope:operations", "runtime:browser"],
-    allow: [],
-    requiresRootExport: true,
+    name: "@sylis/lexicon-builder",
+    root: "apps/backends/lexicon-builder",
+    tags: ["type:app", "scope:lexicon", "runtime:server"],
+    allow: [
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/lexicon-compiler",
+      "@sylis/utils",
+    ],
+  },
+  {
+    name: "@sylis/lexicon-publisher",
+    root: "apps/backends/lexicon-publisher",
+    tags: ["type:app", "scope:lexicon", "runtime:server"],
+    allow: [
+      "@sylis/database",
+      "@sylis/job-contracts",
+      "@sylis/job-runtime",
+      "@sylis/lexicon-artifact",
+      "@sylis/utils",
+    ],
   },
   {
     name: "@sylis/api-client",
     root: "packages/api-client",
     tags: ["type:lib", "scope:platform", "runtime:browser"],
-    allow: [],
+    allow: ["@sylis/agent-contracts", "@sylis/job-contracts"],
+    requiresExports: true,
+  },
+  {
+    name: "@sylis/agent-contracts",
+    root: "packages/agent-contracts",
+    tags: ["type:lib", "scope:agent", "runtime:neutral"],
+    allow: ["@sylis/utils"],
     requiresRootExport: true,
   },
   {
-    name: "@sylis/ai-provider",
-    root: "packages/ai-provider",
-    tags: ["type:lib", "scope:ai", "runtime:node"],
-    allow: [],
-    requiresRootExport: true,
-  },
-  {
-    name: "@sylis/background-jobs",
-    root: "packages/background-jobs",
-    tags: ["type:lib", "scope:jobs", "runtime:neutral"],
-    allow: [],
+    name: "@sylis/agent-runtime",
+    root: "packages/agent-runtime",
+    tags: ["type:lib", "scope:agent", "runtime:node"],
+    allow: ["@sylis/agent-contracts", "@sylis/utils"],
     requiresRootExport: true,
   },
   {
@@ -70,31 +177,57 @@ const projects = [
     requiresRootExport: true,
   },
   {
-    name: "@sylis/database",
-    root: "packages/database",
-    tags: ["type:lib", "scope:data", "runtime:server"],
+    name: "@sylis/content-crypto",
+    root: "packages/content-crypto",
+    tags: ["type:lib", "scope:security", "runtime:server"],
     allow: [],
     requiresRootExport: true,
   },
   {
-    name: "@sylis/harness",
-    root: "packages/harness",
-    tags: ["type:tool", "scope:platform", "runtime:node"],
+    name: "@sylis/database",
+    root: "packages/database",
+    tags: ["type:lib", "scope:data", "runtime:server"],
+    allow: [
+      "@sylis/agent-contracts",
+      "@sylis/content-crypto",
+      "@sylis/job-contracts",
+    ],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/job-contracts",
+    root: "packages/job-contracts",
+    tags: ["type:lib", "scope:jobs", "runtime:neutral"],
     allow: [],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/job-runtime",
+    root: "packages/job-runtime",
+    tags: ["type:lib", "scope:jobs", "runtime:server"],
+    allow: ["@sylis/database", "@sylis/job-contracts", "@sylis/utils"],
+    requiresRootExport: true,
+  },
+  {
+    name: "@sylis/lexicon-artifact",
+    root: "packages/lexicon-artifact",
+    tags: ["type:lib", "scope:lexicon", "runtime:node"],
+    allow: ["@sylis/utils"],
+    requiresRootExport: true,
   },
   {
     name: "@sylis/lexicon-compiler",
     root: "packages/lexicon-compiler",
     tags: ["type:lib", "scope:lexicon", "runtime:node"],
-    allow: ["@sylis/ai-provider", "@sylis/lexicon-contracts"],
+    allow: ["@sylis/lexicon-artifact", "@sylis/utils"],
     forbid: ["@nestjs/", "@prisma/", "ioredis", "pg", "redis", "railway"],
     requiresRootExport: true,
   },
   {
-    name: "@sylis/lexicon-contracts",
-    root: "packages/lexicon-contracts",
-    tags: ["type:lib", "scope:lexicon", "runtime:neutral"],
-    allow: [],
+    name: "@sylis/test-support",
+    root: "packages/test-support",
+    tags: ["type:lib", "scope:delivery", "runtime:node"],
+    allow: ["@sylis/utils"],
     requiresRootExport: true,
   },
   {
@@ -103,27 +236,6 @@ const projects = [
     tags: ["type:lib", "scope:platform", "runtime:neutral"],
     allow: [],
     requiresRootExport: true,
-  },
-  {
-    name: "@sylis/lexicon-compiler-runner",
-    root: "services/lexicon-compiler-runner",
-    tags: ["type:service", "scope:lexicon", "runtime:server"],
-    allow: [
-      "@sylis/ai-provider",
-      "@sylis/background-jobs",
-      "@sylis/database",
-      "@sylis/lexicon-compiler",
-    ],
-  },
-  {
-    name: "@sylis/lexicon-importer",
-    root: "services/lexicon-importer",
-    tags: ["type:service", "scope:lexicon", "runtime:server"],
-    allow: [
-      "@sylis/background-jobs",
-      "@sylis/database",
-      "@sylis/lexicon-contracts",
-    ],
   },
   {
     name: "@sylis/docs",
@@ -137,6 +249,12 @@ const projects = [
     tags: ["type:docs", "scope:ui", "runtime:docs"],
     allow: ["@sylis/components"],
   },
+  {
+    name: "@sylis/engineering-harness",
+    root: "tools/engineering-harness",
+    tags: ["type:tool", "scope:engineering", "runtime:node"],
+    allow: [],
+  },
 ];
 
 const projectByName = new Map(
@@ -147,6 +265,43 @@ const nodeBuiltins = new Set([
   ...builtinModules.map((specifier) => `node:${specifier}`),
 ]);
 const errors = [];
+const providerSdkDependencies = new Set([
+  "@anthropic-ai/sdk",
+  "@google/generative-ai",
+  "@google/genai",
+  "openai",
+]);
+const databaseRoleByE2eService = new Map([
+  ["api", "sylis_api"],
+  ["admin-api", "sylis_admin_api"],
+  ["agent-api", "sylis_agent_api"],
+  ["model-gateway", "sylis_model_gateway"],
+  ["automation-executor", "sylis_automation_executor"],
+  ["lexicon-builder", "sylis_lexicon_builder"],
+  ["lexicon-publisher", "sylis_lexicon_publisher"],
+]);
+const apiOnlyE2eServices = [
+  "agent-executor",
+  "agent-evaluator",
+  "asset-processor",
+];
+
+const deployableApplicationCount = projects.filter((project) =>
+  project.tags.includes("type:app"),
+).length;
+const libraryPackageCount = projects.filter((project) =>
+  project.tags.includes("type:lib"),
+).length;
+if (deployableApplicationCount !== 12) {
+  errors.push(
+    `workspace: expected 12 deployable applications, received ${deployableApplicationCount}`,
+  );
+}
+if (libraryPackageCount !== 12) {
+  errors.push(
+    `workspace: expected 12 library packages, received ${libraryPackageCount}`,
+  );
+}
 
 function checkScriptNames(packageJson, packagePath) {
   for (const scriptName of Object.keys(packageJson.scripts ?? {})) {
@@ -301,8 +456,11 @@ if (!existsSync(turboPath)) {
     "start",
     "test:e2e",
     "test:integration",
+    "//#e2e",
     "prisma:generate",
-    "prisma:migrate",
+    "prisma:push",
+    "prisma:reset",
+    "database:install",
     "compile",
     "sources:fetch",
     "pilot",
@@ -311,6 +469,33 @@ if (!existsSync(turboPath)) {
   ]) {
     if (tasks[task]?.cache !== false) {
       errors.push(`turbo.json: side-effect task ${task} must disable cache`);
+    }
+  }
+}
+
+const e2eComposePath = resolve(workspaceRoot, "tests/e2e/compose.e2e.yml");
+if (!existsSync(e2eComposePath)) {
+  errors.push("workspace: missing tests/e2e/compose.e2e.yml");
+} else {
+  const compose = parseYaml(readFileSync(e2eComposePath, "utf8"));
+  const services = compose?.services ?? {};
+  for (const [serviceName, role] of databaseRoleByE2eService) {
+    const databaseUrl = services[serviceName]?.environment?.DATABASE_URL;
+    const encodedRoleOption = `options=-c%20role%3D${role}`;
+    if (
+      typeof databaseUrl !== "string" ||
+      !databaseUrl.includes(encodedRoleOption)
+    ) {
+      errors.push(
+        `tests/e2e/compose.e2e.yml: ${serviceName} DATABASE_URL must assume ${role}`,
+      );
+    }
+  }
+  for (const serviceName of apiOnlyE2eServices) {
+    if (services[serviceName]?.environment?.DATABASE_URL !== undefined) {
+      errors.push(
+        `tests/e2e/compose.e2e.yml: ${serviceName} must use internal APIs instead of DATABASE_URL`,
+      );
     }
   }
 }
@@ -336,6 +521,14 @@ for (const project of projects) {
       )
     ) {
       errors.push(`${project.name}: forbidden dependency ${dependency}`);
+    }
+    if (
+      providerSdkDependencies.has(dependency) &&
+      project.name !== "@sylis/model-gateway"
+    ) {
+      errors.push(
+        `${project.name}: Provider SDK ${dependency} is restricted to @sylis/model-gateway`,
+      );
     }
   }
 
@@ -399,15 +592,6 @@ for (const project of projects) {
       ) {
         errors.push(
           `${sourcePath}: TypeScript imports of local, aliased, or workspace source must omit file extensions (${specifier})`,
-        );
-      }
-      if (
-        project.name === "@sylis/lexicon-compiler" &&
-        specifier === "@sylis/ai-provider/deepseek" &&
-        sourcePath !== "packages/lexicon-compiler/src/cli/composition.ts"
-      ) {
-        errors.push(
-          `${sourcePath}: DeepSeek adapter imports are restricted to the CLI composition root`,
         );
       }
       if (internalName) {
@@ -490,5 +674,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Workspace architecture check passed (${projects.length} packages).`,
+  `Workspace architecture check passed (${deployableApplicationCount} apps, ${libraryPackageCount} packages, ${projects.length} workspace projects).`,
 );

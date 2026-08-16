@@ -69,7 +69,11 @@ export function Field({ label, hint, error, children }: FieldProps) {
     <label className="sy-field">
       <span className="sy-field__label">{label}</span>
       {children}
-      {error ? <span className="sy-field__error">{error}</span> : null}
+      {error ? (
+        <span className="sy-field__error" role="alert">
+          {error}
+        </span>
+      ) : null}
       {!error && hint ? <span className="sy-field__hint">{hint}</span> : null}
     </label>
   );
@@ -200,7 +204,7 @@ export function EmptyState({
   return (
     <div className="sy-empty">
       <Icon aria-hidden="true" size={24} />
-      <strong>{title}</strong>
+      <h2>{title}</h2>
       <p>{description}</p>
       {action}
     </div>

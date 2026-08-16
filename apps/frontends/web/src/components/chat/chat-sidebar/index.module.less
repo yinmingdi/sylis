@@ -1,0 +1,198 @@
+.sidebarContainer {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoIcon {
+  font-size: 20px;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settingButton {
+  padding: 8px;
+  color: #666;
+
+  &:hover {
+    color: #333;
+    background: #f0f0f0;
+  }
+}
+
+.closeButton {
+  padding: 8px;
+  color: #666;
+
+  &:hover {
+    color: #333;
+    background: #f0f0f0;
+  }
+}
+
+.sidebarContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px 20px;
+}
+
+// MenuItem 通用样式
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  margin: 0 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+
+  &.active {
+    background: var(--color-neutral-200);
+  }
+}
+
+.leftIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rightAction {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+// 搜索框特殊样式
+.searchContainer {
+  margin-bottom: 10px;
+  cursor: default;
+
+  &:hover {
+    background: transparent;
+  }
+}
+
+.searchInput {
+  width: 100%;
+  background: #f5f5f5;
+  border-radius: 8px;
+
+  :global(.adm-input-element) {
+    background: transparent;
+  }
+}
+
+// 历史记录区域
+.history {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.emptyState {
+  text-align: center;
+  color: #999;
+  padding: 40px 20px;
+  font-size: 14px;
+}
+
+.section {
+  margin-bottom: 24px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.sectionTitle {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
+
+.moreButton {
+  padding: 8px;
+  color: var(--color-text-primary);
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    color: var(--color-text-secondary);
+    background: #f0f0f0;
+  }
+}
+
+.editInput {
+  background: white;
+  border: 1px solid #1677ff;
+  border-radius: 4px;
+
+  :global(.adm-input-element) {
+    background: transparent;
+  }
+}
+
+.sessionActions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  min-width: 120px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  text-align: left;
+  width: 100%;
+  border-radius: 4px;
+  color: #333;
+
+  &:hover {
+    background: #f5f5f5;
+    color: #1677ff;
+  }
+
+  span {
+    font-size: 14px;
+  }
+}

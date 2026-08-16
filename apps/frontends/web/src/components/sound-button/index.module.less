@@ -1,0 +1,58 @@
+// 发音按钮组件
+.soundButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.soundIcon {
+  color: var(--color-primary-500);
+}
+
+// 尺寸变体
+.small {
+  width: 20px;
+  height: 20px;
+
+  .soundIcon {
+    font-size: 16px;
+  }
+}
+
+.medium {
+  width: 28px;
+  height: 28px;
+
+  .soundIcon {
+    font-size: 20px;
+  }
+}
+
+.large {
+  width: 36px;
+  height: 36px;
+
+  .soundIcon {
+    font-size: 24px;
+  }
+}
+
+// 深色主题适配
+[data-theme='dark'] {
+  .soundIcon {
+    color: var(--color-primary-500);
+  }
+}

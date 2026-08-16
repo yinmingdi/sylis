@@ -264,7 +264,9 @@ textarea {
   padding: 28px;
   border: 1px dashed var(--sy-line);
 }
-.sy-empty strong {
+.sy-empty h2 {
+  margin: 0;
+  font-size: 1rem;
   color: var(--sy-ink);
 }
 .sy-empty p {

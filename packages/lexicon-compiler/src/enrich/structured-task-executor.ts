@@ -1,16 +1,16 @@
+import { canonicalJsonChunks } from "@sylis/lexicon-artifact";
+import Ajv, { type ValidateFunction } from "ajv";
+import { createHash } from "node:crypto";
+
+import { BudgetLedger, type TokenPricing } from "./budget";
+import { type CandidateCache, MemoryCandidateCache } from "./candidate-cache";
 import type {
   GenerationUsage,
   JsonSchema,
   StructuredGenerationIdentity,
   StructuredGenerationPort,
   StructuredGenerationResult,
-} from "@sylis/ai-provider";
-import Ajv, { type ValidateFunction } from "ajv";
-import { createHash } from "node:crypto";
-
-import { BudgetLedger, type TokenPricing } from "./budget";
-import { type CandidateCache, MemoryCandidateCache } from "./candidate-cache";
-import { canonicalJsonChunks } from "../export/canonicalize";
+} from "../ports/structured-generation";
 
 export interface StructuredEnrichmentOptions {
   enabled: boolean;
@@ -32,6 +32,7 @@ export interface StructuredTaskExecutorDependencies {
 
 export interface StructuredTask<T> {
   taskType: string;
+  candidateIdentity?: unknown;
   schemaName: string;
   schema: JsonSchema;
   systemPrompt: string;
@@ -92,10 +93,15 @@ export class StructuredTaskExecutor {
     this.cache = dependencies.cache ?? new MemoryCandidateCache();
   }
 
-  candidateKey(taskType: string, input: unknown): string {
+  candidateKey(
+    taskType: string,
+    input: unknown,
+    candidateIdentity?: unknown,
+  ): string {
     const payload = canonicalJson({
       taskType,
       input,
+      ...(candidateIdentity === undefined ? {} : { candidateIdentity }),
       promptVersion: this.options.promptVersion,
       schemaVersion: this.options.schemaVersion,
       modelPolicyVersion: this.options.modelPolicyVersion,
@@ -118,14 +124,34 @@ export class StructuredTaskExecutor {
     };
   }
 
+  validateCandidate<T>(task: StructuredTask<T>, value: T): void {
+    const validate = this.ajv.compile(task.schema) as ValidateFunction<T>;
+    if (!validate(value)) {
+      this.validationRejects += 1;
+      throw new Error(
+        `AI_CANDIDATE_INVALID:${task.taskType}:${this.ajv.errorsText(validate.errors)}`,
+      );
+    }
+    const semanticIssue = task.semanticValidator?.(value);
+    if (semanticIssue) {
+      this.validationRejects += 1;
+      throw new Error(
+        `AI_CANDIDATE_SEMANTIC_INVALID:${task.taskType}:${semanticIssue}`,
+      );
+    }
+  }
+
   async execute<T>(task: StructuredTask<T>): Promise<StructuredTaskResult<T>> {
     this.taskCount += 1;
     this.taskCounts.set(
       task.taskType,
       (this.taskCounts.get(task.taskType) ?? 0) + 1,
     );
-    const candidateKey = this.candidateKey(task.taskType, task.input);
-    const validate = this.ajv.compile(task.schema) as ValidateFunction<T>;
+    const candidateKey = this.candidateKey(
+      task.taskType,
+      task.input,
+      task.candidateIdentity,
+    );
     let result = await this.cache.get<T>(candidateKey);
     const cacheHit = result !== null;
     if (cacheHit) this.cacheHits += 1;
@@ -164,19 +190,7 @@ export class StructuredTaskExecutor {
         `AI_MODEL_IDENTITY_MISMATCH:expected=${this.dependencies.resolvedIdentity.provider}/${this.dependencies.resolvedIdentity.model}:received=${result.provider}/${result.model}`,
       );
     }
-    if (!validate(result.value)) {
-      this.validationRejects += 1;
-      throw new Error(
-        `AI_CANDIDATE_INVALID:${task.taskType}:${this.ajv.errorsText(validate.errors)}`,
-      );
-    }
-    const semanticIssue = task.semanticValidator?.(result.value);
-    if (semanticIssue) {
-      this.validationRejects += 1;
-      throw new Error(
-        `AI_CANDIDATE_SEMANTIC_INVALID:${task.taskType}:${semanticIssue}`,
-      );
-    }
+    this.validateCandidate(task, result.value);
     if (!cacheHit) await this.cache.set(candidateKey, result);
     return {
       candidateKey,

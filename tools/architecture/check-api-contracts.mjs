@@ -1,18 +1,20 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const workspaceRoot = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const contractPaths = [
-  "apps/api/openapi/user.openapi.json",
-  "apps/api/openapi/admin.openapi.json",
+  "apps/backends/api/openapi/user.openapi.json",
+  "apps/backends/admin-api/openapi/admin.openapi.json",
+  "apps/backends/agent-api/openapi/agent.openapi.json",
 ];
 const generatedPaths = [
   ...contractPaths,
-  "apps/api/src/openapi/metadata.ts",
-  "packages/api-client/src/generated/schema.ts",
-  "packages/admin-api-client/src/generated/schema.ts",
+  "apps/backends/api/src/openapi/metadata.ts",
+  "packages/api-client/src/user/generated/schema.ts",
+  "packages/api-client/src/admin/generated/schema.ts",
+  "packages/api-client/src/agent/generated/schema.ts",
 ];
 const methods = [
   "get",
@@ -202,6 +204,24 @@ function checkBreakingChanges() {
   }
 }
 
+function checkContractVersions() {
+  const errors = [];
+  for (const path of contractPaths) {
+    const document = JSON.parse(
+      readFileSync(resolve(workspaceRoot, path), "utf8"),
+    );
+    if (document.openapi !== "3.1.0") {
+      errors.push(`${path}: expected OpenAPI 3.1.0, got ${document.openapi}`);
+    }
+  }
+  if (errors.length > 0) {
+    console.error(
+      `Invalid API contract versions:\n${errors.map((error) => `- ${error}`).join("\n")}`,
+    );
+    process.exitCode = 1;
+  }
+}
+
 function checkCleanGeneration() {
   const result = git([
     "status",
@@ -225,5 +245,58 @@ function checkCleanGeneration() {
   }
 }
 
-checkBreakingChanges();
+function generatedSnapshot() {
+  return new Map(
+    generatedPaths.map((path) => [
+      path,
+      existsSync(resolve(workspaceRoot, path))
+        ? readFileSync(resolve(workspaceRoot, path))
+        : null,
+    ]),
+  );
+}
+
+function changedGeneratedPaths(before, after) {
+  return generatedPaths.filter((path) => {
+    const previous = before.get(path);
+    const current = after.get(path);
+    if (previous === null || current === null) return previous !== current;
+    return !previous.equals(current);
+  });
+}
+
+function generateAndCheck() {
+  const before = generatedSnapshot();
+  const result = spawnSync(
+    process.platform === "win32" ? "pnpm.cmd" : "pnpm",
+    ["api-contracts:generate"],
+    {
+      cwd: workspaceRoot,
+      env: process.env,
+      stdio: "inherit",
+    },
+  );
+  if (result.status !== 0) {
+    process.exitCode = result.status ?? 1;
+    return false;
+  }
+
+  const changed = changedGeneratedPaths(before, generatedSnapshot());
+  if (changed.length > 0) {
+    console.error(
+      `Generated API contracts were stale:\n${changed.map((path) => `- ${path}`).join("\n")}`,
+    );
+    process.exitCode = 1;
+    return false;
+  }
+  return true;
+}
+
+const generated = process.argv.includes("--generate")
+  ? generateAndCheck()
+  : true;
+if (generated) {
+  checkContractVersions();
+  checkBreakingChanges();
+}
 if (process.argv.includes("--clean")) checkCleanGeneration();

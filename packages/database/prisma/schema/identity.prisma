@@ -1,38 +1,72 @@
 model User {
-  id                    String                     @id @default(uuid()) @db.Uuid
-  status                String                     @default("ACTIVE")
-  locale                String                     @default("zh-CN")
-  timezone              String                     @default("Asia/Shanghai")
-  credentialGeneration  Int                        @default(0)
-  roleGeneration        Int                        @default(0)
-  createdAt             DateTime                   @default(now()) @db.Timestamptz(3)
-  deletedAt             DateTime?                  @db.Timestamptz(3)
-  emails                UserEmail[]
-  passwordCredentials   PasswordCredential[]
-  mfaCredentials        MfaCredential[]
-  consents              ConsentRecord[]
-  sessions              AuthSession[]
-  roles                 OperatorRoleAssignment[]
-  enrollments           UserBookEnrollment[]
-  studyPlans            DailyStudyPlan[]
-  memoryStates          UserObjectiveMemoryState[]
-  reviewEvents          ReviewEvent[]
-  exerciseAttempts      ExerciseAttempt[]
-  assessmentSessions    AssessmentSession[]
-  notebooks             Notebook[]
-  readingActivities     ReadingActivity[]
-  savedReadings         SavedReading[]
-  readingActivityEvents ReadingActivityEvent[]
-  tutorSessions         TutorSession[]
-  grammarDiagnoses      GrammarDiagnosis[]
-  readingGenerations    ReadingGeneration[]
-  usageLedger           AIUsageLedger[]
-  requestedJobs         BackgroundJob[]            @relation("RequestedJobs")
-  subjectJobs           BackgroundJob[]            @relation("SubjectJobs")
-  lexiconActivations    LexiconReleaseActivation[]
-  securityAuditEvents   SecurityAuditEvent[]       @relation("SecurityAuditActor")
-  requestedApprovals    ApprovalRequest[]          @relation("ApprovalRequester")
-  approvalDecisions     ApprovalDecision[]         @relation("ApprovalActor")
+  id                        String                     @id @default(uuid()) @db.Uuid
+  status                    UserStatus                 @default(ACTIVE)
+  displayName               String
+  avatarUrl                 String?                    @db.Text
+  locale                    String                     @default("zh-CN")
+  timezone                  String                     @default("Asia/Shanghai")
+  securityVersion           Int                        @default(0)
+  createdAt                 DateTime                   @default(now()) @db.Timestamptz(3)
+  disabledAt                DateTime?                  @db.Timestamptz(3)
+  deletedAt                 DateTime?                  @db.Timestamptz(3)
+  emails                    UserEmail[]
+  passwordCredentials       PasswordCredential[]
+  mfaCredentials            MfaCredential[]
+  authenticationChallenges  AuthenticationChallenge[]
+  consents                  ConsentRecord[]
+  sessions                  AuthSession[]
+  roles                     OperatorRoleAssignment[]   @relation("AssignedOperatorRoles")
+  grantedRoles              OperatorRoleAssignment[]   @relation("GrantedOperatorRoles")
+  revokedRoles              OperatorRoleAssignment[]   @relation("RevokedOperatorRoles")
+  supportGrantsOwned        SupportGrant[]             @relation("SupportGrantOwner")
+  supportGrantsIssued       SupportGrant[]             @relation("SupportGrantOperator")
+  securityLocks             UserSecurityLock[]         @relation("SecurityLockOwner")
+  createdSecurityLocks      UserSecurityLock[]         @relation("SecurityLockCreator")
+  releasedSecurityLocks     UserSecurityLock[]         @relation("SecurityLockReleaser")
+  enrollments               UserBookEnrollment[]
+  studyPlans                DailyStudyPlan[]
+  memoryStates              UserObjectiveMemoryState[]
+  reviewEvents              ReviewEvent[]
+  exerciseAttempts          ExerciseAttempt[]
+  assessmentSessions        AssessmentSession[]
+  notebooks                 Notebook[]
+  readingActivities         ReadingActivity[]
+  readingProgress           ReadingProgress[]
+  readingCollections        ReadingCollection[]
+  readingCollectionItems    ReadingCollectionItem[]
+  readingTargets            ReadingTarget[]
+  dataExports               DataExportRequest[]
+  lexiconActivations        LexiconReleaseActivation[]
+  requestedApprovals        ApprovalRequest[]          @relation("ApprovalRequester")
+  approvalDecisions         ApprovalDecision[]         @relation("ApprovalActor")
+  budgetApprovals           BudgetApproval[]
+  reviewDecisions           ReviewDecision[]
+  rightsDecisions           RightsDecision[]           @relation("RightsDecisionDecider")
+  agentSessions             AgentSession[]
+  agentInstructions         AgentInstruction[]
+  decidedAgentProposals     AgentProposal[]            @relation("AgentProposalDecider")
+  agentToolGrants           AgentToolGrant[]
+  agentArtifacts            AgentArtifact[]
+  agentMemoryCards          AgentMemoryCard[]
+  memorySuppressions        MemorySuppression[]
+  diagnosticBundles         DiagnosticBundle[]
+  credentialProfiles        CredentialProfile[]
+  modelContentBodies        ModelContentBody[]
+  modelExecutionPermits     ModelExecutionPermit[]
+  modelUsage                ModelUsageLedger[]
+  contentAssets             ContentAsset[]
+  uploadIntents             UploadIntent[]
+  requestedContentDeletions ContentDeletionRequest[]   @relation("ContentDeletionRequester")
+  contentDeletionTarget     ContentDeletionUserTarget?
+  securityAuditEvents       SecurityAuditEvent[]       @relation("SecurityAuditActor")
+  dataAccessEventsAsActor   DataAccessAuditEvent[]     @relation("DataAccessActor")
+  dataAccessEventsAsOwner   DataAccessAuditEvent[]     @relation("DataAccessOwner")
+  requestedAuditExports     AuditExport[]
+  auditRetentionPolicies    AuditRetentionPolicy[]
+  legalHoldsCreated         LegalHold[]                @relation("LegalHoldCreator")
+  legalHoldsReleased        LegalHold[]                @relation("LegalHoldReleaser")
+  operatorBootstrapStates   OperatorBootstrapState[]
+  readingDocuments          ReadingDocument[]
 }
 
 model UserEmail {
@@ -49,101 +83,271 @@ model UserEmail {
 }
 
 model PasswordCredential {
-  id           String           @id @default(uuid()) @db.Uuid
-  userId       String           @db.Uuid
-  passwordHash String
-  algorithm    String           @default("argon2id")
-  status       CredentialStatus @default(VERIFIED)
-  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
-  rotatedAt    DateTime?        @db.Timestamptz(3)
-  revokedAt    DateTime?        @db.Timestamptz(3)
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String                @id @default(uuid()) @db.Uuid
+  userId     String                @db.Uuid
+  hash       String
+  algorithm  PasswordHashAlgorithm @default(ARGON2ID)
+  parameters Json
+  status     CredentialStatus      @default(VERIFIED)
+  changedAt  DateTime              @default(now()) @db.Timestamptz(3)
+  revokedAt  DateTime?             @db.Timestamptz(3)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
 }
 
-model MfaCredential {
-  id               String           @id @default(uuid()) @db.Uuid
-  userId           String           @db.Uuid
-  type             String
-  status           CredentialStatus @default(PENDING)
-  label            String
-  secretCiphertext Bytes?
-  keyVersion       String?
-  credentialId     Bytes?           @unique
-  publicKey        Bytes?
-  signCount        BigInt?
-  webAuthnUserId   Bytes?
-  transports       String[]
-  aaguid           String?
-  deviceType       String?
-  backedUp         Boolean?
-  verifiedAt       DateTime?        @db.Timestamptz(3)
-  revokedAt        DateTime?        @db.Timestamptz(3)
-  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+model VerificationChallenge {
+  id              String                       @id @default(uuid()) @db.Uuid
+  purpose         VerificationChallengePurpose
+  destinationHash String
+  codeHash        String                       @unique
+  expiresAt       DateTime                     @db.Timestamptz(3)
+  consumedAt      DateTime?                    @db.Timestamptz(3)
+  attemptCount    Int                          @default(0)
+  createdAt       DateTime                     @default(now()) @db.Timestamptz(3)
 
-  @@index([userId, status])
+  @@index([destinationHash, purpose, expiresAt])
 }
 
-model AuthChallenge {
-  id            String          @id @default(uuid()) @db.Uuid
-  userId        String?         @db.Uuid
-  audience      SessionAudience
-  purpose       String
-  challengeHash String          @unique
-  expiresAt     DateTime        @db.Timestamptz(3)
-  consumedAt    DateTime?       @db.Timestamptz(3)
-  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
-}
-
-model ConsentRecord {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @db.Uuid
-  purpose       String
-  policyVersion String
-  decision      String
-  locale        String
-  ipHash        String?
-  userAgentHash String?
-  decidedAt     DateTime @default(now()) @db.Timestamptz(3)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, purpose, decidedAt])
-}
-
-model AuthSession {
-  id                   String          @id @default(uuid()) @db.Uuid
-  userId               String          @db.Uuid
-  audience             SessionAudience
-  tokenHash            String          @unique
-  csrfSecretHash       String
-  authStrength         String
-  reauthenticatedAt    DateTime        @default(now()) @db.Timestamptz(3)
-  credentialGeneration Int
-  roleGeneration       Int
-  ipHash               String?
-  userAgentHash        String?
-  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
-  lastSeenAt           DateTime        @default(now()) @db.Timestamptz(3)
-  expiresAt            DateTime        @db.Timestamptz(3)
-  revokedAt            DateTime?       @db.Timestamptz(3)
-  revokeReason         String?
-  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+model AuthenticationChallenge {
+  id                 String                         @id @default(uuid()) @db.Uuid
+  userId             String                         @db.Uuid
+  audience           SessionAudience
+  purpose            AuthenticationChallengePurpose
+  deviceNonceHash    String                         @unique
+  allowedMfaKinds    MfaCredentialKind[]
+  passwordVerifiedAt DateTime?                      @db.Timestamptz(3)
+  expiresAt          DateTime                       @db.Timestamptz(3)
+  consumedAt         DateTime?                      @db.Timestamptz(3)
+  attemptCount       Int                            @default(0)
+  createdAt          DateTime                       @default(now()) @db.Timestamptz(3)
+  user               User                           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, audience, expiresAt])
 }
 
-model OperatorRoleAssignment {
-  id           String       @id @default(uuid()) @db.Uuid
-  userId       String       @db.Uuid
-  role         OperatorRole
-  grantedById  String       @db.Uuid
-  grantedAt    DateTime     @default(now()) @db.Timestamptz(3)
-  expiresAt    DateTime?    @db.Timestamptz(3)
-  revokedAt    DateTime?    @db.Timestamptz(3)
-  revokeReason String?
-  user         User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+model MfaCredential {
+  id            String              @id @default(uuid()) @db.Uuid
+  userId        String              @db.Uuid
+  kind          MfaCredentialKind
+  status        CredentialStatus    @default(PENDING)
+  label         String
+  verifiedAt    DateTime?           @db.Timestamptz(3)
+  lastUsedAt    DateTime?           @db.Timestamptz(3)
+  disabledAt    DateTime?           @db.Timestamptz(3)
+  createdAt     DateTime            @default(now()) @db.Timestamptz(3)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webAuthn      WebAuthnCredential?
+  totp          TotpCredential?
+  recoveryCodes MfaRecoveryCode[]
 
-  @@index([userId, role, revokedAt])
+  @@index([userId, status])
+}
+
+model WebAuthnCredential {
+  mfaCredentialId String        @id @db.Uuid
+  credentialId    Bytes         @unique
+  publicKey       Bytes
+  signCount       BigInt        @default(0)
+  aaguid          String?
+  transports      String[]
+  mfaCredential   MfaCredential @relation(fields: [mfaCredentialId], references: [id], onDelete: Cascade)
+}
+
+model TotpCredential {
+  mfaCredentialId  String        @id @db.Uuid
+  secretCiphertext Bytes
+  keyVersion       String
+  algorithm        TotpAlgorithm @default(SHA1)
+  digits           Int           @default(6)
+  period           Int           @default(30)
+  mfaCredential    MfaCredential @relation(fields: [mfaCredentialId], references: [id], onDelete: Cascade)
+}
+
+model MfaRecoveryCode {
+  id              String                @id @default(uuid()) @db.Uuid
+  mfaCredentialId String                @db.Uuid
+  codeHash        String                @unique
+  algorithm       PasswordHashAlgorithm @default(ARGON2ID)
+  usedAt          DateTime?             @db.Timestamptz(3)
+  mfaCredential   MfaCredential         @relation(fields: [mfaCredentialId], references: [id], onDelete: Cascade)
+}
+
+model ConsentRecord {
+  id                   String                @id @default(uuid()) @db.Uuid
+  userId               String                @db.Uuid
+  purpose              ConsentPurpose
+  categories           ConsentDataCategory[]
+  policyVersion        String
+  decision             ConsentDecision
+  occurredAt           DateTime              @default(now()) @db.Timestamptz(3)
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptTextResponses AttemptTextResponse[]
+  modelExchangeParts   ModelExchangePart[]
+
+  @@index([userId, purpose, occurredAt])
+}
+
+model AuthSession {
+  id                 String               @id @default(uuid()) @db.Uuid
+  userId             String               @db.Uuid
+  audience           SessionAudience
+  tokenHash          String               @unique
+  csrfTokenHash      String
+  authStrength       SessionAuthStrength
+  securityVersion    Int
+  mfaAuthenticatedAt DateTime?            @db.Timestamptz(3)
+  reAuthenticatedAt  DateTime?            @db.Timestamptz(3)
+  deviceLabel        String?
+  ipHash             String?
+  userAgentHash      String?
+  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
+  lastSeenAt         DateTime             @default(now()) @db.Timestamptz(3)
+  idleExpiresAt      DateTime             @db.Timestamptz(3)
+  expiresAt          DateTime             @db.Timestamptz(3)
+  revokedAt          DateTime?            @db.Timestamptz(3)
+  revokeReason       SessionRevokeReason?
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, audience, expiresAt])
+}
+
+model SupportGrant {
+  id                       String                                          @id @default(uuid()) @db.Uuid
+  userId                   String                                          @db.Uuid
+  supportUserId            String                                          @db.Uuid
+  resourceKind             SupportResourceKind
+  resourceId               String                                          @db.Uuid
+  resourceRevisionId       String                                          @db.Uuid
+  purpose                  SupportGrantPurpose
+  purposeDetails           String
+  createdAt                DateTime                                        @default(now()) @db.Timestamptz(3)
+  expiresAt                DateTime                                        @db.Timestamptz(3)
+  revokedAt                DateTime?                                       @db.Timestamptz(3)
+  actionDigest             String                                          @unique
+  owner                    User                                            @relation("SupportGrantOwner", fields: [userId], references: [id], onDelete: Restrict)
+  operator                 User                                            @relation("SupportGrantOperator", fields: [supportUserId], references: [id], onDelete: Restrict)
+  readingRevisionTarget    SupportGrantReadingDocumentRevisionTarget?
+  assetRevisionTarget      SupportGrantContentAssetRevisionTarget?
+  collectedRevisionTarget  SupportGrantCollectedLexicalItemRevisionTarget?
+  attemptTextTarget        SupportGrantExerciseAttemptTextTarget?
+  diagnosticRevisionTarget SupportGrantDiagnosticBundleRevisionTarget?
+
+  @@index([supportUserId, expiresAt])
+  @@index([userId, resourceKind, resourceRevisionId])
+}
+
+model SupportGrantReadingDocumentRevisionTarget {
+  grantId    String                  @id @db.Uuid
+  documentId String                  @db.Uuid
+  revisionId String                  @db.Uuid
+  grant      SupportGrant            @relation(fields: [grantId], references: [id], onDelete: Restrict, map: "SGReadingRevisionTarget_grant_fkey")
+  revision   ReadingDocumentRevision @relation(fields: [documentId, revisionId], references: [documentId, id], onDelete: Restrict, map: "SGReadingRevisionTarget_revision_fkey")
+
+  @@index([documentId, revisionId], map: "SGReadingRevisionTarget_revision_idx")
+}
+
+model SupportGrantContentAssetRevisionTarget {
+  grantId    String               @id @db.Uuid
+  assetId    String               @db.Uuid
+  revisionId String               @db.Uuid
+  grant      SupportGrant         @relation(fields: [grantId], references: [id], onDelete: Restrict, map: "SGAssetRevisionTarget_grant_fkey")
+  revision   ContentAssetRevision @relation(fields: [assetId, revisionId], references: [assetId, id], onDelete: Restrict, map: "SGAssetRevisionTarget_revision_fkey")
+
+  @@index([assetId, revisionId], map: "SGAssetRevisionTarget_revision_idx")
+}
+
+model SupportGrantCollectedLexicalItemRevisionTarget {
+  grantId         String                       @id @db.Uuid
+  collectedItemId String                       @db.Uuid
+  revisionId      String                       @db.Uuid
+  grant           SupportGrant                 @relation(fields: [grantId], references: [id], onDelete: Restrict, map: "SGCollectedRevisionTarget_grant_fkey")
+  revision        CollectedLexicalItemRevision @relation(fields: [collectedItemId, revisionId], references: [collectedItemId, id], onDelete: Restrict, map: "SGCollectedRevisionTarget_revision_fkey")
+
+  @@index([collectedItemId, revisionId], map: "SGCollectedRevisionTarget_revision_idx")
+}
+
+model SupportGrantExerciseAttemptTextTarget {
+  grantId   String              @id @db.Uuid
+  attemptId String              @db.Uuid
+  grant     SupportGrant        @relation(fields: [grantId], references: [id], onDelete: Restrict, map: "SGAttemptTextTarget_grant_fkey")
+  response  AttemptTextResponse @relation(fields: [attemptId], references: [attemptId], onDelete: Restrict, map: "SGAttemptTextTarget_response_fkey")
+
+  @@index([attemptId], map: "SGAttemptTextTarget_attempt_idx")
+}
+
+model SupportGrantDiagnosticBundleRevisionTarget {
+  grantId    String                   @id @db.Uuid
+  bundleId   String                   @db.Uuid
+  revisionId String                   @db.Uuid
+  grant      SupportGrant             @relation(fields: [grantId], references: [id], onDelete: Restrict, map: "SGDiagnosticRevisionTarget_grant_fkey")
+  revision   DiagnosticBundleRevision @relation(fields: [bundleId, revisionId], references: [bundleId, id], onDelete: Restrict, map: "SGDiagnosticRevisionTarget_revision_fkey")
+
+  @@index([bundleId, revisionId], map: "SGDiagnosticRevisionTarget_revision_idx")
+}
+
+model ServicePrincipal {
+  id                String                 @id @default(uuid()) @db.Uuid
+  serviceKey        String                 @unique
+  audienceAllowlist SessionAudience[]
+  status            ServicePrincipalStatus @default(ACTIVE)
+  createdAt         DateTime               @default(now()) @db.Timestamptz(3)
+  keys              ServicePrincipalKey[]
+}
+
+model ServicePrincipalKey {
+  id         String           @id @default(uuid()) @db.Uuid
+  serviceId  String           @db.Uuid
+  keyId      String           @unique
+  publicKey  Bytes
+  validFrom  DateTime         @db.Timestamptz(3)
+  validUntil DateTime?        @db.Timestamptz(3)
+  revokedAt  DateTime?        @db.Timestamptz(3)
+  service    ServicePrincipal @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+}
+
+model OperatorRoleAssignment {
+  id               String                       @id @default(uuid()) @db.Uuid
+  userId           String                       @db.Uuid
+  role             OperatorRole
+  source           OperatorRoleAssignmentSource @default(ADMIN_COMMAND)
+  grantedByUserId  String                       @db.Uuid
+  reason           String
+  policyVersion    String
+  grantedAt        DateTime                     @default(now()) @db.Timestamptz(3)
+  expiresAt        DateTime?                    @db.Timestamptz(3)
+  revokedAt        DateTime?                    @db.Timestamptz(3)
+  revokedByUserId  String?                      @db.Uuid
+  revocationReason String?
+  actionDigest     String
+  user             User                         @relation("AssignedOperatorRoles", fields: [userId], references: [id], onDelete: Restrict)
+  grantedBy        User                         @relation("GrantedOperatorRoles", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+  revokedBy        User?                        @relation("RevokedOperatorRoles", fields: [revokedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([userId, role, revokedAt, expiresAt])
+  @@index([revokedByUserId])
+}
+
+model OperatorBootstrapState {
+  singletonKey   String   @id
+  operatorUserId String   @db.Uuid
+  completedAt    DateTime @default(now()) @db.Timestamptz(3)
+  actionDigest   String   @unique
+  operator       User     @relation(fields: [operatorUserId], references: [id], onDelete: Restrict)
+}
+
+model UserSecurityLock {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  reasonCode       String
+  createdByUserId  String    @db.Uuid
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  releasedByUserId String?   @db.Uuid
+  releasedAt       DateTime? @db.Timestamptz(3)
+  actionDigest     String
+  user             User      @relation("SecurityLockOwner", fields: [userId], references: [id], onDelete: Restrict)
+  createdBy        User      @relation("SecurityLockCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  releasedBy       User?     @relation("SecurityLockReleaser", fields: [releasedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([userId, releasedAt])
 }

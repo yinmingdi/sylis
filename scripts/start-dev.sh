@@ -15,7 +15,7 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # 启动 docker-compose
-cd apps/api
+cd apps/backends/api
 
 docker-compose up -d
 cd ../..
@@ -23,7 +23,7 @@ cd ../..
 echo "数据库服务已启动..."
 
 # 用 concurrently 启动开发服务
-# "pnpm --filter ./apps/api run dto:watch" \
+# "pnpm --filter ./apps/backends/api run dto:watch" \
 npx concurrently -k -n API,WEB -c green,magenta \
-  "pnpm --filter ./apps/api run dev" \
-  "pnpm --filter ./apps/web run dev"
+  "pnpm --filter ./apps/backends/api run dev" \
+  "pnpm --filter ./apps/frontends/web run dev"

@@ -1,0 +1,745 @@
+model AgentSession {
+  id                  String                        @id @default(uuid()) @db.Uuid
+  userId              String                        @db.Uuid
+  title               String
+  status              AgentSessionStatus            @default(ACTIVE)
+  nextMessageSequence Int                           @default(1)
+  nextEventSequence   Int                           @default(1)
+  createdAt           DateTime                      @default(now()) @db.Timestamptz(3)
+  archivedAt          DateTime?                     @db.Timestamptz(3)
+  deletedAt           DateTime?                     @db.Timestamptz(3)
+  user                User                          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  messages            AgentMessage[]
+  runs                AgentRun[]
+  events              AgentEvent[]
+  toolGrants          AgentToolGrant[]
+  instructions        AgentInstruction[]
+  deletionTarget      ContentDeletionSessionTarget?
+
+  @@index([userId, createdAt])
+}
+
+model AgentMessage {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  sessionId             String                 @db.Uuid
+  runId                 String?                @db.Uuid
+  role                  AgentMessageRole
+  sequence              Int
+  visibility            AgentMessageVisibility
+  supersedesMessageId   String?                @db.Uuid
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  session               AgentSession           @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  run                   AgentRun?              @relation(fields: [runId], references: [id], onDelete: Restrict)
+  supersedes            AgentMessage?          @relation("SupersededAgentMessages", fields: [supersedesMessageId], references: [id], onDelete: Restrict)
+  supersededBy          AgentMessage[]         @relation("SupersededAgentMessages")
+  blocks                AgentMessageBlock[]
+  contextRefs           ContextSnapshotRef[]
+  assistantForRunStep   AgentRunStep?          @relation("AgentRunStepAssistantMessage")
+
+  @@unique([sessionId, sequence])
+}
+
+model AgentRun {
+  id                          String                               @id @default(uuid()) @db.Uuid
+  sessionId                   String                               @db.Uuid
+  instructionId               String                               @unique @db.Uuid
+  parentRunId                 String?                              @db.Uuid
+  originActionId              String?                              @db.Uuid
+  rootRunId                   String                               @db.Uuid
+  goalContentBodyId           String                               @db.Uuid
+  capabilityReleaseId         String                               @db.Uuid
+  providerRouteReleaseId      String                               @db.Uuid
+  credentialRevisionId        String                               @db.Uuid
+  requestedCapability         String
+  maxSteps                    Int
+  maxToolCalls                Int
+  maxOutputTokens             Int
+  nextEventSequence           Int                                  @default(1)
+  status                      AgentRunStatus                       @default(QUEUED)
+  queuedAt                    DateTime                             @default(now()) @db.Timestamptz(3)
+  startedAt                   DateTime?                            @db.Timestamptz(3)
+  waitedAt                    DateTime?                            @db.Timestamptz(3)
+  completedAt                 DateTime?                            @db.Timestamptz(3)
+  session                     AgentSession                         @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  instruction                 AgentInstruction                     @relation(fields: [instructionId], references: [id], onDelete: Restrict)
+  parent                      AgentRun?                            @relation("AgentChildRuns", fields: [sessionId, parentRunId], references: [sessionId, id], onDelete: Restrict)
+  children                    AgentRun[]                           @relation("AgentChildRuns")
+  originAction                AgentRunStepAction?                  @relation(fields: [originActionId], references: [id], onDelete: Restrict)
+  root                        AgentRun                             @relation("AgentRootRuns", fields: [sessionId, rootRunId], references: [sessionId, id], onDelete: Restrict)
+  rootedRuns                  AgentRun[]                           @relation("AgentRootRuns")
+  goalContentBody             ModelContentBody                     @relation("AgentRunGoal", fields: [goalContentBodyId], references: [id], onDelete: Restrict)
+  capabilityRelease           CapabilityRelease                    @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  providerRouteRelease        ProviderRouteRelease                 @relation(fields: [providerRouteReleaseId], references: [id], onDelete: Restrict)
+  credentialRevision          CredentialRevision                   @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+  plan                        AgentPlan?
+  waits                       AgentWaitCondition[]
+  events                      AgentEvent[]
+  steps                       AgentRunStep[]
+  messages                    AgentMessage[]
+  proposals                   AgentProposal[]
+  contextSnapshots            ContextSnapshot[]
+  toolGrants                  AgentToolGrant[]
+  modelExecutionPermitTargets ModelExecutionPermitAgentRunTarget[]
+
+  @@unique([sessionId, id])
+  @@index([sessionId, status])
+  @@index([rootRunId, parentRunId])
+  @@index([originActionId])
+}
+
+model AgentInstruction {
+  id                     String               @id @default(uuid()) @db.Uuid
+  sessionId              String               @db.Uuid
+  userId                 String               @db.Uuid
+  contentBodyId          String               @db.Uuid
+  requestedCapability    String
+  resolvedCapability     String
+  capabilityReleaseId    String               @db.Uuid
+  providerRouteReleaseId String               @db.Uuid
+  credentialRevisionId   String               @db.Uuid
+  inputHash              String
+  idempotencyKey         String
+  contextRefs            Json                 @default("[]")
+  contextTimezone        String               @default("UTC")
+  contextLocale          String               @default("en")
+  createdAt              DateTime             @default(now()) @db.Timestamptz(3)
+  session                AgentSession         @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  contentBody            ModelContentBody     @relation(fields: [contentBodyId], references: [id], onDelete: Restrict)
+  capabilityRelease      CapabilityRelease    @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  providerRouteRelease   ProviderRouteRelease @relation(fields: [providerRouteReleaseId], references: [id], onDelete: Restrict)
+  credentialRevision     CredentialRevision   @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+  run                    AgentRun?
+
+  @@unique([sessionId, idempotencyKey])
+}
+
+model AgentPlan {
+  id                String              @id @default(uuid()) @db.Uuid
+  runId             String              @unique @db.Uuid
+  executionMode     AgentExecutionMode
+  currentRevisionId String?             @unique @db.Uuid
+  run               AgentRun            @relation(fields: [runId], references: [id], onDelete: Restrict)
+  revisions         AgentPlanRevision[] @relation("AgentPlanRevisions")
+  currentRevision   AgentPlanRevision?  @relation("CurrentAgentPlanRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+}
+
+model AgentPlanRevision {
+  id                   String              @id @default(uuid()) @db.Uuid
+  planId               String              @db.Uuid
+  revisionNo           Int
+  steps                Json
+  contentHash          String
+  createdBy            String
+  supersedesRevisionId String?             @db.Uuid
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  plan                 AgentPlan           @relation("AgentPlanRevisions", fields: [planId], references: [id], onDelete: Restrict)
+  currentFor           AgentPlan?          @relation("CurrentAgentPlanRevision")
+  supersedes           AgentPlanRevision?  @relation("SupersededAgentPlanRevision", fields: [supersedesRevisionId], references: [id], onDelete: Cascade)
+  supersededBy         AgentPlanRevision[] @relation("SupersededAgentPlanRevision")
+  messageBlockRefs     AgentMessageBlockReference[]
+
+  @@unique([planId, revisionNo])
+}
+
+model AgentWaitCondition {
+  id             String          @id @default(uuid()) @db.Uuid
+  runId          String          @db.Uuid
+  kind           AgentWaitKind
+  status         AgentWaitStatus @default(ACTIVE)
+  correlationKey String?
+  expiresAt      DateTime?       @db.Timestamptz(3)
+  satisfiedAt    DateTime?       @db.Timestamptz(3)
+  cancelledAt    DateTime?       @db.Timestamptz(3)
+  resultRef      Json?
+  actionId       String?         @unique @db.Uuid
+  run            AgentRun        @relation(fields: [runId], references: [id], onDelete: Restrict)
+  action         AgentRunStepAction? @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  messageBlockRefs AgentMessageBlockReference[]
+
+  @@index([runId, status])
+}
+
+model AgentRunStep {
+  id                 String             @id @default(uuid()) @db.Uuid
+  runId              String             @db.Uuid
+  ordinal            Int
+  modelInvocationId  String             @unique @db.Uuid
+  assistantMessageId String?            @unique @db.Uuid
+  status             AgentRunStepStatus @default(STREAMING)
+  finishReason       ModelExchangeFinishReason?
+  startedAt          DateTime           @default(now()) @db.Timestamptz(3)
+  completedAt        DateTime?          @db.Timestamptz(3)
+  run                AgentRun           @relation(fields: [runId], references: [id], onDelete: Restrict)
+  modelInvocation    ModelInvocation    @relation(fields: [modelInvocationId], references: [id], onDelete: Restrict)
+  assistantMessage   AgentMessage?      @relation("AgentRunStepAssistantMessage", fields: [assistantMessageId], references: [id], onDelete: Restrict)
+  toolCalls          AgentToolCall[]
+  actions            AgentRunStepAction[]
+  messageBlocks      AgentMessageBlock[]
+
+  @@unique([runId, ordinal])
+  @@index([runId, status])
+}
+
+model AgentRunStepAction {
+  id                 String                @id @db.Uuid
+  stepId             String                @db.Uuid
+  modelPosition      Int
+  kind               AgentStepActionKind
+  status             AgentStepActionStatus @default(PENDING)
+  actionDigest       String
+  memoryCardId       String?               @db.Uuid
+  memoryApplied      Boolean?
+  errorCode          String?
+  completedAt        DateTime?             @db.Timestamptz(3)
+  createdAt          DateTime              @default(now()) @db.Timestamptz(3)
+  step               AgentRunStep          @relation(fields: [stepId], references: [id], onDelete: Restrict)
+  memoryCard         AgentMemoryCard?       @relation(fields: [memoryCardId], references: [id], onDelete: Restrict)
+  toolCall           AgentToolCall?
+  proposal           AgentProposal?
+  artifactRevision   AgentArtifactRevision?
+  waitCondition      AgentWaitCondition?
+  childRuns          AgentRun[]
+
+  @@unique([stepId, modelPosition])
+  @@index([stepId, status])
+}
+
+model AgentMessageBlock {
+  id               String                  @id @default(uuid()) @db.Uuid
+  messageId        String                  @db.Uuid
+  parentBlockId    String?                 @db.Uuid
+  position         Int
+  stepId           String?                 @db.Uuid
+  modelPosition    Int?
+  modelSubPosition Int?
+  kind             AgentMessageBlockKind
+  schemaVersion    String
+  status           AgentMessageBlockStatus @default(STREAMING)
+  createdAt        DateTime                @default(now()) @db.Timestamptz(3)
+  sealedAt         DateTime?               @db.Timestamptz(3)
+  message          AgentMessage            @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  parent           AgentMessageBlock?      @relation("AgentMessageBlockTree", fields: [parentBlockId], references: [id], onDelete: Restrict)
+  children         AgentMessageBlock[]     @relation("AgentMessageBlockTree")
+  step             AgentRunStep?           @relation(fields: [stepId], references: [id], onDelete: Restrict)
+  content          AgentMessageBlockContent?
+  table            AgentMessageBlockTable?
+  divider          AgentMessageBlockDivider?
+  reference        AgentMessageBlockReference?
+
+  @@unique([messageId, parentBlockId, position])
+  @@unique([stepId, modelPosition, modelSubPosition])
+  @@index([messageId, position])
+}
+
+model AgentMessageBlockContent {
+  blockId       String            @id @db.Uuid
+  contentBodyId String?           @db.Uuid
+  headingLevel  AgentHeadingLevel?
+  listStyle     AgentListStyle?
+  language      String?
+  block         AgentMessageBlock @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  contentBody   ModelContentBody? @relation("AgentMessageBlockContentBody", fields: [contentBodyId], references: [id], onDelete: Restrict)
+}
+
+model AgentMessageBlockTable {
+  blockId     String                       @id @db.Uuid
+  rowCount    Int
+  columnCount Int
+  block       AgentMessageBlock            @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  rows        AgentMessageBlockTableRow[]
+}
+
+model AgentMessageBlockTableRow {
+  id       String                       @id @default(uuid()) @db.Uuid
+  tableId  String                       @db.Uuid
+  position Int
+  table    AgentMessageBlockTable       @relation(fields: [tableId], references: [blockId], onDelete: Restrict)
+  cells    AgentMessageBlockTableCell[]
+
+  @@unique([tableId, position])
+}
+
+model AgentMessageBlockTableCell {
+  id            String                    @id @default(uuid()) @db.Uuid
+  rowId         String                    @db.Uuid
+  position      Int
+  contentBodyId String                    @db.Uuid
+  row           AgentMessageBlockTableRow @relation(fields: [rowId], references: [id], onDelete: Restrict)
+  contentBody   ModelContentBody          @relation("AgentMessageBlockTableCellBody", fields: [contentBodyId], references: [id], onDelete: Restrict)
+
+  @@unique([rowId, position])
+}
+
+model AgentMessageBlockDivider {
+  blockId String            @id @db.Uuid
+  block   AgentMessageBlock @relation(fields: [blockId], references: [id], onDelete: Restrict)
+}
+
+model AgentMessageBlockReference {
+  blockId             String             @id @db.Uuid
+  toolCallId          String?            @unique @db.Uuid
+  artifactRevisionId String?            @db.Uuid
+  proposalId          String?            @db.Uuid
+  planRevisionId      String?            @db.Uuid
+  waitConditionId     String?            @db.Uuid
+  assetRevisionId     String?            @db.Uuid
+  noticeKind          AgentNoticeKind?
+  noticeCode          String?
+  block               AgentMessageBlock  @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  toolCall            AgentToolCall?     @relation(fields: [toolCallId], references: [id], onDelete: Restrict)
+  artifactRevision    AgentArtifactRevision? @relation(fields: [artifactRevisionId], references: [id], onDelete: Restrict)
+  proposal            AgentProposal?     @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  planRevision        AgentPlanRevision? @relation(fields: [planRevisionId], references: [id], onDelete: Restrict)
+  waitCondition       AgentWaitCondition? @relation(fields: [waitConditionId], references: [id], onDelete: Restrict)
+  assetRevision       ContentAssetRevision? @relation(fields: [assetRevisionId], references: [id], onDelete: Restrict)
+}
+
+model AgentEvent {
+  id              String            @id @default(uuid()) @db.Uuid
+  runId           String            @db.Uuid
+  sessionId       String            @db.Uuid
+  contentBodyId   String?           @db.Uuid
+  sequence        Int
+  sessionSequence Int
+  type            AgentEventType
+  safePayload     Json
+  idempotencyKey  String            @unique
+  occurredAt      DateTime          @default(now()) @db.Timestamptz(3)
+  run             AgentRun          @relation(fields: [runId], references: [id], onDelete: Restrict)
+  session         AgentSession      @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  contentBody     ModelContentBody? @relation("AgentEventContent", fields: [contentBodyId], references: [id], onDelete: Restrict)
+
+  @@unique([runId, sequence])
+  @@unique([sessionId, sessionSequence])
+  @@index([sessionId, occurredAt])
+}
+
+model AgentToolCall {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  stepId              String                   @db.Uuid
+  actionId            String                   @unique @db.Uuid
+  modelPosition       Int
+  providerCallId      String?
+  toolKey             String
+  schemaVersion       String
+  toolReleaseId       String                   @db.Uuid
+  inputHash           String
+  inputContentBodyId  String                   @db.Uuid
+  grantId             String                   @db.Uuid
+  sideEffectClass     AgentToolSideEffectClass
+  concurrencyMode     AgentToolConcurrencyMode @default(EXCLUSIVE)
+  status              AgentToolCallStatus
+  resultRef           Json?
+  resultContentBodyId String?                  @db.Uuid
+  errorCode           String?
+  actionDigest        String
+  executorAttemptId   String?                  @db.Uuid
+  executorFencingToken BigInt?
+  createdAt           DateTime                 @default(now()) @db.Timestamptz(3)
+  queuedAt            DateTime?                @db.Timestamptz(3)
+  startedAt           DateTime?                @db.Timestamptz(3)
+  completedAt         DateTime?                @db.Timestamptz(3)
+  step                AgentRunStep             @relation(fields: [stepId], references: [id], onDelete: Restrict)
+  action              AgentRunStepAction       @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  grant               AgentToolGrant           @relation(fields: [grantId], references: [id], onDelete: Restrict)
+  toolRelease         ToolRelease              @relation(fields: [toolReleaseId], references: [id], onDelete: Restrict)
+  inputContentBody    ModelContentBody         @relation("AgentToolInput", fields: [inputContentBodyId], references: [id], onDelete: Restrict)
+  resultContentBody   ModelContentBody?        @relation("AgentToolResult", fields: [resultContentBodyId], references: [id], onDelete: Restrict)
+  messageBlockRef     AgentMessageBlockReference?
+
+  @@unique([stepId, modelPosition])
+  @@unique([stepId, providerCallId])
+  @@index([stepId, status])
+}
+
+model AgentProposal {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  runId                String                 @db.Uuid
+  actionId             String?                @unique @db.Uuid
+  commandType          String
+  commandVersion       String
+  targetRef            Json
+  payloadContentBodyId String                 @db.Uuid
+  grantId              String?                @unique @db.Uuid
+  actionDigest         String
+  riskClass            AgentProposalRiskClass
+  status               AgentProposalStatus
+  decision             AgentProposalDecision?
+  decidedByUserId      String?                @db.Uuid
+  decidedAt            DateTime?              @db.Timestamptz(3)
+  expiresAt            DateTime               @db.Timestamptz(3)
+  commitAttemptId      String?                @db.Uuid
+  commitLeaseExpiresAt DateTime?              @db.Timestamptz(3)
+  committedResultRef   Json?
+  committedAt          DateTime?              @db.Timestamptz(3)
+  contentPurgedAt      DateTime?              @db.Timestamptz(3)
+  createdAt            DateTime               @default(now()) @db.Timestamptz(3)
+  run                  AgentRun               @relation(fields: [runId], references: [id], onDelete: Restrict)
+  action               AgentRunStepAction?    @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  payloadContentBody   ModelContentBody       @relation("AgentProposalPayload", fields: [payloadContentBodyId], references: [id], onDelete: Restrict)
+  grant                AgentToolGrant?        @relation("AgentProposalGrant", fields: [grantId], references: [id], onDelete: Restrict)
+  decidedBy            User?                  @relation("AgentProposalDecider", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+  idempotencyRecord    IdempotencyRecord?
+  messageBlockRefs     AgentMessageBlockReference[]
+
+  @@index([runId, actionDigest])
+}
+
+model AgentToolGrant {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  userId             String                   @db.Uuid
+  sessionId          String                   @db.Uuid
+  runId              String?                  @db.Uuid
+  toolKey            String
+  resourceScope      Json
+  sideEffectClass    AgentToolSideEffectClass
+  maxCalls           Int
+  expiresAt          DateTime                 @db.Timestamptz(3)
+  revokedAt          DateTime?                @db.Timestamptz(3)
+  issuedBy           String
+  actionDigest       String
+  user               User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  session            AgentSession             @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  run                AgentRun?                @relation(fields: [runId], references: [id], onDelete: Restrict)
+  calls              AgentToolCall[]
+  authorizedProposal AgentProposal?           @relation("AgentProposalGrant")
+
+  @@unique([runId, actionDigest])
+  @@index([runId, toolKey, expiresAt])
+}
+
+model AgentArtifact {
+  id                String                  @id @default(uuid()) @db.Uuid
+  ownerUserId       String                  @db.Uuid
+  kind              AgentArtifactKind
+  title             String
+  currentRevisionId String?                 @unique @db.Uuid
+  createdAt         DateTime                @default(now()) @db.Timestamptz(3)
+  owner             User                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  revisions         AgentArtifactRevision[] @relation("AgentArtifactRevisions")
+  currentRevision   AgentArtifactRevision?  @relation("CurrentAgentArtifactRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+}
+
+model AgentArtifactRevision {
+  id                    String                @id @default(uuid()) @db.Uuid
+  artifactId            String                @db.Uuid
+  actionId              String?               @unique @db.Uuid
+  revisionNo            Int
+  contentBodyId         String?               @db.Uuid
+  objectRef             String?
+  schemaVersion         String
+  contentHash           String
+  sourceRefs            Json
+  createdAt             DateTime              @default(now()) @db.Timestamptz(3)
+  artifact              AgentArtifact         @relation("AgentArtifactRevisions", fields: [artifactId], references: [id], onDelete: Restrict)
+  action                AgentRunStepAction?   @relation(fields: [actionId], references: [id], onDelete: Restrict)
+  currentFor            AgentArtifact?        @relation("CurrentAgentArtifactRevision")
+  contentBody           ModelContentBody?     @relation(fields: [contentBodyId], references: [id], onDelete: Restrict)
+  contextRefs           ContextSnapshotRef[]
+  acceptedAssetRevision ContentAssetRevision?
+  messageBlockRefs      AgentMessageBlockReference[]
+
+  @@unique([artifactId, revisionNo])
+}
+
+model AgentMemoryCard {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  userId             String                    @db.Uuid
+  subject            String
+  claimContentBodyId String                    @db.Uuid
+  confidence         Float
+  visibility         AgentMemoryVisibility
+  management         AgentMemoryManagementKind @default(AGENT_MANAGED)
+  sourceRefs         Json
+  createdAt          DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                  @updatedAt @db.Timestamptz(3)
+  user               User                      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  claimContentBody   ModelContentBody          @relation(fields: [claimContentBodyId], references: [id], onDelete: Restrict)
+  suppressions       MemorySuppression[]
+  contextRefs        ContextSnapshotRef[]
+  stepActions        AgentRunStepAction[]
+}
+
+model MemorySuppression {
+  id           String          @id @default(uuid()) @db.Uuid
+  userId       String          @db.Uuid
+  memoryCardId String          @db.Uuid
+  reason       String
+  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  memoryCard   AgentMemoryCard @relation(fields: [memoryCardId], references: [id], onDelete: Restrict)
+
+  @@index([userId, memoryCardId])
+}
+
+model ContextSnapshot {
+  id              String               @id @default(uuid()) @db.Uuid
+  runId           String               @db.Uuid
+  snapshotVersion String
+  tokenBudget     Int
+  contentHash     String
+  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
+  run             AgentRun             @relation(fields: [runId], references: [id], onDelete: Restrict)
+  refs            ContextSnapshotRef[]
+
+  @@unique([runId, snapshotVersion])
+}
+
+model ContextSnapshotRef {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  snapshotId         String                   @db.Uuid
+  position           Int
+  resourceKind       AgentContextResourceKind
+  resourceId         String                   @db.Uuid
+  resourceRevisionId String?                  @db.Uuid
+  contentHash        String?
+  messageId          String?                  @db.Uuid
+  memoryCardId       String?                  @db.Uuid
+  artifactRevisionId String?                  @db.Uuid
+  snapshot           ContextSnapshot          @relation(fields: [snapshotId], references: [id], onDelete: Restrict)
+  message            AgentMessage?            @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  memoryCard         AgentMemoryCard?         @relation(fields: [memoryCardId], references: [id], onDelete: Restrict)
+  artifactRevision   AgentArtifactRevision?   @relation(fields: [artifactRevisionId], references: [id], onDelete: Restrict)
+
+  @@unique([snapshotId, position])
+}
+
+model CapabilityRelease {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  capabilityKey       String
+  version             String
+  executionMode       AgentExecutionMode
+  systemPrompt        String
+  promptHash          String
+  toolPolicyVersion   String
+  inputSchemaVersion  String
+  outputSchemaVersion String
+  contextTokenBudget  Int                         @default(16000)
+  maxChildRuns        Int                         @default(0)
+  maxSteps            Int                         @default(8)
+  maxToolCalls        Int                         @default(6)
+  maxOutputTokens     Int                         @default(4096)
+  status              ImmutableReleaseStatus
+  releaseEvidence     Json                        @default("{}")
+  releaseDigest       String                      @unique
+  createdAt           DateTime                    @default(now()) @db.Timestamptz(3)
+  runs                AgentRun[]
+  instructions        AgentInstruction[]
+  allowedRoutes       CapabilityRouteAllowance[]
+  modelPermits        ModelExecutionPermit[]
+  toolDependencies    CapabilityToolRelease[]
+  skillDependencies   CapabilitySkillRelease[]
+  evalRequirements    CapabilityEvalRequirement[]
+  evaluationRuns      AgentEvaluationRun[]
+
+  @@unique([capabilityKey, version])
+}
+
+model CapabilityRouteAllowance {
+  capabilityReleaseId String               @db.Uuid
+  routeReleaseId      String               @db.Uuid
+  capability          CapabilityRelease    @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  route               ProviderRouteRelease @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+
+  @@id([capabilityReleaseId, routeReleaseId])
+}
+
+model ToolRelease {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  toolKey              String
+  version              String
+  implementationDigest String
+  schemaDigest         String
+  owner                String
+  sideEffectClass      AgentToolSideEffectClass
+  concurrencyMode      AgentToolConcurrencyMode @default(EXCLUSIVE)
+  requiredScopes       String[]
+  inputSchema          Json
+  outputSchema         Json
+  timeoutMs            Int
+  maxCalls             Int
+  idempotencyPolicy    Json
+  cancellationPolicy   Json                    @default("{}")
+  redactionPolicy      Json
+  releaseDigest        String                   @unique
+  status               ImmutableReleaseStatus
+  releaseEvidence      Json
+  createdAt            DateTime                 @default(now()) @db.Timestamptz(3)
+  calls                AgentToolCall[]
+  capabilities         CapabilityToolRelease[]
+
+  @@unique([toolKey, version])
+  @@unique([implementationDigest, schemaDigest])
+}
+
+model SkillRelease {
+  id              String                   @id @default(uuid()) @db.Uuid
+  skillKey        String
+  version         String
+  markdown        String
+  markdownDigest  String
+  releaseDigest   String                   @unique
+  status          ImmutableReleaseStatus
+  releaseEvidence Json
+  createdAt       DateTime                 @default(now()) @db.Timestamptz(3)
+  capabilities    CapabilitySkillRelease[]
+
+  @@unique([skillKey, version])
+}
+
+model EvalRelease {
+  id                     String                      @id @default(uuid()) @db.Uuid
+  evalKey                String
+  version                String
+  suiteRef               String
+  suiteDigest            String
+  releaseDigest          String                      @unique
+  status                 ImmutableReleaseStatus
+  releaseEvidence        Json
+  createdAt              DateTime                    @default(now()) @db.Timestamptz(3)
+  evaluationRuns         AgentEvaluationRun[]
+  capabilityRequirements CapabilityEvalRequirement[]
+
+  @@unique([evalKey, version])
+}
+
+model CapabilityToolRelease {
+  capabilityReleaseId String            @db.Uuid
+  toolReleaseId       String            @db.Uuid
+  capability          CapabilityRelease @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  tool                ToolRelease       @relation(fields: [toolReleaseId], references: [id], onDelete: Restrict)
+
+  @@id([capabilityReleaseId, toolReleaseId])
+}
+
+model CapabilitySkillRelease {
+  capabilityReleaseId String            @db.Uuid
+  skillReleaseId      String            @db.Uuid
+  capability          CapabilityRelease @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  skill               SkillRelease      @relation(fields: [skillReleaseId], references: [id], onDelete: Restrict)
+
+  @@id([capabilityReleaseId, skillReleaseId])
+}
+
+model CapabilityEvalRequirement {
+  capabilityReleaseId String            @db.Uuid
+  evalReleaseId       String            @db.Uuid
+  minimumScore        Decimal           @db.Decimal(8, 5)
+  capability          CapabilityRelease @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  eval                EvalRelease       @relation(fields: [evalReleaseId], references: [id], onDelete: Restrict)
+
+  @@id([capabilityReleaseId, evalReleaseId])
+}
+
+model AgentEvaluationRun {
+  id                          String                                    @id @default(uuid()) @db.Uuid
+  evalReleaseId               String                                    @db.Uuid
+  targetReleaseKind           AgentReleaseKind
+  targetReleaseId             String                                    @db.Uuid
+  capabilityReleaseId         String?                                   @db.Uuid
+  kind                        AgentEvaluationKind
+  status                      AgentEvaluationStatus
+  inputDigest                 String
+  budgetMicros                BigInt
+  createdAt                   DateTime                                  @default(now()) @db.Timestamptz(3)
+  completedAt                 DateTime?                                 @db.Timestamptz(3)
+  evalRelease                 EvalRelease                               @relation(fields: [evalReleaseId], references: [id], onDelete: Restrict)
+  capabilityRelease           CapabilityRelease?                        @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  evidence                    AgentEvaluationEvidence[]
+  modelExecutionPermitTargets ModelExecutionPermitEvaluationRunTarget[]
+
+  @@unique([targetReleaseKind, targetReleaseId, evalReleaseId, kind])
+  @@index([targetReleaseKind, targetReleaseId, status])
+}
+
+model AgentEvaluationEvidence {
+  id              String             @id @default(uuid()) @db.Uuid
+  evaluationRunId String             @db.Uuid
+  judgeRunId      String?            @db.Uuid
+  score           Decimal            @db.Decimal(8, 5)
+  passed          Boolean
+  metrics         Json
+  contentHash     String             @unique
+  objectRef       String?
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  evaluationRun   AgentEvaluationRun @relation(fields: [evaluationRunId], references: [id], onDelete: Restrict)
+}
+
+model AgentReleaseEvent {
+  id                String                   @id @default(uuid()) @db.Uuid
+  releaseKind       AgentReleaseKind
+  releaseId         String                   @db.Uuid
+  environment       AgentReleaseEnvironment?
+  kind              AgentReleaseEventKind
+  previousReleaseId String?                  @db.Uuid
+  actorRef          String
+  reason            String
+  policyVersion     String
+  actionDigest      String                   @unique
+  occurredAt        DateTime                 @default(now()) @db.Timestamptz(3)
+
+  @@index([releaseKind, releaseId, environment, occurredAt])
+}
+
+model AgentReleaseDeployment {
+  id              String                  @id @default(uuid()) @db.Uuid
+  releaseKind     AgentReleaseKind
+  releaseKey      String
+  environment     AgentReleaseEnvironment
+  activeReleaseId String                  @db.Uuid
+  generation      Int                     @default(1)
+  actionDigest    String
+  updatedBy       String
+  updatedAt       DateTime                @updatedAt @db.Timestamptz(3)
+  createdAt       DateTime                @default(now()) @db.Timestamptz(3)
+
+  @@unique([releaseKind, releaseKey, environment])
+  @@index([activeReleaseId, environment])
+}
+
+model DiagnosticBundle {
+  id                     String                     @id @default(uuid()) @db.Uuid
+  ownerUserId            String                     @db.Uuid
+  redactionPolicyVersion String
+  currentRevisionId      String?                    @unique @db.Uuid
+  createdAt              DateTime                   @default(now()) @db.Timestamptz(3)
+  owner                  User                       @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  revisions              DiagnosticBundleRevision[] @relation("DiagnosticBundleRevisions")
+  currentRevision        DiagnosticBundleRevision?  @relation("CurrentDiagnosticBundleRevision", fields: [currentRevisionId], references: [id], onDelete: Restrict)
+}
+
+model DiagnosticBundleRevision {
+  id                      String                                       @id @default(uuid()) @db.Uuid
+  bundleId                String                                       @db.Uuid
+  revisionNo              Int
+  selectedRefs            Json
+  redactedPayload         Json
+  contentHash             String
+  status                  DiagnosticBundleRevisionStatus               @default(DRAFT)
+  confirmedFromRevisionId String?                                      @unique @db.Uuid
+  confirmedAt             DateTime?                                    @db.Timestamptz(3)
+  createdAt               DateTime                                     @default(now()) @db.Timestamptz(3)
+  bundle                  DiagnosticBundle                             @relation("DiagnosticBundleRevisions", fields: [bundleId], references: [id], onDelete: Restrict)
+  currentFor              DiagnosticBundle?                            @relation("CurrentDiagnosticBundleRevision")
+  confirmedFrom           DiagnosticBundleRevision?                    @relation("DiagnosticRevisionConfirmation", fields: [bundleId, confirmedFromRevisionId, contentHash], references: [bundleId, id, contentHash], onDelete: Cascade, onUpdate: Restrict)
+  confirmation            DiagnosticBundleRevision?                    @relation("DiagnosticRevisionConfirmation")
+  supportGrantTargets     SupportGrantDiagnosticBundleRevisionTarget[]
+
+  @@unique([bundleId, revisionNo])
+  @@unique([bundleId, id])
+  @@unique([bundleId, id, contentHash])
+  @@unique([bundleId, confirmedFromRevisionId, contentHash])
+}
+
+model LexiconGapReport {
+  id                String   @id @default(uuid()) @db.Uuid
+  normalizedTarget  String
+  languageTag       String
+  firstReportedAt   DateTime @default(now()) @db.Timestamptz(3)
+  lastReportedAt    DateTime @default(now()) @db.Timestamptz(3)
+  reportCount       Int      @default(1)
+  sampleArtifactRef String?
+  status            LexiconGapReportStatus @default(OPEN)
+  dedupeKey         String   @unique
+}

@@ -1,8 +1,10 @@
-import { createEmptyArtifact } from "@sylis/lexicon-contracts";
+import {
+  createEmptyArtifact,
+  evaluateContentProfiles,
+} from "@sylis/lexicon-artifact";
 import { describe, expect, it } from "vitest";
 
 import { stableId } from "../src/sources/source-context";
-import { evaluateContentProfiles } from "../src/validate/profiles";
 
 function profileFixture() {
   const artifact = createEmptyArtifact({
@@ -64,6 +66,7 @@ function profileFixture() {
   });
   artifact.provenance.bundles.push({
     id: provenanceId,
+    kind: "SOURCE",
     contentHash: `sha256:${"2".repeat(64)}`,
     resolverVersion: "fixture/1",
     decisionReason: "Direct fixture evidence.",

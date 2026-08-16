@@ -20,6 +20,99 @@ enum RevisionStatus {
   RETIRED
 }
 
+enum LexiconArtifactRole {
+  CURRENT
+  LINEAGE_ANCHOR
+}
+
+enum LexicalEntryType {
+  WORD
+  MULTIWORD
+  AFFIX
+}
+
+enum LexicalFormType {
+  CANONICAL
+  INFLECTED
+  VARIANT
+  ABBREVIATED
+}
+
+enum FormRepresentationType {
+  WRITTEN
+  PHONETIC
+  ROMANIZED
+}
+
+enum LexiconMediaType {
+  AUDIO
+  IMAGE
+}
+
+enum LexicalConceptType {
+  LOCAL_SENSE
+  SYNSET
+}
+
+enum MorphologicalAnalysisType {
+  INFLECTION
+  DERIVATIONAL
+}
+
+enum UnicodeNormalizationForm {
+  NFC
+  NFD
+  NFKC
+  NFKD
+}
+
+enum EtymologyHypothesisStatus {
+  ACCEPTED
+  TENTATIVE
+  DISPUTED
+  REJECTED
+}
+
+enum PedagogicalMaterialKind {
+  LEARNER_EXPLANATION
+  MORPHOLOGY_WALKTHROUGH
+  CULTURAL_CONTEXT
+  MNEMONIC
+  MICRO_STORY
+}
+
+enum LexicalLineageType {
+  SPLIT_FROM
+  MERGED_FROM
+  REPLACES
+}
+
+enum SenseConceptMembershipType {
+  LEXICALIZED_BY
+}
+
+enum LexicalRelationDirection {
+  DIRECTED
+  SYMMETRIC
+}
+
+enum EntryRelationType {
+  ABBREVIATION_OF
+  VARIANT_OF
+  DERIVATIONALLY_RELATED
+}
+
+enum SenseRelationType {
+  SYNONYM
+  ANTONYM
+  RELATED
+}
+
+enum ConceptRelationType {
+  HYPERNYM
+  HYPONYM
+}
+
 enum ProvenanceKind {
   SOURCE
   DERIVED
@@ -27,51 +120,331 @@ enum ProvenanceKind {
   HUMAN
 }
 
+enum ContentEvidenceKind {
+  DIRECT
+  DERIVED
+  SUPPORTING
+  CONTRADICTING
+  GENERATED
+}
+
+enum RightsEvidenceKind {
+  LICENSE_TEXT
+  TERMS_OF_USE
+  OWNER_PERMISSION
+  LEGAL_REVIEW
+  POLICY_DOCUMENT
+}
+
+enum CollectedLexicalItemRevisionSource {
+  USER
+  AGENT
+}
+
 enum JobKind {
-  TUTOR_RESPONSE
-  READING_GENERATION
-  GRAMMAR_DIAGNOSIS
+  AGENT_RUN_ACTIVATION
+  AGENT_TOOL_CONTINUATION
+  AGENT_RELEASE_EVALUATION
+  AGENT_RELEASE_JUDGEMENT
+  ASSET_SCAN
+  ASSET_EXTRACT
+  ASSET_OCR
+  ASSET_LEXICAL_INDEX
+  ASSET_EMBEDDING
+  ASSET_IMAGE_ANALYSIS
+  AUDIT_ARCHIVE
+  AUDIT_ARCHIVE_PURGE
   DATA_EXPORT
-  DAILY_PLAN
+  AUDIT_EXPORT
   SOURCE_SYNC
+  RETENTION_PURGE
   LEXICON_BUILD
-  LEXICON_IMPORT
+  LEXICON_PUBLISH
   LEXICON_VALIDATE
 }
 
-enum JobExecutor {
-  WORKER
-  COMPILER_RUNNER
-  IMPORTER_RUNNER
+enum ExecutorKind {
+  AGENT_EXECUTOR
+  AGENT_EVALUATOR
+  ASSET_PROCESSOR
+  AUTOMATION_EXECUTOR
+  LEXICON_BUILDER
+  LEXICON_PUBLISHER
 }
 
 enum JobStatus {
   QUEUED
   RUNNING
   RETRY_SCHEDULED
-  PAUSED
   SUCCEEDED
   FAILED
   CANCELLED
 }
 
+enum JobFailureClass {
+  TRANSIENT
+  PERMANENT
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum JobOperatorRoleMatch {
+  ANY
+  ALL
+}
+
+enum JobReconciliationRule {
+  NOT_REQUIRED
+  REQUIRED_ON_UNKNOWN_OUTCOME
+}
+
+enum JobOwnerType {
+  AGENT_RUN
+  EVALUATION_RUN
+  ASSET_REVISION
+  USER_EXPORT
+  AUDIT_EXPORT
+  AUDIT_ARCHIVE
+  SOURCE_SYNCHRONIZATION
+  RETENTION_REQUEST
+  BUILD_RUN
+  PUBLISH_RUN
+}
+
+enum BuildRunStatus {
+  PROPOSED
+  BUDGET_APPROVAL_PENDING
+  APPROVED
+  ARTIFACT_PUBLISHED
+  REJECTED
+}
+
+enum BuildRunMode {
+  PILOT
+  FULL
+}
+
+enum BuildRunActivationReason {
+  INITIAL
+  REVIEW_RESUME
+  BUDGET_RESUME
+  USER_RETRY
+}
+
+enum LexiconCompileProfile {
+  PILOT_200
+  CORE_20000
+}
+
+enum LexiconReleaseCompileProfile {
+  FIXTURE
+  PILOT_200
+  CORE_20000
+  DEPLOYMENT_CANARY
+}
+
+enum PublishRunStatus {
+  DRAFT
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum PublishRunMode {
+  PUBLISH
+  VALIDATE
+}
+
 enum SessionAudience {
   USER
   ADMIN
-  SYSTEM
+  AGENT
+  SERVICE
+}
+
+enum SessionAuthStrength {
+  PASSWORD
+  PASSWORD_MFA
+}
+
+enum SessionRevokeReason {
+  USER_LOGOUT
+  USER_REVOKED
+  USER_REAUTHENTICATED
+  USER_DELETION_REQUESTED
+  OPERATOR_LOGOUT
+  ADMIN_REAUTHENTICATED
+  SECURITY_VERSION_CHANGED
+  USER_SECURITY_LOCKED
+  OPERATOR_ROLE_CHANGED
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  DELETED
 }
 
 enum CredentialStatus {
   PENDING
   VERIFIED
+  RETIRED
+  QUARANTINED
+  EXPIRED
   REVOKED
+}
+
+enum CredentialType {
+  API_KEY
+  OAUTH_ACCESS_TOKEN
+  OAUTH_REFRESH_TOKEN
+  SERVICE_ACCOUNT_JSON
+}
+
+enum PasswordHashAlgorithm {
+  ARGON2ID
+}
+
+enum TotpAlgorithm {
+  SHA1
+  SHA256
+  SHA512
+}
+
+enum CredentialSecurityEventKind {
+  CREATED
+  VALIDATED
+  ROTATED
+  QUARANTINED
+  REVOKED
+  RESTORED
+}
+
+enum MfaCredentialKind {
+  TOTP
+  WEBAUTHN
+}
+
+enum VerificationChallengePurpose {
+  REGISTRATION
+  PASSWORD_RECOVERY
+}
+
+enum AuthenticationChallengePurpose {
+  ADMIN_LOGIN
+  ADMIN_REAUTHENTICATION
+  WEBAUTHN_ENROLLMENT
+}
+
+enum ConsentPurpose {
+  OPTIONAL_MODEL_EXCHANGE
+  MODEL_ASSET_PROCESSING
+  LEARNING_RESPONSE_RETENTION
+}
+
+enum ConsentDataCategory {
+  MODEL_INPUT
+  MODEL_OUTPUT
+  ASSET_CONTENT
+  LEARNING_RESPONSE
+}
+
+enum ConsentDecision {
+  GRANTED
+  WITHDRAWN
+}
+
+enum SecurityAuditResult {
+  SUCCEEDED
+  DENIED
+  FAILED
+}
+
+enum SecurityAuditCategory {
+  IDENTITY
+  AUTHORIZATION
+  SOURCE
+  RIGHTS
+  REVIEW
+  LEXICON
+  AGENT
+  MODEL
+  ASSET
+  JOB
+  USER_SUPPORT
+  SECURITY
+  DEPLOYMENT
+  RETENTION
+}
+
+enum LegalHoldScopeKind {
+  GLOBAL
+  AUDIT_CATEGORY
+  AUDIT_ARCHIVE
+}
+
+enum AuditArchiveStatus {
+  PENDING
+  ACTIVE
+  PURGED
+}
+
+enum SourceDatasetVersionStatus {
+  REGISTERED
+  VALIDATED
+  QUARANTINED
+  RETIRED
+}
+
+enum SourceRestrictionKind {
+  BLOCK_BUILD
+  BLOCK_SERVE
+  BLOCK_EXPORT
+}
+
+enum SourceSynchronizationKind {
+  DATASET_VERSION
+}
+
+enum RedditSourceObservationState {
+  AVAILABLE
+  WITHDRAWN
+}
+
+enum CandidateTaskType {
+  LEXICAL_FACT
+  PEDAGOGICAL_MATERIAL
+  EXERCISE
+}
+
+enum ReviewQueueKind {
+  LEXICAL_FACT
+  PEDAGOGICAL_MATERIAL
+  EXERCISE
+  MIXED
+}
+
+enum DeploymentEnvironment {
+  STAGING
+  PRODUCTION
 }
 
 enum OperatorRole {
   SUPPORT
   CONTENT_REVIEWER
+  LEXICON_OPERATOR
   RELEASE_MANAGER
+  MODEL_OPERATOR
+  AGENT_RELEASE_MANAGER
   SECURITY_ADMIN
+}
+
+enum OperatorRoleAssignmentSource {
+  ADMIN_COMMAND
+  BOOTSTRAP
+  RECOVERY
 }
 
 enum AttemptStatus {
@@ -81,11 +454,255 @@ enum AttemptStatus {
   EXPIRED
 }
 
+enum AttemptTextResponsePurpose {
+  EXERCISE_RESPONSE
+}
+
+enum ReviewSnapshotPhase {
+  BEFORE
+  AFTER
+}
+
+enum AssessmentSessionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+enum AssessmentBlueprintPurpose {
+  PRACTICE
+  BOOK_CHECKPOINT
+  DIAGNOSTIC
+  PLACEMENT
+}
+
+enum AssessmentNavigationMode {
+  LINEAR
+  FREE
+}
+
+enum AssessmentFeedbackMode {
+  IMMEDIATE
+  AFTER_SUBMISSION
+}
+
+enum ExerciseAttemptContextKind {
+  STUDY
+  ASSESSMENT
+}
+
+enum ContentEvaluationStatus {
+  PRESENT
+  MISSING
+  NOT_APPLICABLE
+  REJECTED
+}
+
+enum ContentProfileTargetKind {
+  HEADWORD
+  ENTRY
+  FORM
+  SENSE
+  CONCEPT
+  LEARNING_OBJECTIVE
+  PEDAGOGICAL_MATERIAL
+  EXERCISE
+  BOOK_EDITION
+}
+
+enum LearningTargetRole {
+  PRIMARY
+  SUPPORTING
+}
+
+enum KnowledgeFacet {
+  FORM_SPOKEN
+  FORM_WRITTEN
+  FORM_WORD_PARTS
+  MEANING_FORM_MEANING
+  MEANING_CONCEPT_REFERENT
+  MEANING_ASSOCIATIONS
+  USE_GRAMMATICAL_FUNCTION
+  USE_COLLOCATION
+  USE_CONSTRAINTS
+}
+
+enum RetrievalDirection {
+  RECEPTIVE
+  PRODUCTIVE
+  BIDIRECTIONAL
+}
+
+enum ProficiencyClaimType {
+  SOURCE_ASSERTED
+}
+
 enum ExerciseResponseKind {
   CHOICE
   SHORT_TEXT
   EXTENDED_TEXT
   NO_CAPTURE
+}
+
+enum AssessmentSelectionRuleKind {
+  QUOTA
+  SCOPE
+  PINNED_ITEM
+}
+
+enum AssessmentSelectionScopeKind {
+  BOOK_EDITION
+  PROFICIENCY_LEVEL
+}
+
+enum ExerciseTaskKind {
+  FORM_MEANING_MAPPING
+  SPOKEN_FORM_MAPPING
+  SPOKEN_FORM_PRODUCTION
+  CONTEXTUAL_SENSE_INTERPRETATION
+  CONTEXTUAL_FORM_COMPLETION
+  COLLOCATION_RECALL
+  FRAME_COMPLETION
+  SEMANTIC_RELATION_DISCRIMINATION
+  MORPHEME_ANALYSIS
+  WORD_FORMATION
+  USAGE_CONSTRAINT_DISCRIMINATION
+  SENTENCE_TRANSLATION
+  SENTENCE_PRODUCTION
+}
+
+enum ExerciseEvidenceKind {
+  RECOGNITION
+  CUED_RECALL
+  CONTEXTUAL_DISCRIMINATION
+  CONSTRAINED_PRODUCTION
+  FREE_PRODUCTION
+}
+
+enum ExerciseResponseCardinality {
+  SINGLE
+  MULTIPLE
+}
+
+enum ExerciseResponsePlacement {
+  BLOCK
+  INLINE
+}
+
+enum ExerciseGradingMode {
+  EXACT
+  WEIGHTED
+  SELF_REPORT
+}
+
+enum AttemptTextRetentionMode {
+  HASH_ONLY
+  ENCRYPTED_CONTENT
+}
+
+enum ExerciseDifficultyTier {
+  FOUNDATION
+  DEVELOPING
+  ADVANCED
+}
+
+enum ExerciseFeedbackOutcome {
+  CORRECT
+  INCORRECT
+  PARTIAL
+  ANY
+}
+
+enum ExerciseDistractorKind {
+  ANTONYM_CONFUSION
+  SEMANTIC_NEIGHBOR
+  ORTHOGRAPHIC_NEIGHBOR
+  PLAUSIBLE_SAME_DOMAIN
+  SOURCE_DISTRACTOR
+  SAME_POS
+}
+
+enum ExerciseTargetKind {
+  HEADWORD
+  ENTRY
+  FORM
+  SENSE
+  SENSE_EXAMPLE
+  COLLOCATION
+  FRAME
+  MORPHEME
+  LEARNING_OBJECTIVE
+}
+
+enum LexicalAnnotationTargetKind {
+  HEADWORD
+  ENTRY
+  SENSE
+  COLLOCATION
+  OBJECTIVE
+}
+
+enum TextOffsetUnit {
+  UTF8_BYTE
+  UNICODE_CODE_POINT
+  UTF16_CODE_UNIT
+}
+
+enum DocumentOriginKind {
+  AI_GENERATED
+  REDDIT
+  USER_AUTHORED
+  CURATED
+}
+
+enum DocumentRightsPolicy {
+  PRIVATE_OWNER
+  PLATFORM_OWNED
+  PUBLIC_DOMAIN
+  SOURCE_TERMS
+  LICENSED
+}
+
+enum DocumentRetentionPolicy {
+  OWNER_CONTROLLED
+  SOURCE_CONTROLLED
+  FIXED_WINDOW
+  INDEFINITE
+}
+
+enum ReadingActivityKind {
+  OPEN
+  PROGRESS
+  COMPLETE
+  LOOKUP
+}
+
+enum ReadingDocumentVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum ReadingTargetReason {
+  OVERDUE
+  LOW_RETRIEVABILITY
+  COVERAGE_GAP
+  USER_SELECTED
+}
+
+enum ExerciseCapturePolicy {
+  REQUIRED
+  OPTIONAL
+}
+
+enum ExerciseDiacriticPolicy {
+  PRESERVE
+  IGNORE
+}
+
+enum ExerciseWhitespacePolicy {
+  PRESERVE
+  TRIM
+  COLLAPSE
 }
 
 enum ExerciseValidationLevel {
@@ -94,8 +711,625 @@ enum ExerciseValidationLevel {
   SUMMATIVE_VERIFIED
 }
 
+enum DailyStudyPlanStatus {
+  READY
+  COMPLETED
+}
+
+enum StudyPlanItemMode {
+  NEW
+  REVIEW
+}
+
 enum ReadingDocumentStatus {
   DRAFT
   PUBLISHED
   WITHDRAWN
+}
+
+enum LearningObjectiveHintKind {
+  DEFINITION
+  GENERATED_RETRIEVAL_CUE
+}
+
+enum JobAttemptStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum AgentRunStatus {
+  QUEUED
+  RUNNING
+  WAITING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AgentSessionStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum AgentMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum AgentMessageVisibility {
+  USER
+  INTERNAL
+}
+
+enum AgentEventType {
+  INSTRUCTION_QUEUED
+  RUN_STARTED
+  CONTEXT_SNAPSHOT_CREATED
+  MESSAGE_STARTED
+  BLOCK_OPENED
+  BLOCK_DELTA_APPENDED
+  BLOCK_SEALED
+  BLOCK_INTERRUPTED
+  MESSAGE_COMPLETED
+  MESSAGE_INTERRUPTED
+  TOOL_CALL_PROPOSED
+  TOOL_CALL_STARTED
+  TOOL_CALL_COMPLETED
+  PROPOSAL_SUBMITTED
+  PROPOSAL_DECIDED
+  PROPOSAL_COMMITTED
+  ARTIFACT_REVISION_PROPOSED
+  MEMORY_CARD_UPDATED
+  CHILD_RUN_STARTED
+  CHILD_RUN_COMPLETED
+  WAIT_REQUESTED
+  RUN_COMPLETED
+  RUN_FAILED
+  RUN_CANCELLED
+  RUN_PREEMPTED
+  RUN_RECONCILED
+}
+
+enum AgentToolCallStatus {
+  PROPOSED
+  APPROVED
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  REJECTED
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum AgentRunStepStatus {
+  STREAMING
+  TOOL_EXECUTION
+  WAITING
+  COMPLETED
+  FAILED
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum AgentToolConcurrencyMode {
+  PARALLEL_SAFE
+  EXCLUSIVE
+}
+
+enum AgentStepActionKind {
+  DOMAIN_TOOL
+  PROPOSAL
+  ARTIFACT
+  CHILD_RUN
+  MEMORY
+  WAIT
+}
+
+enum AgentStepActionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REJECTED
+  CANCELLED
+  UNKNOWN_OUTCOME
+  WAITING
+}
+
+enum AgentMessageBlockKind {
+  PARAGRAPH
+  HEADING
+  LIST_ITEM
+  QUOTE
+  CALLOUT
+  CODE
+  EQUATION
+  TABLE
+  DIVIDER
+  TOOL_CALL
+  ARTIFACT
+  PROPOSAL
+  PLAN
+  WAIT_CONDITION
+  ASSET
+  NOTICE
+}
+
+enum AgentMessageBlockStatus {
+  STREAMING
+  SEALED
+  INTERRUPTED
+}
+
+enum AgentHeadingLevel {
+  H1
+  H2
+  H3
+}
+
+enum AgentListStyle {
+  BULLETED
+  NUMBERED
+}
+
+enum AgentNoticeKind {
+  INFO
+  WARNING
+  ERROR
+  RECOVERY
+}
+
+enum AgentToolSideEffectClass {
+  READ_PUBLIC
+  READ_PRIVATE
+  WRITE_PRIVATE_REVERSIBLE
+  WRITE_FORMAL
+  EXTERNAL_SIDE_EFFECT
+}
+
+enum AgentProposalRiskClass {
+  LOW
+  MEDIUM
+  HIGH
+  PROHIBITED
+}
+
+enum AgentArtifactKind {
+  ARTICLE
+  GRAMMAR_ANALYSIS
+  TRANSLATION_ANALYSIS
+  LEXICON_EXPLANATION
+  PRACTICE_SET
+  STUDY_PLAN
+  OTHER
+}
+
+enum AgentMemoryVisibility {
+  USER_ONLY
+}
+
+enum AgentMemoryManagementKind {
+  AGENT_MANAGED
+  USER_MANAGED
+}
+
+enum AgentProposalStatus {
+  PENDING
+  COMMITTING
+  REJECTED
+  EXPIRED
+  COMMITTED
+  FAILED
+}
+
+enum AgentProposalDecision {
+  APPROVE
+  REJECT
+}
+
+enum LexiconGapReportStatus {
+  OPEN
+  CANDIDATE_ACCEPTED
+  DISMISSED
+  RESOLVED
+}
+
+enum AgentEvaluationKind {
+  EVALUATION
+  JUDGEMENT
+}
+
+enum AgentEvaluationStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum AgentWaitKind {
+  APPROVAL
+  USER_INPUT
+  CHILD_RUN
+  EXTERNAL_EVENT
+}
+
+enum AgentWaitStatus {
+  ACTIVE
+  SATISFIED
+  CANCELLED
+  EXPIRED
+}
+
+enum AgentExecutionMode {
+  SINGLE_CALL
+  WORKFLOW
+  AGENT_LOOP
+}
+
+enum AgentContextResourceKind {
+  AGENT_MESSAGE
+  AGENT_MEMORY_CARD
+  AGENT_ARTIFACT_REVISION
+  AGENT_RUN_RESULT
+  CONTENT_ASSET_REVISION
+  READING_DOCUMENT_REVISION
+  LEXICON_HEADWORD
+  LEXICON_ENTRY
+  LEXICON_SENSE
+  LEARNING_SUMMARY
+  NOTEBOOK
+}
+
+enum AgentReleaseKind {
+  CAPABILITY
+  TOOL
+  SKILL
+  EVAL
+}
+
+enum AgentReleaseEnvironment {
+  STAGING
+  PRODUCTION
+}
+
+enum AgentReleaseEventKind {
+  CANDIDATE_CREATED
+  VALIDATED
+  EVALUATED
+  JUDGED
+  APPROVED
+  PROMOTED
+  ROLLED_BACK
+  REVOKED
+}
+
+enum ImmutableReleaseStatus {
+  DRAFT
+  CANDIDATE
+  PUBLISHED
+  REVOKED
+}
+
+enum ModelCapabilityKind {
+  TEXT_GENERATION
+  STRUCTURED_GENERATION
+  EMBEDDING
+  VISION
+  OCR
+}
+
+enum ModelEndpointClass {
+  CHAT_COMPLETIONS
+  RESPONSES
+  EMBEDDINGS
+  VISION
+}
+
+enum ProviderRouteSecurityEventKind {
+  SECURITY_REVOKED
+  RESTORED
+}
+
+enum ProviderHealthProbeKind {
+  AUTHENTICATION
+  STRUCTURED_GENERATION
+  STREAMING_GENERATION
+  EMBEDDING
+  VISION
+}
+
+enum ProviderHealthStatus {
+  HEALTHY
+  DEGRADED
+  UNAVAILABLE
+}
+
+enum CredentialOwnerKind {
+  PLATFORM
+  USER
+}
+
+enum ModelPermitStatus {
+  ISSUED
+  CLAIMED
+  CONSUMED
+  EXPIRED
+  REVOKED
+}
+
+enum ModelPurposeKind {
+  AGENT_RUN
+  LEXICON_BUILD
+  AGENT_EVALUATION
+  ASSET_PROCESSING
+}
+
+enum ModelExecutionOwnerType {
+  AGENT_RUN
+  BUILD_RUN
+  EVALUATION_RUN
+  ASSET_REVISION
+}
+
+enum ModelOperationKind {
+  STRUCTURED_GENERATION
+  STREAMING_GENERATION
+  EMBEDDING
+  VISION_ANALYSIS
+  OCR
+}
+
+enum ModelRetentionMode {
+  NONE
+  AUDIT_METADATA_ONLY
+  ENCRYPTED_EXCHANGE
+}
+
+enum ModelInvocationStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum ModelInvocationAttemptStatus {
+  STARTED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  UNKNOWN_OUTCOME
+}
+
+enum ModelUsageEntryType {
+  RESERVATION
+  SETTLEMENT
+  RELEASE
+  CORRECTION
+}
+
+enum ModelPolicyScopeKind {
+  PLATFORM
+  USER
+  CAPABILITY_RELEASE
+  AGENT_RUN
+  BUILD_RUN
+  EVALUATION_RUN
+  ASSET_REVISION
+}
+
+enum ModelExchangeKind {
+  REQUEST
+  RESPONSE
+  TOOL
+}
+
+enum ModelExchangePartRole {
+  SYSTEM
+  USER
+  ASSISTANT
+  TOOL
+}
+
+enum ModelExchangePartKind {
+  TEXT
+  JSON
+  ASSET_REFERENCE
+  TOOL_CALL
+  TOOL_RESULT
+}
+
+enum ModelExchangeFinishReason {
+  STOP
+  LENGTH
+  TOOL_CALL
+  CONTENT_FILTER
+  ERROR
+}
+
+enum ModelContentOwnerKind {
+  AGENT_INSTRUCTION
+  AGENT_MESSAGE
+  AGENT_PROPOSAL
+  AGENT_ARTIFACT
+  AGENT_MEMORY
+  AGENT_TOOL_INPUT
+  AGENT_TOOL_RESULT
+  EVALUATION
+  ASSET_PROCESSING
+  LEXICON_BUILD
+  SYSTEM
+}
+
+enum ModelContentVisibility {
+  USER
+  INTERNAL
+}
+
+enum ModelContentRetentionClass {
+  TRANSIENT
+  USER_CONTROLLED
+  RELEASE_EVIDENCE
+  AUDIT
+}
+
+enum ContentAssetStatus {
+  QUARANTINED
+  PROCESSING
+  READY
+  REJECTED
+  HIDDEN
+  DELETED
+}
+
+enum ContentAssetRevisionStatus {
+  QUARANTINED
+  CLEAN
+  READY
+  REJECTED
+  PURGED
+}
+
+enum ContentAssetPurpose {
+  AGENT_CONTEXT
+  USER_UPLOAD
+  AGENT_ARTIFACT
+  DIAGNOSTIC_BUNDLE
+}
+
+enum UploadIntentStatus {
+  ISSUED
+  FINALIZED
+  EXPIRED
+  CANCELLED
+}
+
+enum AssetProcessingStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum ContentAssetDerivativeKind {
+  EXTRACTED_TEXT
+  OCR_TEXT
+  LEXICAL_INDEX
+  EMBEDDING
+  IMAGE_ANALYSIS
+}
+
+enum ContentDeletionTargetKind {
+  ASSET
+  MODEL_EXCHANGE
+  SESSION
+  USER
+}
+
+enum ContentDeletionStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum DiagnosticReferenceKind {
+  AGENT_MESSAGE
+  AGENT_RUN
+  AGENT_EVENT
+  AGENT_ARTIFACT_REVISION
+  CONTENT_ASSET_REVISION
+}
+
+enum DiagnosticBundleRevisionStatus {
+  DRAFT
+  CONFIRMED
+}
+
+enum SupportResourceKind {
+  READING_DOCUMENT_REVISION
+  CONTENT_ASSET_REVISION
+  COLLECTED_LEXICAL_ITEM_REVISION
+  EXERCISE_ATTEMPT_TEXT_ARTIFACT
+  DIAGNOSTIC_BUNDLE_REVISION
+}
+
+enum SupportGrantPurpose {
+  TECHNICAL_DIAGNOSIS
+  CONTENT_CORRECTION
+  DATA_EXPORT_ASSISTANCE
+}
+
+enum ServicePrincipalStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ApprovalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  EXECUTED
+}
+
+enum ApprovalDecisionKind {
+  APPROVE
+  REJECT
+}
+
+enum CandidateRiskClass {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CandidateStatus {
+  PLANNED
+  GENERATED
+  AUTO_VALIDATED
+  REVIEW_PENDING
+  APPROVED
+  REJECTED
+  PROMOTED
+  FAILED
+  SUPERSEDED
+}
+
+enum CandidatePromotionEntityType {
+  SENSE_ALIGNMENT
+  DEFINITION
+  TRANSLATION_TEXT
+  EXAMPLE
+  COLLOCATION
+  FRAME
+  ENTRY_RELATION
+  SENSE_RELATION
+  CONCEPT_RELATION
+}
+
+enum ValidationSeverity {
+  INFO
+  WARN
+  ERROR
+}
+
+enum ReviewBatchStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  FAILED
+}
+
+enum ReviewDecisionKind {
+  APPROVE
+  REJECT
+  ACCEPT_WARNING
 }

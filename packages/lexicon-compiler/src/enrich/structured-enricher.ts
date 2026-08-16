@@ -1,7 +1,19 @@
-import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-contracts";
+import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-artifact";
 
-import { ensureGeneratedProvenance } from "./generated-provenance";
-import type { CompileProgressPort } from "../progress/reporter";
+import {
+  ensureDerivedCandidateProvenance,
+  recordCandidatePromotionLineage,
+  sourceRecordIdsForProvenance,
+} from "../candidates/candidate-provenance";
+import {
+  executeLexicalCandidateTasks,
+  type LexicalCandidatePort,
+  LexicalCandidatePromotionEntityType,
+  LexicalCandidateRiskClass,
+  LexicalCandidateTargetKind,
+  LexicalCandidateTaskType,
+} from "../candidates/lexical-candidate";
+import { CompileStage, type CompileProgressPort } from "../progress/reporter";
 import { stableId } from "../sources/source-context";
 import {
   type LearnerDefinitionCandidate,
@@ -12,6 +24,7 @@ import { StructuredTaskExecutor } from "./structured-task-executor";
 export async function enrichArtifactDefinitions(
   artifact: SylisLexiconArtifactV1,
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   progress: CompileProgressPort,
 ): Promise<void> {
   const senses = artifact.lexicon.senseRevisions.filter((sense) => {
@@ -50,66 +63,107 @@ export async function enrichArtifactDefinitions(
       },
     };
   });
-  const executions = await executor.executeAll<LearnerDefinitionCandidate>(
-    plans.map((plan) => ({
-      taskType: "LEARNER_DEFINITION",
-      schemaName: "sylis_learner_definition",
-      schema: learnerDefinitionCandidateSchema,
-      systemPrompt:
-        "Generate only a short learner definition or translation supported by the supplied Sense evidence. Return null when evidence is insufficient. Do not create pronunciation, frequency, citation, CEFR, or etymology facts.",
-      input: plan.input,
-      maxTokens: 300,
-    })),
-  );
+  const executions =
+    await executeLexicalCandidateTasks<LearnerDefinitionCandidate>(
+      executor,
+      candidatePort,
+      plans.map((plan) => ({
+        taskType: LexicalCandidateTaskType.LEARNER_DEFINITION,
+        target: {
+          kind: LexicalCandidateTargetKind.SENSE,
+          targetKey: plan.sense.senseId,
+        },
+        riskClass: LexicalCandidateRiskClass.MEDIUM,
+        sourceRecordIds: sourceRecordIdsForProvenance(
+          artifact,
+          plan.sense.provenanceId,
+        ),
+        schemaName: "sylis_learner_definition",
+        schema: learnerDefinitionCandidateSchema,
+        systemPrompt:
+          "Generate only a short learner definition or translation supported by the supplied Sense evidence. Return null when evidence is insufficient. Do not create pronunciation, frequency, citation, CEFR, or etymology facts.",
+        input: plan.input,
+        maxTokens: 300,
+      })),
+    );
 
   for (const [index, plan] of plans.entries()) {
     const execution = executions[index]!;
     const { sense, existingDefinitions, existingTranslations } = plan;
-    const { candidateKey: key, result } = execution;
+    const { candidateKey: key, value, usage } = execution;
 
     const upstreamProvenanceId = sense.provenanceId;
     const addDefinition =
-      existingDefinitions.length === 0 && result.value.definition !== null;
+      existingDefinitions.length === 0 && Boolean(value?.definition);
     const addTranslation =
-      existingTranslations.length === 0 && result.value.translation !== null;
+      existingTranslations.length === 0 && Boolean(value?.translation);
     const provenanceId =
-      addDefinition || addTranslation
-        ? ensureGeneratedProvenance(
+      value &&
+      execution.candidateRevisionId &&
+      (addDefinition || addTranslation)
+        ? ensureDerivedCandidateProvenance(
             artifact,
             key,
-            result.value,
+            execution.candidateRevisionId,
+            value,
             upstreamProvenanceId,
-            "Schema-valid generated learner content candidate.",
+            "Approved learner definition candidate derived from source-backed Sense evidence.",
           )
         : null;
-    if (addDefinition && result.value.definition && provenanceId) {
+    if (addDefinition && value?.definition && provenanceId) {
+      const definitionId = stableId(
+        "definition",
+        sense.senseId,
+        "generated",
+        key,
+      );
       artifact.lexicon.definitions.push({
-        id: stableId("definition", sense.senseId, "generated", key),
+        id: definitionId,
         senseId: sense.senseId,
-        languageTag: result.value.definition.languageTag,
+        languageTag: value.definition.languageTag,
         definitionType: "LEARNER_GENERATED",
-        text: result.value.definition.text,
+        text: value.definition.text,
         displayOrder: 1,
         provenanceId,
       });
+      recordCandidatePromotionLineage(
+        artifact,
+        execution.candidateRevisionId!,
+        "definition",
+        LexicalCandidatePromotionEntityType.DEFINITION,
+        definitionId,
+      );
     }
-    if (addTranslation && result.value.translation && provenanceId) {
+    if (addTranslation && value?.translation && provenanceId) {
+      const translationId = stableId(
+        "translation",
+        sense.senseId,
+        "generated",
+        key,
+      );
       artifact.lexicon.translationTexts.push({
-        id: stableId("translation", sense.senseId, "generated", key),
+        id: translationId,
         senseId: sense.senseId,
-        languageTag: result.value.translation.languageTag,
-        text: result.value.translation.text,
+        languageTag: value.translation.languageTag,
+        text: value.translation.text,
         registerTermId: null,
         displayOrder: 1,
         provenanceId,
       });
+      recordCandidatePromotionLineage(
+        artifact,
+        execution.candidateRevisionId!,
+        "translation:zh-CN",
+        LexicalCandidatePromotionEntityType.TRANSLATION_TEXT,
+        translationId,
+      );
     }
     await progress.report({
-      stage: "FACT_GAP_FILL",
+      stage: CompileStage.FACT_GAP_FILL,
       processed: index + 1,
       total: senses.length,
-      aiInputTokens: result.usage.inputTokens,
-      aiOutputTokens: result.usage.outputTokens,
+      aiInputTokens: usage.inputTokens,
+      aiOutputTokens: usage.outputTokens,
       aiCostMicros: executor.spentMicros,
     });
   }

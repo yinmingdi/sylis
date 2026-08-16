@@ -25,7 +25,6 @@ export const globalIgnores = {
     "**/*.sqlite",
     "**/*.sqlite3",
     "**/generated/",
-    "apps/api/prisma/migrations/",
     "*.log",
     "**/*.log",
     "logs/",

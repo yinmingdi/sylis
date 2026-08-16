@@ -19,15 +19,12 @@ User Web 是 online-first responsive React 应用，在 `0.0.1` 一次性切换�
 /(app)/study/assessments/:blueprintKey
 /(app)/study/assessments/sessions/:sessionId
 /(app)/study/assessments/sessions/:sessionId/result
-/(app)/ai/tutor
-/(app)/ai/tutor/:sessionId
-/(app)/ai/grammar
+/(app)/agent
+/(app)/agent/sessions/:sessionId
 /(app)/explore
 /(app)/explore/reddit
 /(app)/explore/reddit/r/:name
 /(app)/explore/reddit/posts/:externalId
-/(app)/explore/ai-reading
-/(app)/explore/ai-reading/:documentId
 /(app)/reading/history
 /(app)/reading/saved
 /(app)/me
@@ -44,7 +41,7 @@ User Web 是 online-first responsive React 应用，在 `0.0.1` 一次性切换�
 
 当前每条 route、页面和组件组的去向见 [前端目录与模块边界](../implementation/frontend-structure.md) 与 [当前代码到目标代码的重构映射](../implementation/workspace-refactor.md)。
 
-`背单词` 默认进入 `/study/today`，`AI` 默认进入 `/ai/tutor`，`探索` 默认进入 `/explore`，`我的` 默认进入 `/me`。移动端使用四项 bottom navigation；桌面端使用同一四项 primary navigation，不为 viewport 维护第二套路由语义。
+`背单词` 默认进入 `/study/today`，`AI` 默认进入 `/agent`，`探索` 默认进入 `/explore`，`我的` 默认进入 `/me`。移动端使用四项 bottom navigation；桌面端使用同一四项 primary navigation，不为 viewport 维护第二套路由语义。
 
 Admin 是独立 `@sylis/admin` 应用、域名、bundle、router 和 session，详见 [独立 Admin 应用](./admin.md)，不在本路由树增加隐藏 `/admin` 页面。
 
@@ -61,6 +58,8 @@ src/
       store/       可选；真正跨页面的临时浏览器状态
       components/  可跨页面复用且属于该业务的组件
       index.ts     唯一 public surface
+  components/      本应用跨页面、无领域 owner 的少量组合件
+  utils/           Web-only 纯函数；跨 runtime 函数进入 @sylis/utils
   assets/
   main.tsx
 ```
@@ -85,6 +84,8 @@ src/
 注册、登录和恢复流程不得暴露邮箱是否存在。登录后直接进入当前 User，不显示 profile 选择器，也不允许创建或切换代管身份。用户本人可以查看或变更 consent、撤销设备、请求导出或删除；受限 capability 由服务端拒绝，Web 不通过隐藏按钮冒充授权。
 
 设备页显示 session 名称、最近活动和撤销操作，不显示 cookie/token。查看导出下载、私人原文或变更敏感 consent 前触发 re-auth；完成后保持原导航上下文。
+
+支持流程由 User 主动发起。页面显示分配的 SUPPORT Operator、purpose、可选 exact resource revision 和授权期限；默认 2 小时、最长 24 小时。User 可以随时撤销，不能授权 account/document/AgentSession 通配。Agent 问题先生成自动脱敏的 DiagnosticBundle draft，User 可预览、编辑并确认 immutable revision，再为该 revision 创建 SupportGrant；Web 不提供“允许客服查看全部聊天”的开关。
 
 ## 5. 词典详情
 
@@ -130,7 +131,7 @@ Headword/Entry 首响应只携带 material kind/count/completeness；正文用 `
 - 进入一道题时显式 `POST /study/attempts`，使用返回的 attempt ID、ExerciseRevision 和固定 choice order；GET 页面不产生 exposure 写入。
 - hint 渐进展开并上报 `hintUsed`；不能展示说明性大段教程文字占据主界面。
 - 选择题选项使用 attempt 返回顺序，提交 attempt ID + choice ID；不在 bundle 中携带正确答案。
-- SHORT_TEXT 在本地只做输入与 normalization preview；最终 correctness 由服务端决定。EXTENDED_TEXT 使用稳定尺寸编辑区、字数/字符限制和 rubric，`SELF_REPORT/AI_ASSISTED` 明确只用于练习。
+- SHORT_TEXT 在本地只做输入与 normalization preview；`EXACT` correctness 由服务端决定。SELF_REPORT renderer 先收集响应/完成任务，再显式揭示参考或 rubric，最后提交 `revealAcknowledged + selfReported`；EXTENDED_TEXT 使用稳定尺寸编辑区和字数/字符限制。0.0.1 不展示 AI 自动评分入口。
 - response 完成并终结 Attempt 后渲染纠正反馈和目标 Sense 上下文，再提交 FSRS rating；服务端原子创建 ReviewEvent 与 memory snapshots。
 
 ## 9. Assessment UI
@@ -141,13 +142,13 @@ Headword/Entry 首响应只携带 material kind/count/completeness；正文用 `
 - result 页按 section、knowledge facet、接受/产出方向和 evidence kind 展示，不用任意 star 计算“词汇量”。
 - 历史只显示新 AssessmentSession；当前无用户，无需旧记录兼容。
 
-## 10. Reading、Reddit 与 AI
+## 10. Reading、Reddit 与 Learning Agent
 
 - Reading Core 详情组件只消费 ReadingDocumentRevision、annotation 和 activity contract；Reddit feed/comment tree 仍使用来源特有组件。
 - 用户选词先 resolve，再显示 Entry/Sense 候选；收藏保存明确 target，不把屏幕字符串直接建成 Headword。
-- AI Reading 创建后立即进入 Job 页面/行内状态，展示 stage、processed/total、可解释 warning 和真实 terminal result。
-- Tutor 以 SSE 渲染同一条 assistant message；刷新或断线用 event ID 恢复，不新增一条消息。
-- Grammar 结果按 observation/evidence/suggestion 展示；不把 AI 输出包装成权威分数。
+- 阅读生成通过 `reading.compose` Capability 进入 Agent workspace，完成后先成为私人 Artifact；发布为 Reading revision 需要 typed Proposal。
+- Learning Agent 以 SSE 渲染同一 AgentRun 时间线；刷新或断线用 event ID 恢复，不新建 Run、Message 或 ModelInvocation。
+- `grammar.analyze` Artifact 按 observation/evidence/suggestion 展示；不把模型输出包装成权威分数。
 - 无权访问、来源撤回、Job 失败、无 annotation、无学习目标和内容为空分别设计状态，不能共用“暂无数据”。
 
 ## 11. Module 组件目标
@@ -165,8 +166,9 @@ modules/assessments/components/
   session-progress  section-navigation  result-breakdown
 modules/reading/components/
   reading-document  lexical-annotation  reading-progress  collect-target
-modules/ai-tutor/components/
-  tutor-thread  stream-status  grammar-observation  generation-progress
+modules/agent/components/
+  session-list  event-timeline  message-composer  run-status
+  tool-call  wait-condition  proposal-review  artifact-inspector
 modules/identity/components/
   user-profile  consent-control  session-list
 ```

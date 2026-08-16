@@ -1,7 +1,10 @@
-import { StructuredGenerationError } from "@sylis/ai-provider/contracts";
 import { describe, expect, it } from "vitest";
 
 import { compilerCliExitCode } from "../src/cli/exit-code";
+import {
+  StructuredGenerationError,
+  StructuredGenerationErrorCode,
+} from "../src/ports/structured-generation";
 
 describe("compiler CLI exit codes", () => {
   it.each([
@@ -12,7 +15,7 @@ describe("compiler CLI exit codes", () => {
     [new Error("AI_BUDGET_EXHAUSTED"), 6],
     [
       new StructuredGenerationError(
-        "PROVIDER_UNAVAILABLE",
+        StructuredGenerationErrorCode.PROVIDER_UNAVAILABLE,
         "Provider unavailable.",
         true,
       ),
@@ -26,7 +29,7 @@ describe("compiler CLI exit codes", () => {
     expect(
       compilerCliExitCode(
         new StructuredGenerationError(
-          "INVALID_RESPONSE",
+          StructuredGenerationErrorCode.INVALID_RESPONSE,
           "Invalid structured response.",
           false,
         ),

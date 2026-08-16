@@ -2,6 +2,10 @@ import { parse } from "csv-parse";
 import { createReadStream } from "node:fs";
 
 import { sourceContext } from "./source-context";
+import {
+  CandidateFormType,
+  SourceAdapterKind,
+} from "../candidates/candidate-v1";
 import type {
   CandidateSense,
   NormalizedSourceRecord,
@@ -77,7 +81,7 @@ function parseExchange(row: EcdictRow) {
     return [
       {
         text,
-        formType: "INFLECTED" as const,
+        formType: CandidateFormType.INFLECTED,
         features: [feature],
         formOf: row.word,
       },
@@ -101,7 +105,7 @@ export async function* readEcdict(
     const word = row.word?.trim();
     if (!word) continue;
     const senses = buildSenses(row);
-    yield sourceContext(source, "ECDICT", {
+    yield sourceContext(source, SourceAdapterKind.ECDICT, {
       sourceKey: word,
       rawPayload: row,
       languageTag: "en",

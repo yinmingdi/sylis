@@ -1,18 +1,22 @@
-import type {
-  StructuredGenerationIdentity,
-  StructuredGenerationPort,
-} from "@sylis/ai-provider";
 import {
+  assertPublicArtifactSourceRights,
+  createValidationSummary,
+  evaluateContentProfiles,
   type ArtifactManifest,
   type SylisLexiconArtifactV1,
   updateManifestCounts,
   validateArtifact,
-} from "@sylis/lexicon-contracts";
+  validateLinguistics,
+} from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type { NormalizedSourceRecord } from "./candidates/candidate-v1";
+import {
+  type LexicalCandidatePort,
+  LexicalCandidateReviewPendingError,
+} from "./candidates/lexical-candidate";
 import {
   createEncryptedCandidateCacheFromEnv,
   type CandidateCache,
@@ -41,18 +45,27 @@ import {
   type ResolvedSource,
   type SourceManifest,
 } from "./manifest/source-manifest";
+import type { SourceRecordRegistryPort } from "./ports/source-record-registry";
+import type {
+  StructuredGenerationIdentity,
+  StructuredGenerationPort,
+} from "./ports/structured-generation";
 import { readCheckpoint, writeCheckpoint } from "./progress/checkpoint";
-import { type CompileProgressPort, silentProgress } from "./progress/reporter";
+import {
+  CompileStage,
+  type CompileProgressPort,
+  silentProgress,
+} from "./progress/reporter";
 import { buildArtifact } from "./resolve/artifact-builder";
 import { buildLearningContent } from "./resolve/learning-content";
 import { readSource } from "./sources/index";
-import { validateLinguistics } from "./validate/linguistics";
-import { evaluateContentProfiles } from "./validate/profiles";
-import { assertPublicArtifactSourceRights } from "./validate/source-rights";
 import { populateExerciseStatistics } from "./validate/statistics";
-import { createValidationSummary } from "./validate/validation-summary";
 
-export type CompileProfile = "fixture" | "pilot-200" | "core-20000";
+export enum CompileProfile {
+  FIXTURE = "fixture",
+  PILOT_200 = "pilot-200",
+  CORE_20000 = "core-20000",
+}
 
 export interface CompileOptions {
   manifestPath: string;
@@ -66,6 +79,8 @@ export interface CompileOptions {
 export interface CompileDependencies {
   structuredGeneration?: StructuredGenerationPort;
   progress?: CompileProgressPort;
+  lexicalCandidates?: LexicalCandidatePort;
+  sourceRecords?: SourceRecordRegistryPort;
 }
 
 interface CompileInternalDependencies extends CompileDependencies {
@@ -82,14 +97,14 @@ export interface CompileResult extends ArtifactWriteResult {
 }
 
 const PROFILE_HEADWORD_COUNTS: Record<CompileProfile, number | null> = {
-  fixture: null,
-  "pilot-200": 200,
-  "core-20000": 20_000,
+  [CompileProfile.FIXTURE]: null,
+  [CompileProfile.PILOT_200]: 200,
+  [CompileProfile.CORE_20000]: 20_000,
 };
 
 const CHECKPOINT_HANDLER_VERSIONS = {
   SOURCE_RECORDS: "source-records/v6",
-  RELATION_RESOLUTION: "relation-resolution/v2",
+  RELATION_RESOLUTION: "relation-resolution/v3",
   LEARNING_CONTENT: "learning-content/v3",
 } as const;
 
@@ -197,7 +212,10 @@ function assertCheckpointCompatible(
     inputHash: string;
     codeVersion: string;
     compilerVersion: string;
-    stage: "SOURCE_RECORDS" | "RELATION_RESOLUTION" | "LEARNING_CONTENT";
+    stage:
+      | CompileStage.SOURCE_RECORDS
+      | CompileStage.RELATION_RESOLUTION
+      | CompileStage.EXERCISES_BLUEPRINTS;
     handlerVersion: string;
   },
 ): asserts checkpoint is NonNullable<
@@ -239,7 +257,7 @@ async function collectRecords(
       }
       if (processed % 1_000 === 0) {
         await progress.report({
-          stage: "SOURCE_RECORDS",
+          stage: CompileStage.SOURCE_RECORDS,
           processed,
           total: null,
           message: `${source.key} (${sourceIndex + 1}/${sources.length})`,
@@ -323,9 +341,18 @@ export async function compileLexiconInternal(
   dependencies: CompileInternalDependencies = {},
 ): Promise<CompileResult> {
   const progress = dependencies.progress ?? silentProgress;
-  await progress.report({ stage: "PREFLIGHT", processed: 0, total: null });
+  await progress.report({
+    stage: CompileStage.PREFLIGHT,
+    processed: 0,
+    total: null,
+  });
   if (options.ai?.enabled && !dependencies.structuredGeneration) {
     throw new Error("AI is enabled but StructuredGenerationPort is missing.");
+  }
+  if (dependencies.lexicalCandidates && !dependencies.sourceRecords) {
+    throw new Error(
+      "SourceRecordRegistryPort is required with LexicalCandidatePort.",
+    );
   }
   if (
     options.ai?.enabled &&
@@ -357,7 +384,7 @@ export async function compileLexiconInternal(
       `HEADWORD_SET_COUNT_MISMATCH:profile=${options.profile}:expected=${expectedHeadwordCount}:actual=${headwordSet.headwords.length}`,
     );
   }
-  if (options.profile !== "fixture" && !richTargetSet) {
+  if (options.profile !== CompileProfile.FIXTURE && !richTargetSet) {
     throw new Error(
       `${options.profile} requires a checksum-pinned rich target set.`,
     );
@@ -377,7 +404,7 @@ export async function compileLexiconInternal(
       );
     }
     await progress.report({
-      stage: "PREFLIGHT",
+      stage: CompileStage.PREFLIGHT,
       processed: 1,
       total: 1,
       message: "Structured generation capability verified.",
@@ -471,32 +498,38 @@ export async function compileLexiconInternal(
     return executor;
   };
 
-  const resumedLearningCheckpoint = await readCheckpoint(
-    learningCheckpointPath,
-  );
+  const mayResumeRunCheckpoints =
+    Boolean(options.resumeRunId) && !dependencies.lexicalCandidates;
+  const resumedLearningCheckpoint = mayResumeRunCheckpoints
+    ? await readCheckpoint(learningCheckpointPath)
+    : null;
   let artifact: SylisLexiconArtifactV1;
   if (resumedLearningCheckpoint) {
     assertCheckpointCompatible(resumedLearningCheckpoint, {
       ...runCheckpointIdentity,
-      stage: "LEARNING_CONTENT",
+      stage: CompileStage.EXERCISES_BLUEPRINTS,
       handlerVersion: CHECKPOINT_HANDLER_VERSIONS.LEARNING_CONTENT,
     });
-    if (resumedLearningCheckpoint.stage !== "LEARNING_CONTENT") {
-      throw new Error("CHECKPOINT_INPUT_MISMATCH:LEARNING_CONTENT");
+    if (resumedLearningCheckpoint.stage !== CompileStage.EXERCISES_BLUEPRINTS) {
+      throw new Error(
+        `CHECKPOINT_INPUT_MISMATCH:${CompileStage.EXERCISES_BLUEPRINTS}`,
+      );
     }
     artifact = resumedLearningCheckpoint.artifact;
   } else {
-    const resumedRelationCheckpoint = await readCheckpoint(
-      relationCheckpointPath,
-    );
+    const resumedRelationCheckpoint = mayResumeRunCheckpoints
+      ? await readCheckpoint(relationCheckpointPath)
+      : null;
     let records: NormalizedSourceRecord[];
     if (resumedRelationCheckpoint) {
       assertCheckpointCompatible(resumedRelationCheckpoint, {
         ...runCheckpointIdentity,
-        stage: "RELATION_RESOLUTION",
+        stage: CompileStage.RELATION_RESOLUTION,
         handlerVersion: CHECKPOINT_HANDLER_VERSIONS.RELATION_RESOLUTION,
       });
-      if (resumedRelationCheckpoint.stage !== "RELATION_RESOLUTION") {
+      if (
+        resumedRelationCheckpoint.stage !== CompileStage.RELATION_RESOLUTION
+      ) {
         throw new Error("CHECKPOINT_INPUT_MISMATCH:RELATION_RESOLUTION");
       }
       records = resumedRelationCheckpoint.records;
@@ -506,15 +539,15 @@ export async function compileLexiconInternal(
       if (existingSourceCheckpoint) {
         assertCheckpointCompatible(existingSourceCheckpoint, {
           ...sourceCheckpointIdentity,
-          stage: "SOURCE_RECORDS",
+          stage: CompileStage.SOURCE_RECORDS,
           handlerVersion: CHECKPOINT_HANDLER_VERSIONS.SOURCE_RECORDS,
         });
-        if (existingSourceCheckpoint.stage !== "SOURCE_RECORDS") {
+        if (existingSourceCheckpoint.stage !== CompileStage.SOURCE_RECORDS) {
           throw new Error("CHECKPOINT_INPUT_MISMATCH:SOURCE_RECORDS");
         }
         records = existingSourceCheckpoint.records;
         await progress.report({
-          stage: "SOURCE_RECORDS",
+          stage: CompileStage.SOURCE_RECORDS,
           processed: records.length,
           total: records.length,
           message: "Reused checksum-verified source records checkpoint.",
@@ -526,27 +559,53 @@ export async function compileLexiconInternal(
           ...sourceCheckpointIdentity,
           schemaVersion: "sylis.lexicon-artifact/1",
           handlerVersion: CHECKPOINT_HANDLER_VERSIONS.SOURCE_RECORDS,
-          stage: "SOURCE_RECORDS",
+          stage: CompileStage.SOURCE_RECORDS,
           records,
         });
       }
-      const activeExecutor = createExecutor();
-      if (activeExecutor) {
-        await alignAmbiguousSourceSenses(records, activeExecutor, progress);
+      if (dependencies.lexicalCandidates) {
+        await dependencies.sourceRecords!.register(sources, records);
       }
-      await resolveAmbiguousRelations(records, activeExecutor, progress);
+      const activeExecutor = createExecutor();
+      if (activeExecutor && dependencies.lexicalCandidates) {
+        await alignAmbiguousSourceSenses(
+          records,
+          activeExecutor,
+          dependencies.lexicalCandidates,
+          progress,
+        );
+      }
+      await resolveAmbiguousRelations(
+        records,
+        activeExecutor,
+        dependencies.lexicalCandidates,
+        progress,
+      );
+      if (dependencies.lexicalCandidates) {
+        const review =
+          await dependencies.lexicalCandidates.finalizeReviewBatch();
+        if (review.pendingCount > 0) {
+          if (!review.reviewBatchId) {
+            throw new Error("LEXICAL_REVIEW_BATCH_REQUIRED");
+          }
+          throw new LexicalCandidateReviewPendingError(
+            review.reviewBatchId,
+            review.pendingCount,
+          );
+        }
+      }
       await writeCheckpoint(relationCheckpointPath, {
         checkpointVersion: "sylis.lexicon-checkpoint/2",
         ...runCheckpointIdentity,
         schemaVersion: "sylis.lexicon-artifact/1",
         handlerVersion: CHECKPOINT_HANDLER_VERSIONS.RELATION_RESOLUTION,
-        stage: "RELATION_RESOLUTION",
+        stage: CompileStage.RELATION_RESOLUTION,
         records,
       });
     }
 
     await progress.report({
-      stage: "HEADWORD_RESOLUTION",
+      stage: CompileStage.HEADWORD_RESOLUTION,
       processed: records.length,
       total: records.length,
     });
@@ -557,23 +616,43 @@ export async function compileLexiconInternal(
       ai: artifactAi,
     });
     await progress.report({
-      stage: "MORPH_SYNSEM_ETYMOLOGY",
+      stage: CompileStage.MORPH_SYNSEM_ETYMOLOGY,
       processed: records.length,
       total: records.length,
     });
     const activeExecutor = createExecutor();
-    if (activeExecutor) {
-      await enrichArtifactDefinitions(artifact, activeExecutor, progress);
-      await enrichArtifactFacts(artifact, activeExecutor, progress);
+    if (activeExecutor && dependencies.lexicalCandidates) {
+      await enrichArtifactDefinitions(
+        artifact,
+        activeExecutor,
+        dependencies.lexicalCandidates,
+        progress,
+      );
+      await enrichArtifactFacts(
+        artifact,
+        activeExecutor,
+        dependencies.lexicalCandidates,
+        progress,
+      );
+      const review = await dependencies.lexicalCandidates.finalizeReviewBatch();
+      if (review.pendingCount > 0) {
+        if (!review.reviewBatchId) {
+          throw new Error("LEXICAL_REVIEW_BATCH_REQUIRED");
+        }
+        throw new LexicalCandidateReviewPendingError(
+          review.reviewBatchId,
+          review.pendingCount,
+        );
+      }
     }
     await progress.report({
-      stage: "OBJECTIVE_PLANNING",
+      stage: CompileStage.OBJECTIVE_PLANNING,
       processed: 0,
       total: 1,
     });
     buildLearningContent(artifact, records);
     await progress.report({
-      stage: "OBJECTIVE_PLANNING",
+      stage: CompileStage.OBJECTIVE_PLANNING,
       processed: 1,
       total: 1,
       message: `${artifact.learning.learningObjectives.length} objectives`,
@@ -588,12 +667,12 @@ export async function compileLexiconInternal(
       );
     }
     await progress.report({
-      stage: "PEDAGOGICAL_MATERIALS",
+      stage: CompileStage.PEDAGOGICAL_MATERIALS,
       processed: artifact.learning.pedagogicalMaterialRevisions.length,
       total: artifact.learning.pedagogicalMaterialRevisions.length,
     });
     await progress.report({
-      stage: "EXERCISES_BLUEPRINTS",
+      stage: CompileStage.EXERCISES_BLUEPRINTS,
       processed: artifact.learning.exerciseRevisions.length,
       total: artifact.learning.exerciseRevisions.length,
       message: `${artifact.learning.assessmentBlueprintRevisions.length} blueprints`,
@@ -603,14 +682,14 @@ export async function compileLexiconInternal(
       ...runCheckpointIdentity,
       schemaVersion: "sylis.lexicon-artifact/1",
       handlerVersion: CHECKPOINT_HANDLER_VERSIONS.LEARNING_CONTENT,
-      stage: "LEARNING_CONTENT",
+      stage: CompileStage.EXERCISES_BLUEPRINTS,
       artifact,
     });
   }
 
   assertSelectedHeadwordsPublished(artifact, headwordSet);
   if (
-    options.profile === "pilot-200" &&
+    options.profile === CompileProfile.PILOT_200 &&
     artifact.lexicon.headwords.length !== 200
   ) {
     throw new Error(
@@ -621,7 +700,7 @@ export async function compileLexiconInternal(
   populateExerciseStatistics(artifact);
   updateManifestCounts(artifact);
   await progress.report({
-    stage: "GLOBAL_VALIDATION",
+    stage: CompileStage.GLOBAL_VALIDATION,
     processed: 0,
     total: 1,
   });
@@ -647,9 +726,17 @@ export async function compileLexiconInternal(
         .join(",")}`,
     );
   }
-  await progress.report({ stage: "EXPORT", processed: 0, total: 1 });
+  await progress.report({
+    stage: CompileStage.EXPORT,
+    processed: 0,
+    total: 1,
+  });
   const result = await writeArtifact(artifact, resolve(options.outputPath));
-  await progress.report({ stage: "EXPORT", processed: 1, total: 1 });
+  await progress.report({
+    stage: CompileStage.EXPORT,
+    processed: 1,
+    total: 1,
+  });
   return {
     ...result,
     runId,

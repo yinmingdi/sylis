@@ -5,7 +5,7 @@ import { dirname, extname, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
-import type { SourceAdapterKind } from "../candidates/candidate-v1";
+import { SourceAdapterKind } from "../candidates/candidate-v1";
 import { normalizeIdentityText } from "../normalize/text-profile";
 
 export interface HeadwordSetReference {
@@ -31,13 +31,18 @@ export interface RichTargetSetReference {
   sha256: string;
 }
 
+export enum PedagogicalMaterialKind {
+  MNEMONIC = "MNEMONIC",
+  MICRO_STORY = "MICRO_STORY",
+}
+
 export interface RichTargetSelector {
   key: string;
   languageTag: string;
   headword: string;
   partOfSpeech: string;
   senseDefinitionContains: string;
-  materialKinds: Array<"MNEMONIC" | "MICRO_STORY">;
+  materialKinds: PedagogicalMaterialKind[];
   generateStudyHint: boolean;
   generateExercise: boolean;
 }
@@ -51,6 +56,7 @@ export interface RichTargetSet {
 export interface SourceManifestEntry {
   key: string;
   version: string;
+  retrievedAt: string;
   adapter: SourceAdapterKind;
   uri?: string;
   pathEnv?: string;
@@ -70,14 +76,16 @@ export interface SourceManifestEntry {
     mayExport: boolean;
     requiresAttribution: boolean;
     attribution?: string;
+    effectiveFrom: string;
+    effectiveTo: string | null;
   };
 }
 
 const SOURCE_ADAPTERS = new Set<SourceAdapterKind>([
-  "ECDICT",
-  "WIKTEXTRACT_EN",
-  "WN_LMF",
-  "YOUDAO_NDJSON",
+  SourceAdapterKind.ECDICT,
+  SourceAdapterKind.WIKTEXTRACT_EN,
+  SourceAdapterKind.WN_LMF,
+  SourceAdapterKind.YOUDAO_NDJSON,
 ]);
 
 export interface SourceManifest {
@@ -106,7 +114,15 @@ export interface ResolvedSource extends SourceManifestEntry {
   path: string;
   sourceUri: string;
   checksum: string;
+  parserVersion: string;
 }
+
+const SOURCE_PARSER_VERSIONS: Record<SourceAdapterKind, string> = {
+  [SourceAdapterKind.ECDICT]: "ecdict-parser/1",
+  [SourceAdapterKind.WIKTEXTRACT_EN]: "wiktextract-en-parser/1",
+  [SourceAdapterKind.WN_LMF]: "wn-lmf-parser/1",
+  [SourceAdapterKind.YOUDAO_NDJSON]: "youdao-ndjson-parser/1",
+};
 
 function normalizeChecksum(value: string): string {
   const normalized = value.replace(/^sha256:/, "").toLowerCase();
@@ -171,6 +187,8 @@ export function parseSourceManifest(input: unknown): SourceManifest {
     if (
       !source.key ||
       !source.version ||
+      !source.retrievedAt ||
+      Number.isNaN(Date.parse(source.retrievedAt)) ||
       !source.adapter ||
       !SOURCE_ADAPTERS.has(source.adapter)
     ) {
@@ -220,7 +238,12 @@ export function parseSourceManifest(input: unknown): SourceManifest {
       typeof rights.mayBuild !== "boolean" ||
       typeof rights.mayServe !== "boolean" ||
       typeof rights.mayExport !== "boolean" ||
-      typeof rights.requiresAttribution !== "boolean"
+      typeof rights.requiresAttribution !== "boolean" ||
+      typeof rights.effectiveFrom !== "string" ||
+      Number.isNaN(Date.parse(rights.effectiveFrom)) ||
+      (rights.effectiveTo !== null &&
+        (typeof rights.effectiveTo !== "string" ||
+          Number.isNaN(Date.parse(rights.effectiveTo))))
     ) {
       throw new Error(`Source ${source.key} rights metadata is incomplete.`);
     }
@@ -230,6 +253,14 @@ export function parseSourceManifest(input: unknown): SourceManifest {
         rights.attribution.trim().length === 0)
     ) {
       throw new Error(`Source ${source.key} attribution is required.`);
+    }
+    if (
+      rights.effectiveTo &&
+      Date.parse(rights.effectiveTo) <= Date.parse(rights.effectiveFrom)
+    ) {
+      throw new Error(
+        `Source ${source.key} rights effectiveTo must be after effectiveFrom.`,
+      );
     }
   }
   if (manifest.selection) {
@@ -385,7 +416,7 @@ export async function loadRichTargetSet(
     keys.add(target.key);
     if (
       target.materialKinds.some(
-        (kind) => kind !== "MNEMONIC" && kind !== "MICRO_STORY",
+        (kind) => !Object.values(PedagogicalMaterialKind).includes(kind),
       )
     ) {
       throw new Error(
@@ -450,7 +481,13 @@ export async function resolveManifestSources(
     if (actualChecksum !== checksum) {
       throw new Error(`Checksum mismatch for source ${source.key}.`);
     }
-    resolvedSources.push({ ...source, path, sourceUri, checksum });
+    resolvedSources.push({
+      ...source,
+      path,
+      sourceUri,
+      checksum,
+      parserVersion: SOURCE_PARSER_VERSIONS[source.adapter],
+    });
   }
 
   return resolvedSources;

@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: deprecated
 ---
 
 # Phase-gated greenfield refactor aligned to the target architecture

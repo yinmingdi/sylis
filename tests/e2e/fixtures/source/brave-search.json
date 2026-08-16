@@ -1,0 +1,11 @@
+{
+  "web": {
+    "results": [
+      {
+        "title": "Sylis evidence fixture",
+        "url": "https://example.com/sylis-evidence",
+        "description": "Deterministic public Web search evidence for Agent tests."
+      }
+    ]
+  }
+}

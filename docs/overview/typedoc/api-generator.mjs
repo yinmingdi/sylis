@@ -499,7 +499,6 @@ export class ApiGenerator {
         "**/*.config.*",
         "**/*.d.ts",
         "**/dist/**",
-        resolve(basePath, name, "tsdown.config.ts"),
       ],
       ...baseConfig,
     };

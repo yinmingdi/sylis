@@ -1,4 +1,6 @@
-# Agent Harness
+# Engineering Agent Harness
+
+This document describes the repository engineering loop and its mechanical gates. It is not the Sylis product Agent Runtime; the product runtime target is `@sylis/agent-runtime` and is defined in [Learning Agent 系统架构](./refactor/architecture/learning-agent-system.md).
 
 ## Core Loop
 

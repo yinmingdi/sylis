@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main, "release/**", "hotfix/**"]
+    branches: [main]
   push:
-    branches: [develop, main, "release/**", "hotfix/**"]
+    branches: [main]
 
 permissions:
   contents: read
@@ -14,8 +14,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  NODE_VERSION: "24"
+  NODE_VERSION: "24.19.0"
   PNPM_VERSION: "10.23.0"
+  E2E_CI_LANE: ${{ github.event_name == 'pull_request' && 'PULL_REQUEST' || 'MAIN' }}
 
 jobs:
   secret-scan:
@@ -33,7 +34,7 @@ jobs:
         run: node tools/architecture/check-secrets.mjs
 
   repository-gates:
-    name: Architecture and documentation
+    name: Architecture and contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -58,16 +59,18 @@ jobs:
       - run: pnpm workflows:check
       - run: pnpm docs:check
       - run: pnpm artifact:validate
+      - run: pnpm e2e:typecheck
+      - run: pnpm test-coverage:check
       - name: Validate protected lexicon pilot orchestration
         run: node --test tools/lexicon/run-protected-pilot.test.mjs
       - run: git diff --check
 
   quality:
-    name: Workspace quality
+    name: Workspace quality and empty database
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18-bookworm
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -77,39 +80,10 @@ jobs:
           --health-cmd "pg_isready -U postgres -d sylis"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
     env:
       NODE_ENV: test
-      PORT: "3000"
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sylis
-      REDIS_URL: redis://localhost:6379
-      PUBLIC_ORIGIN: http://localhost:5173
-      ADMIN_ORIGIN: http://localhost:5180
-      WEBAUTHN_RP_ID: localhost
-      WEBAUTHN_RP_NAME: Sylis CI
-      SESSION_HASH_KEY: ci-session-hash-key-000000000000000000000000
-      CSRF_SIGNING_KEY: ci-csrf-signing-key-000000000000000000000
-      REGISTRATION_SIGNING_KEY: ci-registration-key-00000000000000000000
-      CONTENT_ENCRYPTION_KEYS_JSON: '{"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
-      CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION: ci
-      COOKIE_SECURE: "false"
-      JOB_CHECKPOINT_KEY_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      RUNTIME_AI_ENABLED: "false"
-      RUNTIME_AI_PROVIDER: deepseek
-      RUNTIME_AI_BASE_URL: https://api.deepseek.com
-      RUNTIME_AI_MODEL: deepseek-v4-flash
-      LEXICON_AI_ENABLED: "false"
-      LEXICON_AI_PROVIDER: deepseek
-      LEXICON_AI_BASE_URL: https://api.deepseek.com
-      LEXICON_AI_MODEL: deepseek-v4-flash
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -123,155 +97,95 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Validate and generate database client
+      - name: Validate and build the database package
         run: |
           pnpm --filter @sylis/database prisma:validate
-          pnpm --filter @sylis/database prisma:generate
-      - name: Apply migrations to a fresh database
-        run: pnpm --filter @sylis/database prisma:migrate
-      - name: Configure affected range
+          pnpm --filter @sylis/database invariants:check
+          pnpm --filter @sylis/database... build
+      - name: Install the database from the Prisma schema
+        run: pnpm --filter @sylis/database database:install
+      - name: Configure the affected range
         if: github.event_name == 'pull_request'
         run: |
           echo "TURBO_SCM_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
           echo "TURBO_SCM_HEAD=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
-      - name: Check affected workspace
+      - name: Check affected workspace projects
         if: github.event_name == 'pull_request'
         run: pnpm ci:affected
-      - name: Check full workspace
+      - name: Check the full workspace
         if: github.event_name == 'push'
         run: pnpm ci:full
-      - name: API readiness smoke
-        run: |
-          pnpm --filter @sylis/api start:prod > /tmp/sylis-api.log 2>&1 &
-          curl --fail --retry 20 --retry-all-errors --retry-delay 2 http://localhost:3000/health/ready
+      - name: Enforce focused executable coverage thresholds
+        run: pnpm test:coverage
 
-  container-images:
+  images:
     name: Image ${{ matrix.name }}
+    needs: [secret-scan, repository-gates, quality]
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: sylis
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U postgres -d sylis"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: api
-            dockerfile: apps/api/Dockerfile
-            port: 3000
-            health_path: /health/ready
           - name: web
-            dockerfile: apps/web/Dockerfile
-            port: 8080
-            health_path: /health
+            dockerfile: apps/frontends/web/Dockerfile
           - name: admin
-            dockerfile: apps/admin/Dockerfile
-            port: 8080
-            health_path: /health
-          - name: worker
-            dockerfile: apps/worker/Dockerfile
-            port: 3001
-            health_path: /ready
-          - name: compiler-runner
-            dockerfile: services/lexicon-compiler-runner/Dockerfile
-            port: 3002
-            health_path: /ready
-          - name: importer
-            dockerfile: services/lexicon-importer/Dockerfile
-            port: 3003
-            health_path: /ready
+            dockerfile: apps/frontends/admin/Dockerfile
+          - name: api
+            dockerfile: apps/backends/api/Dockerfile
+          - name: admin-api
+            dockerfile: apps/backends/admin-api/Dockerfile
+          - name: agent-api
+            dockerfile: apps/backends/agent-api/Dockerfile
+          - name: model-gateway
+            dockerfile: apps/backends/model-gateway/Dockerfile
+          - name: agent-executor
+            dockerfile: apps/backends/agent-executor/Dockerfile
+          - name: agent-evaluator
+            dockerfile: apps/backends/agent-evaluator/Dockerfile
+          - name: asset-processor
+            dockerfile: apps/backends/asset-processor/Dockerfile
+          - name: automation-executor
+            dockerfile: apps/backends/automation-executor/Dockerfile
+          - name: lexicon-builder
+            dockerfile: apps/backends/lexicon-builder/Dockerfile
+          - name: lexicon-publisher
+            dockerfile: apps/backends/lexicon-publisher/Dockerfile
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Build immutable image
+      - name: Build the immutable application image once
         env:
-          IMAGE_NAME: sylis-${{ matrix.name }}
+          APPLICATION: ${{ matrix.name }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
         run: |
           owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
-          image="ghcr.io/$owner/$IMAGE_NAME"
+          image="ghcr.io/$owner/sylis-$APPLICATION:$GITHUB_SHA"
+          release_version=$(node -p "require('./package.json').version")
           docker build \
-            --file "${{ matrix.dockerfile }}" \
+            --file "$DOCKERFILE" \
+            --build-arg "SYLIS_RELEASE_VERSION=$release_version" \
+            --build-arg "SYLIS_COMMIT_SHA=$GITHUB_SHA" \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
-            --tag "$image:$GITHUB_SHA" \
+            --tag "$image" \
             .
-          container="sylis-${{ matrix.name }}-smoke"
-          cleanup() {
-            code=$?
-            if [ "$code" -ne 0 ]; then docker logs "$container" || true; fi
-            docker rm --force "$container" > /dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-          case "${{ matrix.name }}" in
-            web|admin)
-              docker run --rm --entrypoint caddy "$image:$GITHUB_SHA" \
-                validate --config /etc/caddy/Caddyfile
-              docker run --detach --name "$container" --network host \
-                --env PORT=${{ matrix.port }} "$image:$GITHUB_SHA"
-              ;;
-            api|worker|compiler-runner|importer)
-              database_url=postgresql://postgres:postgres@127.0.0.1:5432/sylis
-              docker run --rm --network host --env DATABASE_URL="$database_url" \
-                --entrypoint sh "$image:$GITHUB_SHA" -c \
-                'cd /app/node_modules/@sylis/database && ./node_modules/.bin/prisma migrate deploy --schema ./prisma/schema'
-              runtime_args=(
-                --env NODE_ENV=production
-                --env PORT=${{ matrix.port }}
-                --env DATABASE_URL="$database_url"
-                --env JOB_CHECKPOINT_KEY_BASE64=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-              )
-              if [ "${{ matrix.name }}" = api ]; then
-                runtime_args+=(
-                  --env PUBLIC_ORIGIN=http://localhost:5173
-                  --env ADMIN_ORIGIN=http://localhost:5180
-                  --env WEBAUTHN_RP_ID=localhost
-                  --env WEBAUTHN_RP_NAME="Sylis CI"
-                  --env SESSION_HASH_KEY=ci-session-hash-key-000000000000000000000000
-                  --env CSRF_SIGNING_KEY=ci-csrf-signing-key-000000000000000000000
-                  --env REGISTRATION_SIGNING_KEY=ci-registration-key-00000000000000000000
-                  --env 'CONTENT_ENCRYPTION_KEYS_JSON={"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
-                  --env CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION=ci
-                  --env COOKIE_SECURE=false
-                  --env RUNTIME_AI_ENABLED=false
-                )
-              elif [ "${{ matrix.name }}" = worker ]; then
-                runtime_args+=(
-                  --env 'CONTENT_ENCRYPTION_KEYS_JSON={"ci":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}'
-                  --env CONTENT_ENCRYPTION_ACTIVE_KEY_VERSION=ci
-                  --env RUNTIME_AI_ENABLED=false
-                )
-              elif [ "${{ matrix.name }}" = compiler-runner ]; then
-                runtime_args+=(--env LEXICON_AI_ENABLED=false)
-              fi
-              docker run --detach --name "$container" --network host \
-                "${runtime_args[@]}" "$image:$GITHUB_SHA"
-              ;;
-          esac
-          curl --fail --retry 20 --retry-all-errors --retry-delay 2 \
-            "http://127.0.0.1:${{ matrix.port }}${{ matrix.health_path }}"
-          trap - EXIT
-          docker rm --force "$container" > /dev/null
-          if [ "$GITHUB_EVENT_NAME" = push ] && { [ "$GITHUB_REF" = refs/heads/main ] || [ "$GITHUB_REF" = refs/heads/develop ]; }; then
-            printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-            docker push "$image:$GITHUB_SHA"
-            docker inspect --format='{{index .RepoDigests 0}}' "$image:$GITHUB_SHA"
-          fi
+          mkdir -p .artifacts/images
+          docker image inspect "$image" > ".artifacts/images/$APPLICATION.inspect.json"
+          docker save --output ".artifacts/images/$APPLICATION.tar" "$image"
+      - name: Upload the exact image used by E2E
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-${{ matrix.name }}
+          path: .artifacts/images/${{ matrix.name }}.*
+          compression-level: 1
+          retention-days: 1
+          if-no-files-found: error
 
-  browser-e2e:
-    name: User Web desktop and mobile
+  e2e-harness:
+    name: Build E2E runtime harness once
+    needs: [repository-gates, quality]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -285,86 +199,553 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo run build --filter=@sylis/web
-      - run: pnpm --filter @sylis/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @sylis/web test:e2e
+      - name: Build only the runtime packages imported by the E2E harness
+        run: pnpm e2e:prepare
+      - name: Archive the immutable E2E harness
+        run: |
+          mkdir -p .artifacts
+          tar --create --gzip --file .artifacts/e2e-harness.tar.gz packages/*/dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-harness
+          path: .artifacts/e2e-harness.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
+  e2e-sharded:
+    name: E2E core shard ${{ matrix.shard }}/4
+    needs: [images, e2e-harness]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      CI: "true"
+      E2E_SHARD_INDEX: ${{ matrix.shard }}
+      E2E_SHARD_TOTAL: "7"
+      SYLIS_E2E_IMAGE_TAG: ${{ github.sha }}
+      SYLIS_E2E_PULL_POLICY: never
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - name: Download all validated application images
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: image-*
+          path: .artifacts/images
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-harness
+          path: .artifacts/harness
+      - name: Load the shared image set
+        run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "SYLIS_E2E_IMAGE_PREFIX=ghcr.io/$owner/sylis" >> "$GITHUB_ENV"
+          for archive in .artifacts/images/*.tar; do docker load --input "$archive"; done
+      - run: pnpm install --frozen-lockfile
+      - name: Restore the shared E2E harness and generate the local Prisma Client
+        run: |
+          tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
+          pnpm --filter @sylis/database prisma:generate
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run isolated user, Admin and Agent journeys
+        run: pnpm e2e:core -- --shard=${{ matrix.shard }}/4
+      - name: Upload the shard report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blob-report-shard-${{ matrix.shard }}
+          path: tests/e2e/blob-report
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload shard execution evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-evidence-core-${{ matrix.shard }}
+          path: |
+            tests/e2e/evidence/planned-tests.json
+            tests/e2e/evidence/executed-tests.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload failed shard diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-diagnostics-shard-${{ matrix.shard }}
+          path: |
+            tests/e2e/test-results
+            tests/e2e/diagnostics
+          retention-days: 14
+          if-no-files-found: warn
+
+  e2e-api:
+    name: E2E API system
+    needs: [images, e2e-harness]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      E2E_SHARD_INDEX: "5"
+      E2E_SHARD_TOTAL: "7"
+      SYLIS_E2E_IMAGE_TAG: ${{ github.sha }}
+      SYLIS_E2E_PULL_POLICY: never
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: image-*
+          path: .artifacts/images
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-harness
+          path: .artifacts/harness
+      - name: Load the shared image set
+        run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "SYLIS_E2E_IMAGE_PREFIX=ghcr.io/$owner/sylis" >> "$GITHUB_ENV"
+          for archive in .artifacts/images/*.tar; do docker load --input "$archive"; done
+      - run: pnpm install --frozen-lockfile
+      - name: Restore the shared E2E harness and generate the local Prisma Client
+        run: |
+          tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
+          pnpm --filter @sylis/database prisma:generate
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run API contracts, authorization and persistence journeys
+        run: pnpm e2e:api
+      - name: Upload the API report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blob-report-api
+          path: tests/e2e/blob-report
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload API execution evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-evidence-api
+          path: |
+            tests/e2e/evidence/planned-tests.json
+            tests/e2e/evidence/executed-tests.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload failed API diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-diagnostics-api
+          path: |
+            tests/e2e/test-results
+            tests/e2e/diagnostics
+          retention-days: 14
+          if-no-files-found: warn
+
+  e2e-system:
+    name: E2E system exclusive
+    needs: [images, e2e-harness]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      E2E_SHARD_INDEX: "6"
+      E2E_SHARD_TOTAL: "7"
+      SYLIS_E2E_IMAGE_TAG: ${{ github.sha }}
+      SYLIS_E2E_PULL_POLICY: never
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: image-*
+          path: .artifacts/images
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-harness
+          path: .artifacts/harness
+      - name: Load the shared image set
+        run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "SYLIS_E2E_IMAGE_PREFIX=ghcr.io/$owner/sylis" >> "$GITHUB_ENV"
+          for archive in .artifacts/images/*.tar; do docker load --input "$archive"; done
+      - run: pnpm install --frozen-lockfile
+      - name: Restore the shared E2E harness and generate the local Prisma Client
+        run: |
+          tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
+          pnpm --filter @sylis/database prisma:generate
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run globally mutating and resilience journeys alone
+        run: pnpm e2e:project -- --project=system:exclusive
+      - name: Upload the exclusive report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blob-report-system
+          path: tests/e2e/blob-report
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload exclusive execution evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-evidence-system
+          path: |
+            tests/e2e/evidence/planned-tests.json
+            tests/e2e/evidence/executed-tests.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload failed system diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-diagnostics-system
+          path: |
+            tests/e2e/test-results
+            tests/e2e/diagnostics
+          retention-days: 14
+          if-no-files-found: warn
+
+  e2e-browser-quality:
+    name: E2E accessibility and browser smoke
+    needs: [images, e2e-harness]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      E2E_SHARD_INDEX: "7"
+      E2E_SHARD_TOTAL: "7"
+      SYLIS_E2E_IMAGE_TAG: ${{ github.sha }}
+      SYLIS_E2E_PULL_POLICY: never
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: image-*
+          path: .artifacts/images
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-harness
+          path: .artifacts/harness
+      - name: Load the shared image set
+        run: |
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "SYLIS_E2E_IMAGE_PREFIX=ghcr.io/$owner/sylis" >> "$GITHUB_ENV"
+          for archive in .artifacts/images/*.tar; do docker load --input "$archive"; done
+      - run: pnpm install --frozen-lockfile
+      - name: Restore the shared E2E harness and generate the local Prisma Client
+        run: |
+          tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
+          pnpm --filter @sylis/database prisma:generate
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - name: Run mobile, WCAG A/AA and cross-browser key journeys
+        run: pnpm e2e:browser-quality
+      - name: Upload the browser quality report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: blob-report-browser-quality
+          path: tests/e2e/blob-report
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload browser quality execution evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-evidence-browser-quality
+          path: |
+            tests/e2e/evidence/planned-tests.json
+            tests/e2e/evidence/executed-tests.json
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload failed browser diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-diagnostics-browser-quality
+          path: |
+            tests/e2e/test-results
+            tests/e2e/diagnostics
+          retention-days: 14
+          if-no-files-found: warn
+
+  e2e-report:
+    name: E2E merged report
+    if: ${{ !cancelled() }}
+    needs: [e2e-harness, e2e-sharded, e2e-api, e2e-system, e2e-browser-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: e2e-harness
+          path: .artifacts/harness
+      - name: Restore the shared E2E harness and generate the local Prisma Client
+        run: |
+          tar --extract --gzip --file .artifacts/harness/e2e-harness.tar.gz
+          pnpm --filter @sylis/database prisma:generate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: blob-report-*
+          path: .artifacts/blob-reports
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: e2e-evidence-*
+          path: .artifacts/evidence
+      - name: Assemble unique blob inputs
+        run: |
+          mkdir -p .artifacts/blob-merged
+          index=0
+          while IFS= read -r archive; do
+            index=$((index + 1))
+            cp "$archive" ".artifacts/blob-merged/$(printf '%03d' "$index")-$(basename "$archive")"
+          done < <(find .artifacts/blob-reports -type f -name '*.zip' | sort)
+          test "$index" -eq 7
+      - name: Merge HTML and JUnit reports
+        run: >-
+          pnpm exec playwright merge-reports
+          --config=tests/e2e/merge.config.ts
+          .artifacts/blob-merged
+      - name: Merge Playwright collection and execution manifests
+        run: |
+          mapfile -t planned < <(find .artifacts/evidence -type f -name planned-tests.json | sort)
+          mapfile -t executed < <(find .artifacts/evidence -type f -name executed-tests.json | sort)
+          test "${#planned[@]}" -eq 7
+          test "${#executed[@]}" -eq 7
+          planned_args=()
+          executed_args=()
+          for file in "${planned[@]}"; do planned_args+=("--input=$file"); done
+          for file in "${executed[@]}"; do executed_args+=("--input=$file"); done
+          pnpm --filter @sylis/test-support build
+          pnpm --filter @sylis/test-support coverage-evidence:merge -- \
+            --kind=planned "${planned_args[@]}" \
+            --output=tests/e2e/evidence/planned-tests.json
+          pnpm --filter @sylis/test-support coverage-evidence:merge -- \
+            --kind=executed "${executed_args[@]}" \
+            --output=tests/e2e/evidence/executed-tests.json
+      - name: Collect and execute required Vitest evidence
+        run: pnpm e2e:coverage-evidence -- --lane="$E2E_CI_LANE"
+      - name: Reconcile declared, collected and executed evidence
+        run: pnpm e2e:reconcile -- --lane="$E2E_CI_LANE"
+      - name: Upload the human-readable report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-report-attempt-${{ github.run_attempt }}
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/results.xml
+            tests/e2e/evidence/planned-tests.json
+            tests/e2e/evidence/executed-tests.json
+            tests/e2e/evidence/coverage-reconciliation.json
+            tests/e2e/evidence/coverage-reconciliation.md
+          retention-days: 14
+          if-no-files-found: error
 
   required:
     name: CI required
     if: always()
     needs:
-      [secret-scan, repository-gates, quality, container-images, browser-e2e]
+      - secret-scan
+      - repository-gates
+      - quality
+      - images
+      - e2e-harness
+      - e2e-sharded
+      - e2e-api
+      - e2e-system
+      - e2e-browser-quality
+      - e2e-report
     runs-on: ubuntu-latest
     steps:
-      - name: Require every gate
+      - name: Require every repository and E2E gate
         env:
           SECRET_SCAN: ${{ needs.secret-scan.result }}
           REPOSITORY_GATES: ${{ needs.repository-gates.result }}
           QUALITY: ${{ needs.quality.result }}
-          CONTAINER_IMAGES: ${{ needs.container-images.result }}
-          BROWSER_E2E: ${{ needs.browser-e2e.result }}
+          IMAGES: ${{ needs.images.result }}
+          E2E_HARNESS: ${{ needs.e2e-harness.result }}
+          E2E_SHARDED: ${{ needs.e2e-sharded.result }}
+          E2E_API: ${{ needs.e2e-api.result }}
+          E2E_SYSTEM: ${{ needs.e2e-system.result }}
+          E2E_BROWSER_QUALITY: ${{ needs.e2e-browser-quality.result }}
+          E2E_REPORT: ${{ needs.e2e-report.result }}
         run: |
           test "$SECRET_SCAN" = success
           test "$REPOSITORY_GATES" = success
           test "$QUALITY" = success
-          test "$CONTAINER_IMAGES" = success
-          test "$BROWSER_E2E" = success
+          test "$IMAGES" = success
+          test "$E2E_HARNESS" = success
+          test "$E2E_SHARDED" = success
+          test "$E2E_API" = success
+          test "$E2E_SYSTEM" = success
+          test "$E2E_BROWSER_QUALITY" = success
+          test "$E2E_REPORT" = success
 
-  deploy-environment:
-    name: Deploy ${{ matrix.name }} digest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+  publish-images:
+    name: Publish ${{ matrix.name }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: required
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'sylis / production' || 'sylis / staging' }}
     permissions:
       contents: read
-      packages: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: api
-            service_id: ${{ vars.RAILWAY_API_SERVICE_ID }}
-          - name: web
-            service_id: ${{ vars.RAILWAY_WEB_SERVICE_ID }}
-          - name: admin
-            service_id: ${{ vars.RAILWAY_ADMIN_SERVICE_ID }}
-          - name: worker
-            service_id: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
-          - name: compiler-runner
-            service_id: ${{ vars.RAILWAY_COMPILER_RUNNER_SERVICE_ID }}
-          - name: importer
-            service_id: ${{ vars.RAILWAY_IMPORTER_SERVICE_ID }}
+        name:
+          - web
+          - admin
+          - api
+          - admin-api
+          - agent-api
+          - model-gateway
+          - agent-executor
+          - agent-evaluator
+          - asset-processor
+          - automation-executor
+          - lexicon-builder
+          - lexicon-publisher
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-${{ matrix.name }}
+          path: .artifacts/images
+      - name: Push the already validated image
+        env:
+          APPLICATION: ${{ matrix.name }}
+        run: |
+          docker load --input ".artifacts/images/$APPLICATION.tar"
+          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          image="ghcr.io/$owner/sylis-$APPLICATION:$GITHUB_SHA"
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$image"
+          immutable=$(docker image inspect --format='{{index .RepoDigests 0}}' "$image")
+          test -n "$immutable"
+          mkdir -p .artifacts/digests
+          jq -n \
+            --arg application "$APPLICATION" \
+            --arg image "$immutable" \
+            --arg commit "$GITHUB_SHA" \
+            '{application:$application,image:$image,commit:$commit}' \
+            > ".artifacts/digests/$APPLICATION.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: digest-${{ matrix.name }}
+          path: .artifacts/digests/${{ matrix.name }}.json
+          retention-days: 1
+          if-no-files-found: error
+
+  staging-manifest:
+    name: Staging image manifest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish-images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: digest-*
+          path: .artifacts/digests
+          merge-multiple: true
+      - name: Assemble the immutable deployment manifest
+        run: |
+          jq -s \
+            --arg version "0.0.1" \
+            --arg commit "$GITHUB_SHA" \
+            '{schemaVersion:"sylis.deployment-manifest/1",version:$version,commit:$commit,images:(sort_by(.application))}' \
+            .artifacts/digests/*.json > .artifacts/staging-manifest.json
+          test "$(jq '.images | length' .artifacts/staging-manifest.json)" = 12
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: staging-image-manifest
+          path: .artifacts/staging-manifest.json
+          retention-days: 30
+          if-no-files-found: error
+
+  deploy-staging-api:
+    name: Deploy staging api and install database
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [publish-images, staging-manifest]
+    runs-on: ubuntu-latest
+    environment: sylis / staging
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+      SERVICE_ID: ${{ vars.RAILWAY_API_SERVICE_ID }}
     steps:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Install pinned Railway CLI
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: digest-api
+          path: .artifacts/digest
+      - name: Install the pinned Railway CLI
         run: npm install --global @railway/cli@5.30.4
-      - name: Resolve and deploy immutable digest
-        env:
-          SERVICE_ID: ${{ matrix.service_id }}
-          IMAGE_NAME: sylis-${{ matrix.name }}
+      - name: Run API pre-deploy database install and wait for readiness
         run: |
           test -n "$SERVICE_ID"
           test -n "$RAILWAY_PROJECT_ID"
           test -n "$RAILWAY_ENVIRONMENT_ID"
-          owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
-          image="ghcr.io/$owner/$IMAGE_NAME"
-          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker pull "$image:$GITHUB_SHA"
-          immutable=$(docker inspect --format='{{index .RepoDigests 0}}' "$image:$GITHUB_SHA")
+          immutable=$(jq -r '.image' .artifacts/digest/api.json)
           test -n "$immutable"
           railway service source connect \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
             --service "$SERVICE_ID" \
             --image "$immutable" \
-            --json > /tmp/source.json
+            --json > /tmp/railway-source.json
           deployment=$(railway service redeploy \
             --project "$RAILWAY_PROJECT_ID" \
             --environment "$RAILWAY_ENVIRONMENT_ID" \
@@ -383,7 +764,7 @@ jobs:
             current_id=$(printf '%s' "$status_json" | jq -r '.deploymentId // empty')
             status=$(printf '%s' "$status_json" | jq -r '.status // empty')
             if [ "$current_id" = "$deployment_id" ] && [ "$status" = SUCCESS ]; then
-              printf '%s\n' "service=${{ matrix.name }} image=$immutable deployment=$deployment_id" >> "$GITHUB_STEP_SUMMARY"
+              printf '%s\n' "service=api image=$immutable deployment=$deployment_id" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             case "$status" in FAILED|CRASHED|REMOVED) exit 1 ;; esac
@@ -391,46 +772,145 @@ jobs:
           done
           exit 1
 
-  environment-smoke:
-    name: Environment health
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    needs: deploy-environment
+  deploy-staging:
+    name: Deploy staging ${{ matrix.name }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [publish-images, staging-manifest, deploy-staging-api]
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'sylis / production' || 'sylis / staging' }}
+    environment: sylis / staging
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: web
+            service_variable: RAILWAY_WEB_SERVICE_ID
+          - name: admin
+            service_variable: RAILWAY_ADMIN_SERVICE_ID
+          - name: admin-api
+            service_variable: RAILWAY_ADMIN_API_SERVICE_ID
+          - name: agent-api
+            service_variable: RAILWAY_AGENT_API_SERVICE_ID
+          - name: model-gateway
+            service_variable: RAILWAY_MODEL_GATEWAY_SERVICE_ID
+          - name: agent-executor
+            service_variable: RAILWAY_AGENT_EXECUTOR_SERVICE_ID
+          - name: agent-evaluator
+            service_variable: RAILWAY_AGENT_EVALUATOR_SERVICE_ID
+          - name: asset-processor
+            service_variable: RAILWAY_ASSET_PROCESSOR_SERVICE_ID
+          - name: automation-executor
+            service_variable: RAILWAY_AUTOMATION_EXECUTOR_SERVICE_ID
+          - name: lexicon-builder
+            service_variable: RAILWAY_LEXICON_BUILDER_SERVICE_ID
+          - name: lexicon-publisher
+            service_variable: RAILWAY_LEXICON_PUBLISHER_SERVICE_ID
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: digest-${{ matrix.name }}
+          path: .artifacts/digest
+      - name: Install the pinned Railway CLI
+        run: npm install --global @railway/cli@5.30.4
+      - name: Deploy the validated digest
+        env:
+          SERVICE_ID: ${{ vars[matrix.service_variable] }}
+          APPLICATION: ${{ matrix.name }}
+        run: |
+          test -n "$SERVICE_ID"
+          test -n "$RAILWAY_PROJECT_ID"
+          test -n "$RAILWAY_ENVIRONMENT_ID"
+          immutable=$(jq -r '.image' ".artifacts/digest/$APPLICATION.json")
+          test -n "$immutable"
+          railway service source connect \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$SERVICE_ID" \
+            --image "$immutable" \
+            --json > /tmp/railway-source.json
+          deployment=$(railway service redeploy \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$SERVICE_ID" \
+            --from-source \
+            --yes \
+            --json)
+          deployment_id=$(printf '%s' "$deployment" | jq -r '.id // .deploymentId // empty')
+          test -n "$deployment_id"
+          for attempt in $(seq 1 90); do
+            status_json=$(railway service status \
+              --project "$RAILWAY_PROJECT_ID" \
+              --environment "$RAILWAY_ENVIRONMENT_ID" \
+              --service "$SERVICE_ID" \
+              --json)
+            current_id=$(printf '%s' "$status_json" | jq -r '.deploymentId // empty')
+            status=$(printf '%s' "$status_json" | jq -r '.status // empty')
+            if [ "$current_id" = "$deployment_id" ] && [ "$status" = SUCCESS ]; then
+              printf '%s\n' "service=$APPLICATION image=$immutable deployment=$deployment_id" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            case "$status" in FAILED|CRASHED|REMOVED) exit 1 ;; esac
+            sleep 10
+          done
+          exit 1
+
+  staging-smoke:
+    name: Staging smoke
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [deploy-staging, staging-manifest]
+    runs-on: ubuntu-latest
+    environment: sylis / staging
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Check all service health endpoints
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: staging-image-manifest
+          path: .artifacts/deployment
+      - name: Check the staging deployment edges
         env:
-          SYLIS_HEALTH_URLS: ${{ vars.SYLIS_HEALTH_URLS }}
+          SYLIS_DEPLOYMENT_MANIFEST: .artifacts/deployment/staging-manifest.json
+          SYLIS_WEB_URL: ${{ vars.SYLIS_WEB_URL }}
+          SYLIS_ADMIN_URL: ${{ vars.SYLIS_ADMIN_URL }}
+          SYLIS_API_URL: ${{ vars.SYLIS_API_URL }}
           SYLIS_EVIDENCE_DIR: .artifacts/deployment
         run: node tools/operations/cli.mjs health-rehearsal
-
-  tag-initial-release:
-    name: Tag v0.0.1
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: environment-smoke
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          fetch-depth: 0
-      - name: Create the initial release tag once
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Verify deployed shells and authenticated read paths
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          version=$(node -p "require('./package.json').version")
-          test "$version" = 0.0.1
-          tag="v$version"
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null 2>&1; then
-            echo "$tag already exists; no tag was moved" >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          git config user.name github-actions[bot]
-          git config user.email github-actions[bot]@users.noreply.github.com
-          git tag --annotate "$tag" --message "Sylis $tag"
-          git push origin "refs/tags/$tag"
-          gh release create "$tag" --verify-tag --title "Sylis $tag" --generate-notes
+          SYLIS_WEB_URL: ${{ vars.SYLIS_WEB_URL }}
+          SYLIS_ADMIN_URL: ${{ vars.SYLIS_ADMIN_URL }}
+          SYLIS_EXPECTED_VERSION: "0.0.1"
+          SYLIS_EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          SYLIS_SYNTHETIC_USER_EMAIL: ${{ secrets.SYLIS_SYNTHETIC_USER_EMAIL }}
+          SYLIS_SYNTHETIC_USER_PASSWORD: ${{ secrets.SYLIS_SYNTHETIC_USER_PASSWORD }}
+          SYLIS_SYNTHETIC_ADMIN_EMAIL: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_EMAIL }}
+          SYLIS_SYNTHETIC_ADMIN_PASSWORD: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_PASSWORD }}
+          SYLIS_SYNTHETIC_ADMIN_TOTP_SECRET: ${{ secrets.SYLIS_SYNTHETIC_ADMIN_TOTP_SECRET }}
+        run: pnpm exec playwright test --config tests/deployment/playwright.config.ts
+      - name: Upload staging browser evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: staging-browser-smoke
+          path: |
+            .artifacts/deployment
+            tests/deployment/report
+            tests/deployment/test-results
+          retention-days: 30
+          if-no-files-found: warn

@@ -4,17 +4,20 @@ This file is the architecture entry map for humans and agents. Detailed rules li
 
 ## Workspace Map
 
-| Path                           | Package                      | Harness group |
-| ------------------------------ | ---------------------------- | ------------- |
-| `.`                            | `sylis`                      | root          |
-| `apps/api`                     | `@sylis/api`                 | consumer      |
-| `apps/web`                     | `@sylis/web`                 | consumer      |
-| `docs/components`              | `components`                 | consumer      |
-| `docs/overview`                | `@sylis/doc-overview`        | consumer      |
-| `packages/harness`             | `@sylis/harness`             | shared        |
-| `packages/shared`              | `@sylis/shared`              | shared        |
-| `packages/utils`               | `@sylis/utils`               | shared        |
-| `services/vocabulary-importer` | `@sylis/vocabulary-importer` | consumer      |
+| Path                        | Responsibility                                    | Harness group |
+| --------------------------- | ------------------------------------------------- | ------------- |
+| `.`                         | repository orchestration                          | root          |
+| `apps/frontends/web`        | learner application                               | consumer      |
+| `apps/frontends/admin`      | operator control plane                            | consumer      |
+| `apps/backends/*`           | ten independently deployable backend applications | consumer      |
+| `packages/*`                | twelve reusable libraries and contracts           | shared        |
+| `docs/components`           | component documentation                           | consumer      |
+| `docs/overview`             | architecture and product documentation            | consumer      |
+| `tools/engineering-harness` | repository harness generator and validator        | tooling       |
+
+The exact twelve-app and twelve-package registry is enforced by
+`tools/architecture/check-workspace.mjs`. Non-deployable test projects stay outside
+`apps/`; repository tools stay outside `packages/`.
 
 ## Allowed Dependency Directions
 
@@ -22,10 +25,19 @@ This file is the architecture entry map for humans and agents. Detailed rules li
 - `shared->shared`
 - `consumer->shared`
 
-The machine-readable source of truth is `.harness/config.json`. Run the harness check after changing workspace manifests.
+Consumers do not import other consumers. The package-specific allowlist in
+`tools/architecture/check-workspace.mjs` is stricter than these group-level rules.
+Run the architecture and harness checks after changing workspace manifests.
 
 ## Detailed Context
 
+- Target `0.0.1` architecture: `docs/overview/refactor/index.md`
+- Learning Agent runtime: `docs/overview/refactor/architecture/learning-agent-system.md`
+- Agent conversation blocks: `docs/overview/refactor/architecture/agent-conversation-blocks.md`
+- Server-hosted runtime decision: `docs/overview/adr/0017-server-hosted-framework-neutral-agent-runtime.md`
+- Model execution boundary: `docs/overview/refactor/architecture/model-gateway.md`
+- Credential boundary: `docs/overview/refactor/architecture/credential-management.md`
+- File/content boundary: `docs/overview/refactor/architecture/agent-files-and-exchanges.md`
 - Architecture index: `docs/overview/guide/architecture.md`
 - Enforced boundaries: `docs/overview/architecture/boundaries.md`
 - Architecture decisions: `docs/overview/adr/index.md`

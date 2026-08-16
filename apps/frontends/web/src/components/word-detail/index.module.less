@@ -1,0 +1,151 @@
+.wordDetail {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tabsContainer {
+  flex: 1;
+  background: var(--color-bg-primary);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 10px 20px;
+}
+
+.tabButtons {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  z-index: 10;
+}
+
+.tabButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-text-primary);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.tabButtonActive {
+  background: #f5f5f5;
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.tabContent {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.meaningsTab {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 12px 0 20px;
+}
+
+.meaningList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meaningItem {
+  display: grid;
+  grid-template-columns: minmax(48px, auto) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.partOfSpeech,
+.definitionLabel {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.meaningText,
+.definitionText {
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.englishDefinitions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.definitionText {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.emptyState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+}
+
+// 进入动画
+@media (prefers-reduced-motion: no-preference) {
+  .wordDetail {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .tabsContainer {
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+    animation-delay: 0.1s;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-4));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--spacing-4)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

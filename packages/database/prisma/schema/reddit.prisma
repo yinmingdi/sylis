@@ -16,7 +16,7 @@ model RedditSourceObservation {
   synchronizationId String                @db.Uuid
   documentId        String                @db.Uuid
   postId            String
-  state             String
+  state             RedditSourceObservationState
   contentHash       String?
   sourceEditedAt    DateTime?             @db.Timestamptz(3)
   observedAt        DateTime              @default(now()) @db.Timestamptz(3)

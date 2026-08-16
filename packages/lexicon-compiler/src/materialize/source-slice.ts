@@ -18,7 +18,7 @@ import { finished } from "node:stream/promises";
 import { createGunzip } from "node:zlib";
 
 import { ExternalStringSorter } from "./external-sort";
-import type { SourceAdapterKind } from "../candidates/candidate-v1";
+import { SourceAdapterKind } from "../candidates/candidate-v1";
 import {
   headwordSelectorKey,
   parseHeadwordSet,
@@ -26,10 +26,9 @@ import {
 } from "../manifest/source-manifest";
 import { normalizeIdentityText } from "../normalize/text-profile";
 
-export type SliceableSourceAdapter = Extract<
-  SourceAdapterKind,
-  "ECDICT" | "WIKTEXTRACT_EN"
->;
+export type SliceableSourceAdapter =
+  | SourceAdapterKind.ECDICT
+  | SourceAdapterKind.WIKTEXTRACT_EN;
 
 export interface SourceSliceOptions {
   adapter: SliceableSourceAdapter;
@@ -45,7 +44,12 @@ export interface SourceSliceOptions {
   progress?: SourceSliceProgressPort;
 }
 
-export type SourceSliceStage = "VERIFY_PARENT" | "SCAN" | "WRITE" | "INSTALL";
+export enum SourceSliceStage {
+  VERIFY_PARENT = "VERIFY_PARENT",
+  SCAN = "SCAN",
+  WRITE = "WRITE",
+  INSTALL = "INSTALL",
+}
 
 export interface SourceSliceProgressEvent {
   stage: SourceSliceStage;
@@ -97,7 +101,7 @@ interface SliceStats {
 }
 
 class SourceSliceProgressTracker {
-  private stage: SourceSliceStage = "VERIFY_PARENT";
+  private stage: SourceSliceStage = SourceSliceStage.VERIFY_PARENT;
   private processedBytes = 0;
   private totalBytes: number | null = null;
   private matchedRecords = 0;
@@ -110,7 +114,7 @@ class SourceSliceProgressTracker {
     this.stage = stage;
     this.processedBytes = 0;
     this.totalBytes = totalBytes;
-    if (stage === "SCAN") this.matchedRecords = 0;
+    if (stage === SourceSliceStage.SCAN) this.matchedRecords = 0;
     this.lastReportAt = Date.now();
     this.lastReportBytes = 0;
     this.report(true);
@@ -557,7 +561,7 @@ export async function materializeSourceSlice(
   );
   const inputByteSize = (await stat(inputPath)).size;
   const parentSha256 = normalizeSha256(options.parentSha256, "Parent checksum");
-  progress.start("VERIFY_PARENT", inputByteSize);
+  progress.start(SourceSliceStage.VERIFY_PARENT, inputByteSize);
   const actualParentSha256 = await sha256FileWithProgress(inputPath, progress);
   progress.complete();
   if (actualParentSha256 !== parentSha256) {
@@ -594,8 +598,8 @@ export async function materializeSourceSlice(
     let stats: SliceStats;
     let prefix = "";
     let materializerVersion: SourceSliceManifest["materializerVersion"];
-    progress.start("SCAN", inputByteSize);
-    if (options.adapter === "ECDICT") {
+    progress.start(SourceSliceStage.SCAN, inputByteSize);
+    if (options.adapter === SourceAdapterKind.ECDICT) {
       const result = await collectEcdictRecords(
         inputPath,
         selected,
@@ -618,7 +622,7 @@ export async function materializeSourceSlice(
     if (stats.recordCount < 1) {
       throw new Error("Source slice did not match any source records.");
     }
-    progress.start("WRITE", null);
+    progress.start(SourceSliceStage.WRITE, null);
     const output = await writeSortedOutput(
       sorter,
       temporaryOutput,
@@ -652,7 +656,7 @@ export async function materializeSourceSlice(
     const metadataBytes = `${JSON.stringify(manifest, null, 2)}\n`;
     const temporaryMetadata = join(workDirectory, "slice.metadata.json");
     await writeFile(temporaryMetadata, metadataBytes, { flag: "wx" });
-    progress.start("INSTALL", output.byteSize);
+    progress.start(SourceSliceStage.INSTALL, output.byteSize);
     await installGeneratedFile(temporaryOutput, outputPath, output.sha256);
     await installGeneratedFile(
       temporaryMetadata,

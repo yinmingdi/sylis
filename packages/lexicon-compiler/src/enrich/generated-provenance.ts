@@ -1,7 +1,7 @@
-import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-contracts";
+import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-artifact";
+import { canonicalJsonChunks } from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 
-import { canonicalJsonChunks } from "../export/canonicalize";
 import { stableId } from "../sources/source-context";
 
 export function ensureGeneratedProvenance(
@@ -22,6 +22,7 @@ export function ensureGeneratedProvenance(
   for (const chunk of canonicalJsonChunks(candidate)) hash.update(chunk);
   artifact.provenance.bundles.push({
     id: provenanceId,
+    kind: "GENERATED",
     contentHash: `sha256:${hash.digest("hex")}`,
     resolverVersion,
     decisionReason,

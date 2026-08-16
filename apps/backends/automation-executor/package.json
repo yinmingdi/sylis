@@ -1,0 +1,32 @@
+{
+  "name": "@sylis/automation-executor",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.922.0",
+    "@aws-sdk/lib-storage": "3.1103.0",
+    "@aws-sdk/s3-request-presigner": "3.1103.0",
+    "@sylis/database": "workspace:*",
+    "@sylis/job-contracts": "workspace:*",
+    "@sylis/job-runtime": "workspace:*",
+    "@sylis/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

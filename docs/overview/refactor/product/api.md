@@ -1,290 +1,231 @@
-# API 重构
+# API 契约
 
-## 1. Contract 边界
+## 1. 三个公开接口
 
-用户 API 固定前缀为 `/api/v1`，Admin API 固定前缀为 `/api/admin/v1`。下文用户端表格中的 path 均相对于 `/api/v1`；Admin 端点始终写出完整前缀。两套 API 使用不同 audience 的 opaque session，不提供长期 bearer JWT，也不把 Prisma model、provider response 或 artifact entity 直接作为 HTTP DTO。
+| App                       | Prefix          | Audience | Owner                                                                      |
+| ------------------------- | --------------- | -------- | -------------------------------------------------------------------------- |
+| `apps/backends/api`       | `/api/v1`       | USER     | Identity、Lexicon query、Learning、Exercise、Assessment、Notebook、Reading |
+| `apps/backends/agent-api` | `/api/agent/v1` | AGENT    | Agent Session/Run/Event/Tool/Proposal/Artifact/Memory/usage                |
+| `apps/backends/admin-api` | `/api/admin/v1` | ADMIN    | 运营、审核、Job、发布和审计                                                |
 
-OpenAPI 3.1 是唯一传输契约。CI 分别生成 `@sylis/api-client` 和 `@sylis/admin-api-client`；User Web 不得引用 Admin client，Admin Web 不得引用 User Web 的 cache、router 或 session helper。
+OpenAPI 3.1 是传输真相，`@sylis/api-client` 通过 `./user`、`./agent`、`./admin` 导出生成 client。DTO 不暴露 Prisma model、provider response、secret、checkpoint 或 Artifact 内部存储路径。
 
-## 2. Module 目标
+内部 app route 使用 `/internal/v1`、service grant 和独立 network policy，不与 browser route 共用 cookie/auth guard。
 
-```text
-apps/api/src/modules/
-  identity/         注册、登录、独立 User、opaque session、consent
-  health/           liveness/readiness
-  lexicon/          search、headword、entry、release-pinned queries
-  books/            book/edition/enrollment
-  study/            daily plan、objective、review、FSRS
-  exercises/        read-only exercise delivery/scoring helpers
-  assessments/      blueprint、session、response、results
-  notebooks/        user collection with typed lexical targets
-  reading/          Reading Core、annotation、activity、saved
-  reddit/           Reddit experience adapter 与来源特有 projection
-  ai-tutor/         tutor、grammar、reading generation；不写词典
-  jobs/             BackgroundJob enqueue/query/cancel、SSE projection
-  operations/       build/import/release/deployment/usage/audit commands
-```
+## 2. Identity 与 Grant
 
-删除 `words`、旧 `quiz`、旧 `vocabulary-test` 和运行时 `vocabulary-enrichment` module。可复用的纯投影/校验逻辑迁入拥有它的新 module service。
+User session 使用 HttpOnly、Secure、SameSite cookie。`api` 独占注册、登录、MFA、session、Consent、AccessGrant、service grant 和 SupportGrant；Model Gateway 独占 Platform/BYOK `CredentialProfile/Revision`。User API 可以提供同源认证入口，但不持久化、缓存或回显 Provider secret。
 
-当前每个 module、endpoint family 和跨 module 依赖的逐项去向见 [后端目录与 NestJS 模块边界](../implementation/backend-structure.md) 与 [当前代码到目标代码的重构映射](../implementation/workspace-refactor.md)。
+| Method          | User path                                         | 行为                                                                          |
+| --------------- | ------------------------------------------------- | ----------------------------------------------------------------------------- |
+| POST            | `/auth/registration-challenges`                   | 创建短期验证 challenge                                                        |
+| POST            | `/auth/register`                                  | 创建独立 User、Credential 与 USER session                                     |
+| POST            | `/auth/sessions`                                  | 登录并设置 session cookie，不返回 bearer token                                |
+| GET/DELETE      | `/auth/session`                                   | bootstrap 或撤销当前 session                                                  |
+| POST            | `/auth/session/re-authentication`                 | 敏感操作前 re-auth 并轮换 CSRF                                                |
+| GET/PATCH       | `/users/me`                                       | 当前 User projection/设置                                                     |
+| GET/DELETE      | `/users/me/sessions/:id?`                         | 列表或撤销设备 session                                                        |
+| GET/POST        | `/users/me/consents`、`/users/me/consent-records` | 有效 consent 与 append-only decision                                          |
+| GET/POST/DELETE | `/users/me/model-credentials`                     | 代理 Gateway 的 masked metadata、创建/轮换/撤销 BYOK；创建后永不回显明文      |
+| POST            | `/users/me/agent-grants`                          | 签发短期 AGENT audience AccessGrant cookie                                    |
+| GET/POST/DELETE | `/users/me/support-grants/:id?`                   | 列出、创建或撤销绑定 SUPPORT Operator、精确资源 revision 与 expiry 的支持授权 |
+| POST            | `/users/me/export-requests`                       | 创建异步导出                                                                  |
+| POST            | `/users/me/deletion-requests`                     | 立即隐藏并启动 30 天 hard purge                                               |
 
-业务 module 采用 NestJS module-first 结构，目录只在需要时创建：
+普通只读 AccessGrant 可缓存 revocation 约 2 分钟；mutation、Admin、Proposal commit、release 和外部副作用每次在线检查 AuthSession/securityVersion。所有 browser mutation 校验 CSRF、Origin、Fetch Metadata 和 `Idempotency-Key`。
 
-```text
-<module>/
-  <module>.module.ts
-  controllers/
-  dto/
-  services/
-  repositories/
-  entities/
-  policies/
-  events/
-  index.ts
-```
+## 3. User API 资源
 
-复杂 service 按用例拆分，repository 归业务 module。Nest provider 默认私有；跨 module 必须通过对方 Nest module 明确 export 的 token/interface 和 `index.ts` 公开入口，不 deep import service/repository，也不跨 repository 开事务。`AppModule` 只做 composition。完整目录、module ownership、允许/禁止依赖和测试以 [后端目录与 NestJS 模块边界](../implementation/backend-structure.md) 为准。
+### Lexicon
 
-## 3. Identity、User 与 session
+| Method | Path                                   | 返回                                                          |
+| ------ | -------------------------------------- | ------------------------------------------------------------- |
+| GET    | `/lexicon/search?q=&cursor=`           | Headword/Entry/Form/multiword/collocation 分区与 match reason |
+| GET    | `/lexicon/headwords/:id`               | Entry 集合、completeness 和材料摘要                           |
+| GET    | `/lexicon/entries/:id`                 | Form、Sense、frame、morphology 和关系                         |
+| GET    | `/lexicon/senses/:id`                  | 精确 Sense、example、collocation、relation 与 Concept         |
+| GET    | `/lexicon/targets/:kind/:id/materials` | release-pinned PedagogicalMaterial                            |
+| POST   | `/lexicon/translate`                   | 临时 TranslationResult，不写正式词典                          |
 
-| Method | Path                              | 行为                                                        |
-| ------ | --------------------------------- | ----------------------------------------------------------- |
-| POST   | `/auth/registration-challenges`   | 创建短效验证 challenge；始终返回不泄露账号存在性的统一结果  |
-| POST   | `/auth/register`                  | 消费 challenge，创建独立 User、凭据和首个 USER session      |
-| POST   | `/auth/sessions`                  | 登录并设置 `__Host-sylis_session`；响应不返回 session token |
-| GET    | `/auth/session`                   | bootstrap 当前 actor、session generation 和 CSRF token      |
-| DELETE | `/auth/session`                   | 撤销当前 session 并清 cookie                                |
-| POST   | `/auth/session/re-authentication` | 敏感操作前重新认证并轮换 session/CSRF                       |
-| GET    | `/users/me`                       | 当前 User 的非敏感 projection                               |
-| PATCH  | `/users/me`                       | 修改当前 User 的展示资料和 timezone                         |
-| GET    | `/users/me/sessions`              | 列出设备 session，不返回 token/hash                         |
-| DELETE | `/users/me/sessions/:sessionId`   | 撤销指定设备 session                                        |
-| GET    | `/users/me/consents`              | 查看本人的有效 consent projection 与 append-only 历史       |
-| POST   | `/users/me/consent-records`       | 本人给予或撤回明确 purpose/data-category 的 consent         |
-| POST   | `/users/me/export-jobs`           | 创建异步导出 Job                                            |
-| POST   | `/users/me/deletion-requests`     | 创建可审计删除请求                                          |
+每个 Lexicon response 回显 `releaseId/releaseVersion` 并支持 ETag。请求开始时只解析一次 active release，整个 query chain 不混用版本。
 
-认证成功后服务端从 AuthSession 解析 `ActorContext { userId, roles, consentPolicyVersion }`，客户端不能提交或切换 owner ID，也不能声称 operator role。所有 mutation 必须通过 session-bound CSRF header、Origin 与 Fetch Metadata 校验。
+### Learning、Exercise 与 Assessment
 
-Admin 认证不复用上述 User cookie，端点固定为：
+| Method     | Path                                                | 行为                                                       |
+| ---------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| GET        | `/vocabulary-books`、`/:bookId/editions/:editionId` | stable book 与 immutable edition                           |
+| POST/PATCH | `/study/enrollments`、`/:id`                        | enrollment 与 User 设置                                    |
+| POST       | `/study/enrollments/:id/migrate`                    | 预览/确认 edition migration                                |
+| GET        | `/study/today`                                      | 固定 DailyStudyPlan 与 Objective summaries                 |
+| GET        | `/study/objectives/:id`                             | ObjectiveRevision、hint 和 eligible exercises              |
+| POST       | `/study/attempts`                                   | 创建 PRESENTED attempt、固定 ExerciseRevision/choice order |
+| POST       | `/study/attempts/:id/responses`                     | typed response 并服务端 grading                            |
+| POST       | `/study/reviews`                                    | STUDY attempt -> ReviewEvent + FSRS transaction            |
+| POST/GET   | `/assessments/sessions`、`/:id`                     | 固定 blueprint/release 的 session                          |
+| POST       | `/assessments/sessions/:id/responses`               | 提交 typed response，不信任 client correctness             |
+| POST/GET   | `/assessments/sessions/:id/submit`、`/result`       | immutable result 与 breakdown                              |
 
-| Method | Path                                           | 行为                                                  |
-| ------ | ---------------------------------------------- | ----------------------------------------------------- |
-| POST   | `/api/admin/v1/auth/challenges`                | 密码验证后创建一次性 MFA challenge                    |
-| POST   | `/api/admin/v1/auth/sessions`                  | 验证 WebAuthn/TOTP，设置 `__Host-sylis_admin_session` |
-| GET    | `/api/admin/v1/auth/session`                   | bootstrap actor/roles/re-auth window 与 CSRF token    |
-| DELETE | `/api/admin/v1/auth/session`                   | 撤销 Admin session 并清 cookie                        |
-| POST   | `/api/admin/v1/auth/session/re-authentication` | 密码 + MFA re-auth，并轮换 session/CSRF               |
+### Notebook 与 Reading
 
-ADMIN session 必须是 `PASSWORD_MFA`；User session、recovery-code-only 流程或未验证 factor 均不得访问 Admin API。角色、密码或 MFA generation 变化后旧 Admin session 立即失效。
+Notebook endpoint 使用 discriminated lexical target，数据库按 typed relation 强 FK；不接受任意 `targetType + targetId` 或 ownerId。
 
-## 4. Lexicon endpoints
+| Method          | Path                                       | 行为                                         |
+| --------------- | ------------------------------------------ | -------------------------------------------- |
+| CRUD            | `/notebooks`、`/:id/items`                 | User-owned collection、typed lexical target  |
+| GET             | `/reading/documents/:id`                   | immutable revision、origin、rights、progress |
+| GET             | `/reading/revisions/:id/annotations`       | 固定 release 的 typed annotations            |
+| POST            | `/reading/revisions/:id/resolve-selection` | 解析 User 选择，不创建正式词典事实           |
+| POST            | `/reading/activities`                      | append-only OPEN/PROGRESS/COMPLETE/LOOKUP    |
+| GET/POST/DELETE | `/reading/saved`                           | User collection                              |
+| GET             | `/explore/reddit/**`                       | 来源特有 experience projection               |
 
-| Method | Path                                | 返回                                                                    |
-| ------ | ----------------------------------- | ----------------------------------------------------------------------- |
-| GET    | `/lexicon/search?q=&cursor=&limit=` | Headword、Entry、multiword、collocation、frame 分区结果                 |
-| GET    | `/lexicon/headwords/:id`            | Headword 下完整 Entry 集合、completeness 和 material kind/count 摘要    |
-| GET    | `/lexicon/entries/:id`              | 单一 POS/同形词 Entry，forms/senses/frames/morphology/relations         |
-| GET    | `/lexicon/entries/:id/materials`    | 当前 release 的 Entry-targeted PedagogicalMaterial，按 kind cursor 分页 |
-| GET    | `/lexicon/senses/:id`               | 精确 Sense、递归 children、examples/collocations/relations/concept      |
-| GET    | `/lexicon/senses/:id/materials`     | 当前 release 的 Sense-targeted PedagogicalMaterial，按 kind cursor 分页 |
-| POST   | `/lexicon/translate`                | 临时 `TranslationResult`，不写词典                                      |
+阅读材料生成不再使用 `/explore/ai-reading/generations`；Web 以 `reading.compose` Capability 调用 Agent API，结果是私人 AgentArtifact，发布到 Reading Core 时走 typed Proposal。
 
-所有响应包含：
+## 4. Agent API
 
-```typescript
-interface ReleaseEnvelope<T> {
-  releaseId: string;
-  releaseVersion: string;
-  data: T;
-  completeness?: ContentProfileEvaluationDto;
-  attribution?: ContentAttributionDto[];
-}
-```
+| Method           | Path                                               | 行为                                                                                   |
+| ---------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| GET/POST         | `/sessions`                                        | User-scoped session list/create                                                        |
+| GET/PATCH/DELETE | `/sessions/:id`                                    | projection、archive/title、delete                                                      |
+| GET              | `/sessions/:id/messages`                           | cursor messages + closed typed Block tree；正文按 owner 授权读取 Gateway content body  |
+| POST             | `/sessions/:id/instructions`                       | 原子创建 Instruction/UserMessage/Root Run，返回 `instructionId/runId/eventCursor/run`  |
+| GET              | `/sessions/:id/events`                             | Session SSE；新连接首帧 snapshot，重连按 `Last-Event-ID` 回放持久 AgentEvent           |
+| GET              | `/sessions/:id/runs`                               | Root/ChildRun 与 wait/activation projection                                            |
+| GET              | `/runs/:id`                                        | 精确 Run recovery/Admin-link projection；普通 UI 不循环调用                            |
+| POST             | `/runs/:id/cancel`                                 | cancel 当前 Run，不改 terminal Run，返回更新后的 Run                                   |
+| POST             | `/runs/:id/retry`                                  | User retry 创建并返回新的 Root Run                                                     |
+| POST             | `/runs/:id/wait-conditions/:waitId/responses`      | 提供 User input/满足明确 wait                                                          |
+| GET/POST         | `/proposals/:id`、`/:id/decisions`                 | 查看并 approve/reject 相同 action digest                                               |
+| GET              | `/artifacts`、`/artifacts/:id`                     | User-owned Artifact/revision                                                           |
+| POST             | `/artifacts/:id/revisions`                         | User 编辑产生新 immutable revision                                                     |
+| POST             | `/artifacts/:id/accept-as-asset`                   | 显式接受 candidate，创建 immutable ContentAssetRevision                                |
+| POST             | `/assets/upload-intents`                           | 创建短期 quarantine presigned upload intent                                            |
+| POST             | `/assets/:id/finalize`                             | 校验 size/hash/MIME 并创建 processing Job                                              |
+| GET/DELETE       | `/assets/:id`、`/assets/:id/revisions/:revisionId` | owner-scoped 状态/固定 revision/当前 revision 的 active processing Jobs/立即隐藏删除   |
+| GET/POST         | `/diagnostic-bundles`                              | 从明确选择的引用创建自动脱敏 draft，User 预览后产生 immutable DiagnosticBundleRevision |
+| POST             | `/diagnostic-bundles/:id/revisions`                | User 编辑/确认新 revision；Support 只能读取 grant 固定的 revision                      |
+| DELETE           | `/model-exchanges/:id`                             | 撤回并立即隐藏 optional exchange，启动 30 天 purge                                     |
+| GET/PATCH/DELETE | `/memory-cards/:id?`                               | 查看、更正、删除/抑制长期记忆                                                          |
+| GET              | `/capabilities`                                    | 七个 Capability 与可用 provider/credential metadata                                    |
+| GET              | `/usage`                                           | User quota/BYOK usage projection，不返回 key                                           |
 
-请求开始时读取一次 active release，并传入整个 repository call chain；不得在嵌套查询中再次解析“当前 release”。
-
-Material list DTO 只返回 immutable revision、typed primary/supporting targets、typed blocks、lexical mentions、允许公开的 citations 和 completeness。它不返回 prompt、provider response、candidate rationale 或模型 chain-of-thought。词典详情首响应只返回 material availability；正文端点按需加载，避免所有故事和文化内容进入首包。
-
-## 5. Books 与 enrollment
-
-| Method | Path                                            | 行为                                          |
-| ------ | ----------------------------------------------- | --------------------------------------------- |
-| GET    | `/vocabulary-books`                             | stable books + latest editions/coverage       |
-| GET    | `/vocabulary-books/:bookId/editions/:editionId` | 不可变 item 顺序、release coverage            |
-| POST   | `/study/enrollments`                            | 固定到 edition，设置每日计划                  |
-| PATCH  | `/study/enrollments/:id`                        | 只改用户设置；edition migration 用专门 action |
-| POST   | `/study/enrollments/:id/migrate`                | 预览/确认迁移到新 edition 并审计              |
-
-旧 `/learning/add-book`、`current-book` 和 `Book.offlinedata/criteria` 不延续。
-
-## 6. Study endpoints
-
-| Method | Path                                   | 行为                                                                                                                      |
-| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/study/today`                         | 固定 DailyStudyPlan + ObjectiveRevision summaries                                                                         |
-| GET    | `/study/objectives/:objectiveId`       | 当前计划固定的 ObjectiveRevision、hints、eligible ExerciseRevisions；不返回正确答案                                       |
-| POST   | `/study/attempts`                      | 按 plan item 选择 ExerciseRevision，创建 PRESENTED STUDY attempt 并固定 choice order                                      |
-| POST   | `/study/attempts/:attemptId/responses` | 提交 CHOICE/SHORT_TEXT/EXTENDED_TEXT/NO_CAPTURE typed response；SELF_REPORT 与正文分开，服务端按 gradingMode 终结 attempt |
-| POST   | `/study/reviews`                       | 对已 SUBMITTED 的 STUDY attempt 提交 FSRS rating，事务写 ReviewEvent、snapshots 和 memory state                           |
-| GET    | `/study/stats`                         | 从 review events/attempts/plan 聚合，不读取旧 UserWord counters                                                           |
-
-三个 POST 都支持 `Idempotency-Key`。创建 attempt 只接受 plan item 与客户端 capability，不接受客户端指定正确答案；response 只接受 attempt ID + typed response；review 只接受已评分 attempt ID + FSRS rating。同 key + user + operation 只产生一份事实，payload 不一致返回 conflict。
-
-## 7. Assessment endpoints
-
-| Method | Path                                  | 行为                                                                        |
-| ------ | ------------------------------------- | --------------------------------------------------------------------------- |
-| GET    | `/assessments/blueprints`             | 可用测试定义摘要                                                            |
-| POST   | `/assessments/sessions`               | 从 blueprint revision 事务组卷，预建 PRESENTED attempts 并固定 choice order |
-| GET    | `/assessments/sessions/:id`           | 返回未泄露正确答案的下一/全部题                                             |
-| POST   | `/assessments/sessions/:id/responses` | 提交 attempt ID + typed response；服务端判分并终结 ASSESSMENT attempt       |
-| POST   | `/assessments/sessions/:id/submit`    | 完成并生成版本化 result                                                     |
-| GET    | `/assessments/sessions/:id/result`    | 结果、反馈、facet/direction/evidence breakdown 和允许展示的正确答案         |
-| GET    | `/assessments/history`                | cursor pagination                                                           |
-
-客户端不再回传 `answerWordId`、`correctIndex` 或由客户端计算的 `isCorrect`。
-
-## 8. Notebook
-
-收藏不再只能引用 Headword。`CollectedLexicalItem` 使用分类型 relation 表支持：
-
-- Headword：以后再选择学习哪个 Entry/Sense；
-- Entry：明确词性/同形词；
-- Sense：阅读中具体义项；
-- Collocation/Multiword Entry：固定短语。
-
-API 用 discriminated union 投影，数据库不用无外键 polymorphic ID。
-
-| Method | Path                                   | 行为                                                         |
-| ------ | -------------------------------------- | ------------------------------------------------------------ |
-| GET    | `/notebooks`                           | 当前 User 的 notebook cursor list                            |
-| POST   | `/notebooks`                           | 创建 notebook；title 在本人范围内按 normalized key 唯一      |
-| GET    | `/notebooks/:notebookId`               | notebook metadata 与 item summary                            |
-| PATCH  | `/notebooks/:notebookId`               | 修改 title/description/order，不接受 ownerId                 |
-| DELETE | `/notebooks/:notebookId`               | 删除容器和 membership；不删除 lexical fact 或学习事实        |
-| GET    | `/notebooks/:notebookId/items`         | typed target cursor list，固定当前 release projection        |
-| POST   | `/notebooks/:notebookId/items`         | 添加 `{ target: TypedLexicalTarget, note? }`，同 target 幂等 |
-| PATCH  | `/notebooks/:notebookId/items/:itemId` | 修改用户 note/tags/order，不允许更换 target                  |
-| DELETE | `/notebooks/:notebookId/items/:itemId` | 删除 membership                                              |
-
-所有 endpoint 从 session 推导 userId 并验证 notebook owner；target 必须在请求固定的 LexiconRelease 中可服务。跨 release 无法解析时返回 typed unavailable projection，不能静默把 Sense 降级成 Headword。
-
-## 9. Reading Core 与内容体验
-
-| Method | Path                                               | 行为                                                         |
-| ------ | -------------------------------------------------- | ------------------------------------------------------------ |
-| GET    | `/reading/documents/:documentId`                   | 返回可用 immutable revision、origin/rights 与阅读 projection |
-| GET    | `/reading/revisions/:revisionId/annotations`       | 固定 lexicon release 的 typed lexical annotations            |
-| POST   | `/reading/revisions/:revisionId/resolve-selection` | 解析用户明确选中文本；不创建词典事实                         |
-| POST   | `/reading/activities`                              | 记录 append-only OPEN/PROGRESS/COMPLETE/LOOKUP 事件          |
-| GET    | `/reading/history`                                 | user-scoped cursor history                                   |
-| GET    | `/reading/saved`                                   | user-scoped collection                                       |
-| POST   | `/reading/saved`                                   | 收藏 stable document 或精确 lexical target                   |
-| DELETE | `/reading/saved/:itemId`                           | 删除当前 User 的收藏                                         |
-| GET    | `/explore/reddit/feed`                             | Reddit experience 的来源特有 feed/filter/cursor              |
-| GET    | `/explore/reddit/posts/:externalId`                | 来源 metadata + 可用 ReadingDocumentRevision                 |
-| GET    | `/explore/ai-reading`                              | 当前 User 的已发布 AI reading 列表                           |
-| POST   | `/explore/ai-reading/generations`                  | 创建 ReadingGeneration + BackgroundJob，返回 202/job URL     |
-
-ReadingDocumentRevision 一经发布不可变。外部内容被编辑、撤回或 rights/retention 到期时产生新同步事实并改变可见性，不能原地覆盖正文。通用 Reading DTO 不包含 subreddit 投票、provider prompt 或任意 `usedWords` JSON。
-
-## 10. Tutor、Grammar 与长任务
-
-| Method | Path                                     | 行为                                                          |
-| ------ | ---------------------------------------- | ------------------------------------------------------------- |
-| GET    | `/ai/tutor/sessions`                     | user-scoped 会话列表                                          |
-| POST   | `/ai/tutor/sessions`                     | 创建 TutorSession                                             |
-| GET    | `/ai/tutor/sessions/:sessionId/messages` | 解密授权后的 cursor projection                                |
-| POST   | `/ai/tutor/sessions/:sessionId/messages` | 创建一次 invocation；返回 202 和 message stream URL           |
-| POST   | `/ai/grammar-diagnoses`                  | 创建 GrammarDiagnosis + BackgroundJob，返回 202/job URL       |
-| GET    | `/ai/grammar-diagnoses/:diagnosisId`     | observation/evidence/suggestion，不返回 provider raw body     |
-| GET    | `/jobs/:jobId`                           | owner-scoped 状态、stage、processed/total、可恢复性与安全错误 |
-| GET    | `/jobs/:jobId/events`                    | SSE；支持 `Last-Event-ID` 恢复                                |
-| POST   | `/jobs/:jobId/cancel`                    | 仅可取消可取消状态；terminal Job 不变                         |
-| GET    | `/ai/usage`                              | 当前 User 的 capability quota，不返回系统密钥或全局账本       |
-
-客户端只能提交 typed `contextRefs`，服务端再做 owner、consent、release 和最小化投影校验。Tutor SSE 使用 `message.*` 事件；通用 Job SSE 使用 `job.*` 事件。每条事件有单调 sequence；重连只能恢复同一次 invocation，不能重复收费。
-
-## 11. Admin API
-
-`/api/admin/v1/**` 只接受 `audience=ADMIN` session。所有 command 在 application 层执行 RBAC；激活、回滚、来源移除、角色授予和 retention policy 变更还需要 re-auth、理由、impact digest 与第二人审批。
-
-| 资源族                             | 关键操作                                                                  |
-| ---------------------------------- | ------------------------------------------------------------------------- |
-| `/build-runs`                      | 创建 pilot/full、预算预测/批准、resume、manifest/安全恢复摘要/SSE         |
-| `/review-batches`                  | 风险分层队列、candidate/evidence diff、approve/reject、抽检 gate          |
-| `/import-jobs`                     | dry-run/start/resume、stage/progress、validation report                   |
-| `/lexicon-releases`                | 列表、validation/activation preview、activate、rollback                   |
-| `/deployment-releases`             | commit/image/deployment/health/smoke projection；不代理 Railway secret    |
-| `/ai-usage`                        | runtime/compiler 分账、reservation/settlement、告警与 provider projection |
-| `/source-rights`                   | version、rights status、attribution、removal impact                       |
-| `/support/users`                   | 最小 User 状态、session revoke、导出/删除请求状态                         |
-| `/operator-role-assignments`       | grant/revoke；固定 role 且强制双人审批                                    |
-| `/audit-events`                    | append-only cursor query；敏感正文不可作为普通列表字段                    |
-| `/approvals/:approvalId/decisions` | 对同一 action digest 提交第二人决定                                       |
-
-Admin 发起 build/import 不等于在 API request 内执行长任务。command 只创建 typed request、`BackgroundJob` 和 outbox；Compiler Runner 执行 `LEXICON_BUILD`，Importer 执行 `LEXICON_IMPORT/LEXICON_VALIDATE`，通用 Worker 不处理这三类 Job；API 只暴露状态与事件。
-
-release command 使用明确资源端点：`POST /api/admin/v1/lexicon-releases/:id/validation-jobs`、`POST .../:id/activation-previews`、`POST .../:id/activation-requests` 和 `POST .../:id/rollback-requests`。`LexiconRelease.status` 只允许 `DRAFT -> VALIDATING -> VALIDATED -> RETIRED`；当前生效版本只由 `Lexicon.activeReleaseId` 表示，不能写 `ACTIVE` status。activation/rollback request 必须绑定 re-auth、理由、impact digest 和第二人审批。
-
-## 12. Pagination 与搜索
-
-- list/search 使用 opaque cursor，cursor 包含 release ID + sort tuple + query profile version 并签名。
-- page size 默认 20、上限 100；不暴露 offset 扫描。
-- search response 按类型分区并返回 match reason，不把 Form 命中伪装成独立 Headword。
-- cursor release 不再可服务时返回明确 problem，客户端重新开始搜索。
-
-## 13. HTTP consistency
-
-- GET 支持 `ETag`/`If-None-Match`；ETag 包含 release/content hash。
-- mutation 使用正确 201/202/204/409/422；长 import 不经 public API。
-- timestamps ISO 8601 UTC；用户日界线单独使用 IANA timezone。
-- `Content-Language` 和响应内 languageTag 语义一致。
-- 不为内部 UUID 暴露递增 ID。
-- mutation 默认要求 `Idempotency-Key`；同 actor + operation + key 的 payload hash 不一致返回 409。
-- SSE 响应禁用 proxy buffering，并发送 heartbeat；事件中不得包含 secret、私人原文或 provider raw body。
-
-## 14. Error contract
-
-所有错误使用 RFC 9457：
-
-```json
-{
-  "type": "https://sylis.example/problems/assessment-answer-invalid",
-  "title": "Assessment answer is invalid",
-  "status": 422,
-  "detail": "The selected choice does not belong to this session item.",
-  "instance": "/api/v1/assessments/sessions/session-id/responses",
-  "code": "ASSESSMENT_CHOICE_NOT_IN_ITEM",
-  "requestId": "request-id",
-  "errors": []
-}
-```
-
-生产错误不泄露 SQL、连接串、AI response 或 stack。
-
-## 15. DTO、OpenAPI 与生成客户端
-
-- OpenAPI 3.1 是 public contract；DTO schema 与 artifact schema 分开。
-- CI 先生成并核对独立的 User/Admin OpenAPI 3.1 snapshot，再用 `openapi-typescript` 生成类型、用 `openapi-fetch` 建立 typed client。
-- `packages/api-client` 只包含 `/api/v1`，`packages/admin-api-client` 只包含 `/api/admin/v1`；CI 用 import graph 阻止 User Web 引入 Admin client。
-- 两个 client 只封装 base URL、credentials、CSRF、idempotency、RFC 9457 和 SSE transport，不包含 React hook、query key 或领域业务规则。
-- 删除 `packages/shared`；transport type 归两套 generated client，artifact/Job/database/UI/通用函数分别归各自明确 package。前端禁止手写复制 OpenAPI DTO。
-- API input 运行时验证；output contract test 验证 discriminated unions 和空数组语义。
-- CI 生成 OpenAPI 并做 breaking-change check。
-
-## 16. Repository pattern
-
-controller 只做 HTTP/auth/DTO 边界；use-case service 管流程和 transaction；repository 接收显式 release/user scope。禁止 repository 内部读取全局 active release 或触发 enrichment。
+每个新 Instruction 都立即拥有独立 Root Run。Session 已有执行槽 owner 时，新 Run 保持 `QUEUED` 且不创建 activation Job；前序 Run 终态后才调度最早候选。Run WAITING 通过 response/approval 后创建新 activation Job。Client 不直接 enqueue Job，也不能提交 model、prompt、tool grant 或 correctness 任意值。
 
 ```typescript
-findEntryDetail(input: {
-  releaseId: string;
-  entryId: string;
-  includeAttribution: boolean;
-}): Promise<LexicalEntryDetail | null>;
+interface InstructionSubmission {
+  instructionId: string;
+  runId: string;
+  eventCursor: number;
+  run: AgentRunView;
+  userMessage?: AgentMessageView;
+}
+
+type SessionStreamFrame =
+  | {
+      type: "SESSION_SNAPSHOT";
+      cursor: number;
+      session: AgentSessionView;
+      messages: AgentMessageView[];
+      runs: AgentRunView[];
+    }
+  | AgentStreamEvent;
 ```
 
-查询使用 select/projection 避免全图 N+1；大型 nested relation 用批量 query/DataLoader 风格组装，并以真实 query plan 和 API latency budget 验收。
+`AgentMessageView.blocks` 是 closed discriminated union，并返回 stable block/parent/tree position/modelPosition/modelSubPosition、schema version、lifecycle 和 typed body/reference projection。`MESSAGE_STARTED` 固定本次 Root Run 的 assistant message id；`BLOCK_OPENED/BLOCK_DELTA_APPENDED/BLOCK_SEALED/BLOCK_INTERRUPTED` 只更新该 stable Block；`MESSAGE_COMPLETED/MESSAGE_INTERRUPTED` 携带完整公开 message projection；terminal Run event 携带状态、时间和安全错误码。浏览器用 `runId` 关联一次提交，不再通过“查询最新 Assistant 消息”猜归属。
+
+新连接的 `SESSION_SNAPSHOT.cursor` 来自内部 Session `nextEventSequence`，必须是有限整数并与随后查询 PostgreSQL `AgentEvent` 使用的 cursor 完全相同；公开 `AgentSessionView` 不返回该内部序列。Controller 在发送 frame 和查询事件前校验 cursor，不能把 `NaN`、缺失值或 Redis payload 当作恢复位置。
+
+Asset `finalize` 返回的 `jobId` 只代表 `ASSET_SCAN`。扫描成功后服务端按 MIME 创建 `ASSET_EXTRACT | ASSET_OCR`，之后创建 `ASSET_LEXICAL_INDEX`；浏览器对每个 Job 使用 `/api/v1/jobs/:jobId/events` SSE，Job terminal 时恰好读取一次 Asset projection 来取得下一批 `processingJobs` 或最终状态。正常链路没有 messages/runs/artifacts/proposals/Job/Asset 周期轮询。
+
+### Executor ingress
+
+`agent-executor` 使用 service grant 调用语义化 ingress：
+
+```text
+POST /internal/v1/agent-runs/:runId/message-block-fragments
+POST /internal/v1/agent-runs/:runId/step-proposals
+POST /internal/v1/agent-run-steps/:stepId/receipts
+```
+
+每个 Body 是独立的 `@sylis/agent-contracts` schema，不存在 generic action envelope。Block fragment 必须携带稳定 message/block identity、`modelPosition + modelSubPosition`、tree position、fragment sequence 和 Gateway opaque content ref；fragment idempotency key 固定为 `(invocationId, modelPosition, modelSubPosition, fragmentSequence)`，不能提交裸字符串或任意 JSON。完整 Step proposal 在任何副作用前一次 preflight，receipt 覆盖全部 accepted action 并按 modelPosition 排序。服务端校验 audience/scope、run/step/invocation、JobAttempt fencing token、CapabilityRelease、ToolGrant、schema、owner、action digest 和 idempotency；只有 Agent API 创建 `AgentRunStep`、`AgentToolCall`、`AgentMessageBlock` 和 `AgentEvent`。产品 write Proposal 获批后，Agent API 使用自己的 service grant 调用 User API typed internal command，不直接写 Learning/Reading/Notebook 表。
+
+## 5. Model Gateway 内部 API
+
+Model Gateway 不接受 browser cookie，也不提供 OpenAI-compatible 通用代理面：
+
+| Method   | Path                                              | 行为                                                                        |
+| -------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| POST     | `/internal/v1/model-execution-permits`            | 固定 caller/purpose/owner/route/credential/input digest/预算并 reservation  |
+| POST     | `/internal/v1/model-invocations`                  | 原子消费一次性 permit，执行 typed generation/embed/vision operation         |
+| GET      | `/internal/v1/model-invocations/:id`              | redacted status、usage、cost、latency 和错误分类                            |
+| GET      | `/internal/v1/model-invocations/:id/events`       | normalized stream，禁止 raw Provider body/hidden reasoning                  |
+| POST/GET | `/internal/v1/model-content-bodies`、`/:id`       | 幂等创建或按 owner-scoped service grant 读取单个加密正文                    |
+| POST     | `/internal/v1/model-content-bodies/:id/fragments` | 按 model position/sub-position/sequence 追加加密 fragment；同键同 hash 幂等 |
+| POST     | `/internal/v1/model-content-bodies/:id/seal`      | 固定最终 content hash 并禁止继续追加                                        |
+| POST     | `/internal/v1/model-content-bodies/:id/hide`      | 立即隐藏并安排符合 retention 的 hard purge                                  |
+| POST     | `/internal/v1/credential-profiles/:id/revisions`  | MFA/re-auth 授权后的 immutable credential rotation                          |
+| POST     | `/internal/v1/credential-profiles/:id/revoke`     | 撤销并阻止新 permit；按安全策略终止受影响调用                               |
+
+permit 是单次、短期、精确绑定的授权记录，调用还必须匹配 executor service grant；它不是用户 API Key。Exact route 和 credential revision 在 Run/Build/Eval/Asset request 创建时固定，Provider 故障不能静默 failover。
+
+## 6. Admin API
+
+Admin session 使用独立 cookie、ADMIN audience、password + verified WebAuthn/TOTP 与 re-auth。`ADMIN` 不是 role；每个 route 同时检查当前七角色集合、目标资源、状态、revision 和 command policy。
+
+| 资源                                                   | 关键操作                                                                                                         |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `/overview`                                            | 一个 permission-scoped projection；section 可独立 `DEGRADED`，回显 `observedAt`                                  |
+| `/source-datasets`、`/versions`、`/rights-policies`    | immutable dataset version、checksum/parser/validation/rights reference；创建受控 acquisition/validation Job      |
+| `/source-datasets/versions/:id/rights-decisions`       | typed evidence URI/hash/kind、serve/build/export policy 和 removal impact；任一 allow 无依据即拒绝               |
+| `/lexicon/build-runs`                                  | 创建 pilot/full BuildRun，固定 source/profile/route/credential/budget/digest；full 引用 pilot evidence           |
+| `/lexicon/build-runs/:id/budget-approval-previews`     | 基于当前等待状态、forecast 与预算差额生成 action digest，不产生 Job                                              |
+| `/lexicon/build-runs/:id/budget-approvals`             | 双角色、re-auth、reason、action digest 和幂等键批准预算，并创建 `BUDGET_RESUME` activation                       |
+| `/reviews/batches`、`/reviews/candidates`              | typed queue、CandidateRevisionEvidence diff、服务端 evidence hash、risk sampling、approve/reject/WARN acceptance |
+| `/lexicon/publish-runs`                                | 固定 Artifact 的 preflight、dry validation、start/resume、progress 与 report；成功创建未激活 release             |
+| `/lexicon/releases`                                    | validation evidence、activation preview/request/command 与 rollback pointer                                      |
+| `/agents/runs`                                         | redacted projection；按安全或预算原因终止非终态 Run，不能读取 Exchange、retry 或修改 goal                        |
+| `/agents/releases`                                     | Capability/Skill draft、immutable Candidate、Eval/Judge、approval、staging/promotion/rollback/revoke evidence    |
+| `/models/routes`                                       | Git-owned immutable route/eval/health projection 与 security revoke/restore；不存在在线 endpoint editor          |
+| `/models/credentials`                                  | Platform secret submission、masked revision/health、normal rotation/revoke 与 emergency quarantine/restore       |
+| `/models/budget-policies`、`/quota-policies`、`/usage` | versioned policy、append-only usage projection、reservation/settlement/cost/error                                |
+| `/assets`                                              | quarantine/scan/parser/derivative/purge metadata 与 redacted failure；普通 route 不返回正文或 object URL         |
+| `/jobs`                                                | Job/Attempt/progress/SSE；control 由 JobKindPolicy、领域角色和状态共同决定                                       |
+| `/user-support/users`、`/support-grants`               | SUPPORT 的最小 User projection、会话撤销和 exact-resource SupportGrant；不能借此编辑用户事实                     |
+| `/operator-roles`、`/user-security-locks`              | 固定七角色 grant/renew/revoke 与 SECURITY_ADMIN 用户安全锁定；禁止 self-change/last-admin removal                |
+| `/audit/*`                                             | SECURITY_ADMIN 结构化查询、两级 retention、LegalHold 和异步签名 NDJSON.zst export                                |
+| `/deployment-releases`                                 | 仅 GET application release evidence 与 GitHub/Railway link；browser API 不提供 deploy/rollback/write             |
+
+SupportGrant access 使用 `SupportResourceKind` discriminated contract，只允许 ReadingDocumentRevision、ContentAssetRevision、CollectedLexicalItemRevision、ExerciseAttemptTextArtifact 和 DiagnosticBundleRevision。不存在接受任意 `resourceType + URL/table/id` 的通用读取代理，也不存在 account/document/AgentSession 通配。
+
+跨 bounded context 的 Admin command 必须交给 transaction owner：Identity/User/SupportGrant 由 `api` internal interface 处理，Agent Run/Release 由 `agent-api` 处理，Provider route/credential/usage 由 `model-gateway` 处理。`admin-api` 负责 ADMIN audience、command authorization、orchestration 和 redacted projection，不直接更新其他 owner 的表。
+
+DeploymentRelease 由 GitHub Actions 使用受限 service identity 调用 internal ingestion API；ProviderRouteRelease 和 Tool implementation/schema 同样由 Git + CI/Eval ingestion 发布。Admin browser 不持有 GitHub/Railway token，也不能冒充 CI source。
+
+Production v0.0.1 的 policy quorum 为一个同时具备 command 所需角色的 Operator，approval 绑定 immutable revision/manifest/action digest。未来提高 quorum 只发布新 policyVersion，不在页面硬编码人数。
+
+Admin 创建 BuildRun/PublishRun 只提交领域 request、Job activation 与 outbox；HTTP 不执行长任务。Lexicon Publisher 成功只得到 VALIDATED release，activation 始终是独立 command。
+
+## 7. HTTP 一致性
+
+- list/search 使用签名 opaque cursor，包含 release/query profile/sort tuple；默认 20、上限 100。
+- GET 支持 ETag；mutation 使用 201/202/204/409/422，长任务返回领域 Run 与 event URL。
+- RFC 9457 problem 至少区分 validation、authentication、authorization、conflict、rate limit、credential failure、wait required、not found 和 transient unavailable。
+- 同 actor + operation + idempotency key + request hash 只产生一个事实；不同 hash 返回 409。
+- SSE 禁用 proxy buffering，发送 heartbeat，事件不含 secret、完整 User 内容、checkpoint 或 provider raw body。
+- Agent Session SSE 以 PostgreSQL cursor 为准，Redis 只唤醒；一个浏览器 tab 对同一 Session 最多一个 EventSource。正常发送链为一次 instruction POST 加既有 SSE，禁止轮询 messages/runs/artifacts/proposals。
+- Job SSE 使用稳定 event sequence 和 `Last-Event-ID`，包含 stage、processed/total、throughput、ETA 或 `estimating`、warning、attempt、heartbeat 和 terminal result；heartbeat 不推进业务 sequence。User 只能观察自己的数据导出和 Asset processing Job，通用 cancel 仍只允许定义了取消状态收敛的数据导出 Job。
+- 高风险 command body 只提交目标 revision、结构化 reason 和必要领域 input；actor/role/before state、policy result 与 canonical action digest 由服务端计算。
+- 时间为 ISO 8601 UTC，User 日界线单独携带 IANA timezone；自然语言文本带 BCP 47 tag。
+
+## 8. 验收
+
+- 三个 OpenAPI snapshot 和 client subpath 无 drift，User/Admin/Agent audience 互相拒绝。
+- Agent Executor 不能通过内部接口或数据库权限绕过 typed action/Proposal。
+- POST `/messages` 和 generic `/actions` 均不存在；instruction、语义结果与事件创建职责可区分。
+- BYOK failure problem 不触发 PLATFORM invocation/ledger。
+- permit 不能重放或改变 route/credential/input digest；未 READY asset 不能作为 instruction context。
+- Lexicon response 单 release，Attempt/Review/Assessment owner 与 correctness 不信任 client。
+- Admin 无 exact-resource SupportGrant 看不到明文；SupportGrant 永不解锁 AgentSession、ModelExchange、BYOK、hidden reasoning、system prompt 或 Provider raw body。
+- 七角色、组合角色、role expiry、self-change/last-admin protection 与 JobKindPolicy 覆盖 allow/deny contract。
+- Deployment browser route 只读；CI/service ingestion、Provider/Agent owner command 和 Admin API 互相拒绝错误 audience。
+- AuditEvent append-only、structured search、两级 retention、LegalHold、archive hash 与 24h AuditExport 通过 contract/integration tests。

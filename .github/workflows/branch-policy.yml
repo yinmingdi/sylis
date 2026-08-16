@@ -1,0 +1,42 @@
+name: Trunk branch policy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Trunk policy required
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a feature branch targeting main
+        env:
+          SOURCE: ${{ github.head_ref }}
+          TARGET: ${{ github.base_ref }}
+        run: |
+          test "$TARGET" = main
+          test "$SOURCE" != main
+          case "$SOURCE" in
+            feature/*|fix/*|refactor/*|chore/*|docs/*|test/*|ci/*|dependabot/*) ;;
+            *) echo "Unsupported source branch: $SOURCE"; exit 1 ;;
+          esac
+      - name: Validate conventional commit subjects
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([^)]+\))?!?: .+'
+          git log --format=%s "$BASE_SHA..$HEAD_SHA" | while IFS= read -r subject; do
+            [[ "$subject" =~ $pattern ]] || { echo "Invalid commit subject: $subject"; exit 1; }
+          done
+      - name: Validate repository secret policy
+        run: node tools/architecture/check-secrets.mjs

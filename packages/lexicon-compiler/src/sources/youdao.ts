@@ -2,6 +2,13 @@ import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 
 import { sourceContext } from "./source-context";
+import {
+  CandidateCollocationComponentRole,
+  CandidateCollocationType,
+  CandidateEntryRelationType,
+  CandidateSenseRelationType,
+  SourceAdapterKind,
+} from "../candidates/candidate-v1";
 import type {
   CandidateExample,
   CandidateExercise,
@@ -235,7 +242,7 @@ function collocations(record: JsonRecord, payload: JsonRecord, word: string) {
     return [
       {
         text,
-        relationType: "UNKNOWN" as const,
+        relationType: CandidateCollocationType.UNKNOWN,
         translations: translated
           ? [{ languageTag: "zh-CN", text: translated }]
           : [],
@@ -243,8 +250,8 @@ function collocations(record: JsonRecord, payload: JsonRecord, word: string) {
           surfaceText,
           role:
             surfaceText.toLocaleLowerCase() === word.toLocaleLowerCase()
-              ? ("HEAD" as const)
-              : ("PARTNER" as const),
+              ? CandidateCollocationComponentRole.HEAD
+              : CandidateCollocationComponentRole.PARTNER,
           targetText:
             surfaceText.toLocaleLowerCase() === word.toLocaleLowerCase()
               ? word
@@ -401,7 +408,7 @@ function wordFamilyRelations(record: JsonRecord, payload: JsonRecord) {
       return targetText
         ? [
             {
-              relationType: "DERIVATIONALLY_RELATED" as const,
+              relationType: CandidateEntryRelationType.DERIVATIONALLY_RELATED,
               targetText,
               targetPartOfSpeech,
             },
@@ -533,16 +540,22 @@ export async function* readYoudao(
     const synonymContainer = asRecord(sourceValue(record, payload, "syno"));
     const antonymContainer = asRecord(sourceValue(record, payload, "antos"));
     const relationGroups = [
-      ...actualRelations(synonymContainer.synos, "SYNONYM"),
-      ...actualRelations(antonymContainer.antos, "ANTONYM"),
+      ...actualRelations(
+        synonymContainer.synos,
+        CandidateSenseRelationType.SYNONYM,
+      ),
+      ...actualRelations(
+        antonymContainer.antos,
+        CandidateSenseRelationType.ANTONYM,
+      ),
       ...genericRelations(
         sourceValue(record, payload, "synonyms"),
-        "SYNONYM",
+        CandidateSenseRelationType.SYNONYM,
         topPartOfSpeech,
       ),
       ...genericRelations(
         sourceValue(record, payload, "antonyms"),
-        "ANTONYM",
+        CandidateSenseRelationType.ANTONYM,
         topPartOfSpeech,
       ),
     ];
@@ -588,7 +601,7 @@ export async function* readYoudao(
       Boolean(value.text),
     );
 
-    yield sourceContext(source, "YOUDAO_NDJSON", {
+    yield sourceContext(source, SourceAdapterKind.YOUDAO_NDJSON, {
       sourceKey,
       rawPayload: record as never,
       languageTag: "en",

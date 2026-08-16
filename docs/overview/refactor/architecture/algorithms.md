@@ -8,19 +8,19 @@ AI 模型不是算法真相。模型可以生成候选或辅助反馈，但正�
 
 ## 2. 注册表
 
-| Algorithm                | Owner               | 主要输入                                        | 输出                                       | 失败策略                            |
-| ------------------------ | ------------------- | ----------------------------------------------- | ------------------------------------------ | ----------------------------------- |
-| `lexical-identity/v1`    | Lexicon Compiler    | normalized source candidates + evidence         | Headword/Entry/Form/Sense/Concept proposal | 冲突进入 `UNRESOLVED`，不自动合并   |
-| `lexicon-search/v1`      | Lexicon API         | release、query、language、filters、cursor       | ranked typed matches + reason              | 返回空分区，不调用 AI               |
-| `fsrs-objective/v1`      | Learning            | MemoryState + ReviewEvent rating/time           | next state + due                           | 事务回滚，保留前态                  |
-| `study-selection/v1`     | Learning            | due objectives、coverage、history、capability   | ordered plan items + selection trace       | 无合格 Exercise 时返回明确缺口      |
-| `exercise-scoring/v1`    | Learning            | revision、presented choices、typed response     | outcome、score、feedback eligibility       | 422，不做宽松猜测                   |
-| `assessment-assembly/v1` | Assessment          | blueprint revision、eligible bank、seed         | fixed session items                        | blueprint unsatisfied，禁止静默缩水 |
-| `reading-targets/v1`     | Reading             | document annotations + due objectives           | bounded ReadingTargets                     | 保留文档，目标列表为空              |
-| `content-relevance/v1`   | Reading             | source order、filters、target coverage、history | source-specific ordered candidates         | 回退来源原始顺序                    |
-| `ai-publication-gate/v1` | Compiler/Admin      | candidate、evidence、validators、risk policy    | publish/review/reject decision             | 任一 ERROR 阻断 batch               |
-| `ai-budget/v1`           | AI Tutor/Compiler   | quota、ledger、pilot forecast、idempotency key  | allow/reserve/settle/pause                 | 超额前拒绝或暂停，不透支            |
-| `import-progress/v1`     | Platform Operations | bytes/rows/checkpoints/stage timestamps         | progress、rate、ETA、warnings              | ETA 可为空，已确认计数不可倒退      |
+| Algorithm                | Owner                   | 主要输入                                        | 输出                                       | 失败策略                            |
+| ------------------------ | ----------------------- | ----------------------------------------------- | ------------------------------------------ | ----------------------------------- |
+| `lexical-identity/v1`    | Lexicon Compiler        | normalized source candidates + evidence         | Headword/Entry/Form/Sense/Concept proposal | 冲突进入 `UNRESOLVED`，不自动合并   |
+| `lexicon-search/v1`      | Lexicon API             | release、query、language、filters、cursor       | ranked typed matches + reason              | 返回空分区，不调用 AI               |
+| `fsrs-objective/v1`      | Learning                | MemoryState + ReviewEvent rating/time           | next state + due                           | 事务回滚，保留前态                  |
+| `study-selection/v1`     | Learning                | due objectives、coverage、history、capability   | ordered plan items + selection trace       | 无合格 Exercise 时返回明确缺口      |
+| `exercise-scoring/v1`    | Learning                | revision、presented choices、typed response     | outcome、score、feedback eligibility       | 422，不做宽松猜测                   |
+| `assessment-assembly/v1` | Assessment              | blueprint revision、eligible bank、seed         | fixed session items                        | blueprint unsatisfied，禁止静默缩水 |
+| `reading-targets/v1`     | Reading                 | document annotations + due objectives           | bounded ReadingTargets                     | 保留文档，目标列表为空              |
+| `content-relevance/v1`   | Reading                 | source order、filters、target coverage、history | source-specific ordered candidates         | 回退来源原始顺序                    |
+| `ai-publication-gate/v1` | Compiler/Admin          | candidate、evidence、validators、risk policy    | publish/review/reject decision             | 任一 ERROR 阻断 batch               |
+| `ai-budget/v1`           | Learning Agent/Compiler | quota、ledger、pilot forecast、idempotency key  | allow/reserve/settle/wait-or-fail          | 超额前拒绝；领域 Run 可显式等待批准 |
+| `import-progress/v1`     | Platform Operations     | bytes/rows/checkpoints/stage timestamps         | progress、rate、ETA、warnings              | ETA 可为空，已确认计数不可倒退      |
 
 ## 3. Lexical identity resolution
 
@@ -67,7 +67,7 @@ FSRS 只处理一个 User 对一个 LearningObjective 的 difficulty、stability
 
 - `CHOICE` response 只比较 revision 内 stable choice ID 集合；SINGLE/MULTIPLE cardinality 决定集合约束。
 - `SHORT_TEXT` 使用语言感知 normalization 与受控 accepted response；不得用任意编辑距离把错误猜成正确，INLINE 只改变呈现位置。
-- `EXTENDED_TEXT`、`SELF_REPORT`、`AI_ASSISTED`、开放翻译和自由造句只能 `PRACTICE_ONLY`。
+- `EXTENDED_TEXT`、`SELF_REPORT`、开放翻译和自由造句只能 `PRACTICE_ONLY`；0.0.1 不发布尚无 durable evaluation result 的 AI 自动评分。
 - `NO_CAPTURE` 只允许 reveal 后 `SELF_REPORT`，不创建文本/音频响应，也不调用 ASR 或自动发音评分；`SPOKEN_FORM_PRODUCTION` 必须有可靠发音 stimulus。
 - Session assembly 依 blueprint 的 facet/direction/evidence/task/response/validation quotas 无放回抽样，固定 seed、release、algorithm version 和 choice order。
 - 题库不足返回 `BLUEPRINT_UNSATISFIED` 与缺口报告，不临时请求 AI 或减少题量。
@@ -84,7 +84,7 @@ ReadingTarget 候选必须同时存在于固定 DocumentRevision annotation 和�
 
 发布门禁固定为：schema -> reference closure -> lexical evidence -> answer uniqueness -> distractor collision -> duplicate/toxicity/language checks -> risk classification -> automated publish 或 human review。AI judge 不能成为唯一 verifier；抽检失败率超过 batch policy 阈值时阻断整个 batch。
 
-Compiler 全量运行前必须完成 200 lemma pilot。成本预测包含输入/输出 token、缓存命中、验证失败和重试分位数；Admin 明确批准 run budget，80% 发告警，100% 令 BackgroundJob 进入 `PAUSED` 并写 `pauseReasonCode=BUDGET_APPROVAL_REQUIRED`，追加预算后以授权 command 重新排队并从 checkpoint 恢复。
+Compiler 全量运行前必须完成 200 lemma pilot。成本预测包含输入/输出 token、缓存命中、验证失败和重试分位数；User/Admin 明确批准 BuildRun budget，80% 发告警，100% 的 owner budget typed signal 使当前 activation Job 失败并令 BuildRun 等待新的预算批准。追加预算继续引用同一固定 forecast，为同一 BuildRun 创建新 Job，从兼容 checkpoint 恢复；Job 本身没有暂停状态。全局模型 BudgetPolicy/Quota 超限保持独立失败，不能通过追加单个 BuildRun 预算绕过。
 
 在线调用先以 `user + capability + window` 检查用户额度，再检查系统额度和并发；预留后调用 provider，按实际用量结算。幂等键命中只能复用相同 input hash、prompt version 和 model，不重复扣费。
 

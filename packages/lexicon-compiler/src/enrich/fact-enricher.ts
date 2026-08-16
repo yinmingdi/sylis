@@ -1,11 +1,24 @@
-import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-contracts";
+import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-artifact";
 
-import { ensureGeneratedProvenance } from "./generated-provenance";
+import {
+  ensureDerivedCandidateProvenance,
+  recordCandidatePromotionLineage,
+  sourceRecordIdsForProvenance,
+} from "../candidates/candidate-provenance";
+import { CandidateCollocationComponentRole } from "../candidates/candidate-v1";
+import {
+  executeLexicalCandidateTasks,
+  type LexicalCandidatePort,
+  LexicalCandidatePromotionEntityType,
+  LexicalCandidateRiskClass,
+  LexicalCandidateTargetKind,
+  LexicalCandidateTaskType,
+} from "../candidates/lexical-candidate";
 import {
   normalizeComparableText,
   normalizeIdentityText,
 } from "../normalize/text-profile";
-import type { CompileProgressPort } from "../progress/reporter";
+import { CompileStage, type CompileProgressPort } from "../progress/reporter";
 import { LexicalStructureBuilder } from "../resolve/lexical-structures";
 import { stableId } from "../sources/source-context";
 import {
@@ -101,30 +114,44 @@ function containsKnownForm(text: string, context: SenseContext): boolean {
 async function enrichExamples(
   artifact: SylisLexiconArtifactV1,
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   candidates: SenseContext[],
   progress: CompileProgressPort,
   offset: number,
   total: number,
 ): Promise<number> {
   let processed = offset;
-  const executions = await executor.executeAll<ExampleGenerationCandidate>(
-    candidates.map((context) => ({
-      taskType: "EXAMPLE_GENERATION",
-      schemaName: "sylis_example_generation",
-      schema: exampleGenerationCandidateSchema,
-      systemPrompt:
-        "Generate one short bilingual learner example for exactly the supplied Sense. The English sentence must contain one supplied written form. Return null when the evidence cannot support an unambiguous example. Do not invent citations or source claims.",
-      input: evidence(context),
-      maxTokens: 320,
-      semanticValidator: (candidate) =>
-        candidate.example && !containsKnownForm(candidate.example.text, context)
-          ? "TARGET_FORM_NOT_MENTIONED"
-          : null,
-    })),
-  );
+  const executions =
+    await executeLexicalCandidateTasks<ExampleGenerationCandidate>(
+      executor,
+      candidatePort,
+      candidates.map((context) => ({
+        taskType: LexicalCandidateTaskType.EXAMPLE_GENERATION,
+        target: {
+          kind: LexicalCandidateTargetKind.SENSE,
+          targetKey: context.sense.senseId,
+        },
+        riskClass: LexicalCandidateRiskClass.MEDIUM,
+        sourceRecordIds: sourceRecordIdsForProvenance(
+          artifact,
+          upstreamProvenance(context),
+        ),
+        schemaName: "sylis_example_generation",
+        schema: exampleGenerationCandidateSchema,
+        systemPrompt:
+          "Generate one short bilingual learner example for exactly the supplied Sense. The English sentence must contain one supplied written form. Return null when the evidence cannot support an unambiguous example. Do not invent citations or source claims.",
+        input: evidence(context),
+        maxTokens: 320,
+        semanticValidator: (candidate) =>
+          candidate.example &&
+          !containsKnownForm(candidate.example.text, context)
+            ? "TARGET_FORM_NOT_MENTIONED"
+            : null,
+      })),
+    );
   for (const [index, context] of candidates.entries()) {
     const execution = executions[index]!;
-    const generated = execution.result.value.example;
+    const generated = execution.value?.example;
     if (generated) {
       const normalized = normalizeComparableText(generated.text);
       const existing = artifact.lexicon.examples.find(
@@ -132,10 +159,11 @@ async function enrichExamples(
           example.languageTag === "en" &&
           normalizeComparableText(example.text) === normalized,
       );
-      const provenanceId = ensureGeneratedProvenance(
+      const provenanceId = ensureDerivedCandidateProvenance(
         artifact,
         execution.candidateKey,
-        execution.result.value,
+        execution.candidateRevisionId!,
+        execution.value,
         upstreamProvenance(context),
         "Generated example passed target-form and Sense-boundary validation.",
       );
@@ -158,6 +186,13 @@ async function enrichExamples(
           provenanceId,
         });
       }
+      recordCandidatePromotionLineage(
+        artifact,
+        execution.candidateRevisionId!,
+        "example",
+        LexicalCandidatePromotionEntityType.EXAMPLE,
+        exampleId,
+      );
       if (
         !artifact.lexicon.senseExamples.some(
           (binding) =>
@@ -180,11 +215,11 @@ async function enrichExamples(
     }
     processed += 1;
     await progress.report({
-      stage: "FACT_GAP_FILL",
+      stage: CompileStage.FACT_GAP_FILL,
       processed,
       total,
-      aiInputTokens: execution.result.usage.inputTokens,
-      aiOutputTokens: execution.result.usage.outputTokens,
+      aiInputTokens: execution.usage.inputTokens,
+      aiOutputTokens: execution.usage.outputTokens,
       aiCostMicros: executor.spentMicros,
       message: "EXAMPLE_GENERATION",
     });
@@ -195,6 +230,7 @@ async function enrichExamples(
 async function enrichCollocations(
   artifact: SylisLexiconArtifactV1,
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   candidates: SenseContext[],
   progress: CompileProgressPort,
   offset: number,
@@ -202,39 +238,53 @@ async function enrichCollocations(
 ): Promise<number> {
   const builder = new LexicalStructureBuilder(artifact);
   let processed = offset;
-  const executions = await executor.executeAll<CollocationEnrichmentCandidate>(
-    candidates.map((context) => ({
-      taskType: "COLLOCATION_ENRICHMENT",
-      schemaName: "sylis_collocation_enrichment",
-      schema: collocationEnrichmentCandidateSchema,
-      systemPrompt:
-        "Return at most three concise collocation candidates for exactly the supplied Sense. Every candidate must contain a supplied written form, have exactly one HEAD component, and use typed components. Return an empty array when evidence is insufficient.",
-      input: evidence(context),
-      maxTokens: 700,
-      semanticValidator: (candidate) => {
-        for (const collocation of candidate.collocations) {
-          if (!containsKnownForm(collocation.text, context)) {
-            return "TARGET_FORM_NOT_MENTIONED";
+  const executions =
+    await executeLexicalCandidateTasks<CollocationEnrichmentCandidate>(
+      executor,
+      candidatePort,
+      candidates.map((context) => ({
+        taskType: LexicalCandidateTaskType.COLLOCATION_ENRICHMENT,
+        target: {
+          kind: LexicalCandidateTargetKind.SENSE,
+          targetKey: context.sense.senseId,
+        },
+        riskClass: LexicalCandidateRiskClass.HIGH,
+        sourceRecordIds: sourceRecordIdsForProvenance(
+          artifact,
+          upstreamProvenance(context),
+        ),
+        schemaName: "sylis_collocation_enrichment",
+        schema: collocationEnrichmentCandidateSchema,
+        systemPrompt:
+          "Return at most three concise collocation candidates for exactly the supplied Sense. Every candidate must contain a supplied written form, have exactly one HEAD component, and use typed components. Return an empty array when evidence is insufficient.",
+        input: evidence(context),
+        maxTokens: 700,
+        semanticValidator: (candidate) => {
+          for (const collocation of candidate.collocations) {
+            if (!containsKnownForm(collocation.text, context)) {
+              return "TARGET_FORM_NOT_MENTIONED";
+            }
+            if (
+              collocation.components.filter(
+                (component) =>
+                  component.role === CandidateCollocationComponentRole.HEAD,
+              ).length !== 1
+            ) {
+              return "HEAD_COMPONENT_CARDINALITY";
+            }
           }
-          if (
-            collocation.components.filter(
-              (component) => component.role === "HEAD",
-            ).length !== 1
-          ) {
-            return "HEAD_COMPONENT_CARDINALITY";
-          }
-        }
-        return null;
-      },
-    })),
-  );
+          return null;
+        },
+      })),
+    );
   for (const [index, context] of candidates.entries()) {
     const execution = executions[index]!;
-    if (execution.result.value.collocations.length > 0) {
-      const provenanceId = ensureGeneratedProvenance(
+    if (execution.value && execution.value.collocations.length > 0) {
+      const provenanceId = ensureDerivedCandidateProvenance(
         artifact,
         execution.candidateKey,
-        execution.result.value,
+        execution.candidateRevisionId!,
+        execution.value,
         upstreamProvenance(context),
         "Generated collocations passed Sense and component validation.",
       );
@@ -250,26 +300,40 @@ async function enrichCollocations(
           examples: [],
           relations: [],
           tags: [],
-          collocations: execution.result.value.collocations.map(
-            (collocation) => ({
-              ...collocation,
-              components: collocation.components.map((component) => ({
-                ...component,
-                targetText: component.targetText ?? undefined,
-              })),
-            }),
-          ),
+          collocations: execution.value.collocations.map((collocation) => ({
+            ...collocation,
+            components: collocation.components.map((component) => ({
+              ...component,
+              targetText: component.targetText ?? undefined,
+            })),
+          })),
         },
         provenanceId,
       );
+      for (const [
+        collocationIndex,
+        collocation,
+      ] of execution.value.collocations.entries()) {
+        recordCandidatePromotionLineage(
+          artifact,
+          execution.candidateRevisionId!,
+          `collocation:${collocationIndex + 1}`,
+          LexicalCandidatePromotionEntityType.COLLOCATION,
+          stableId(
+            "collocation",
+            "en",
+            normalizeIdentityText(collocation.text),
+          ),
+        );
+      }
     }
     processed += 1;
     await progress.report({
-      stage: "FACT_GAP_FILL",
+      stage: CompileStage.FACT_GAP_FILL,
       processed,
       total,
-      aiInputTokens: execution.result.usage.inputTokens,
-      aiOutputTokens: execution.result.usage.outputTokens,
+      aiInputTokens: execution.usage.inputTokens,
+      aiOutputTokens: execution.usage.outputTokens,
       aiCostMicros: executor.spentMicros,
       message: "COLLOCATION_ENRICHMENT",
     });
@@ -281,6 +345,7 @@ async function enrichCollocations(
 async function enrichFrames(
   artifact: SylisLexiconArtifactV1,
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   candidates: SenseContext[],
   progress: CompileProgressPort,
   offset: number,
@@ -288,9 +353,20 @@ async function enrichFrames(
 ): Promise<void> {
   const builder = new LexicalStructureBuilder(artifact);
   let processed = offset;
-  const executions = await executor.executeAll<SynsemFrameCandidate>(
+  const executions = await executeLexicalCandidateTasks<SynsemFrameCandidate>(
+    executor,
+    candidatePort,
     candidates.map((context) => ({
-      taskType: "SYNSEM_FRAME",
+      taskType: LexicalCandidateTaskType.SYNSEM_FRAME,
+      target: {
+        kind: LexicalCandidateTargetKind.SENSE,
+        targetKey: context.sense.senseId,
+      },
+      riskClass: LexicalCandidateRiskClass.HIGH,
+      sourceRecordIds: sourceRecordIdsForProvenance(
+        artifact,
+        upstreamProvenance(context),
+      ),
       schemaName: "sylis_synsem_frame",
       schema: synsemFrameCandidateSchema,
       systemPrompt:
@@ -308,15 +384,16 @@ async function enrichFrames(
   );
   for (const [index, context] of candidates.entries()) {
     const execution = executions[index]!;
-    if (execution.result.value.frame) {
-      const provenanceId = ensureGeneratedProvenance(
+    if (execution.value?.frame) {
+      const provenanceId = ensureDerivedCandidateProvenance(
         artifact,
         execution.candidateKey,
-        execution.result.value,
+        execution.candidateRevisionId!,
+        execution.value,
         upstreamProvenance(context),
         "Generated SynSem frame passed predicate and target validation.",
       );
-      const frame = execution.result.value.frame;
+      const frame = execution.value.frame;
       builder.addSenseStructures(
         context.entry.entryId,
         context.sense.senseId,
@@ -342,14 +419,21 @@ async function enrichFrames(
         },
         provenanceId,
       );
+      recordCandidatePromotionLineage(
+        artifact,
+        execution.candidateRevisionId!,
+        "frame",
+        LexicalCandidatePromotionEntityType.FRAME,
+        stableId("frame", context.entry.entryId, frame.frameKey),
+      );
     }
     processed += 1;
     await progress.report({
-      stage: "FACT_GAP_FILL",
+      stage: CompileStage.FACT_GAP_FILL,
       processed,
       total,
-      aiInputTokens: execution.result.usage.inputTokens,
-      aiOutputTokens: execution.result.usage.outputTokens,
+      aiInputTokens: execution.usage.inputTokens,
+      aiOutputTokens: execution.usage.outputTokens,
       aiCostMicros: executor.spentMicros,
       message: "SYNSEM_FRAME",
     });
@@ -360,6 +444,7 @@ async function enrichFrames(
 export async function enrichArtifactFacts(
   artifact: SylisLexiconArtifactV1,
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   progress: CompileProgressPort,
 ): Promise<void> {
   const allContexts = contexts(artifact).filter(
@@ -392,6 +477,7 @@ export async function enrichArtifactFacts(
   let processed = await enrichExamples(
     artifact,
     executor,
+    candidatePort,
     exampleCandidates,
     progress,
     0,
@@ -400,6 +486,7 @@ export async function enrichArtifactFacts(
   processed = await enrichCollocations(
     artifact,
     executor,
+    candidatePort,
     collocationCandidates,
     progress,
     processed,
@@ -408,6 +495,7 @@ export async function enrichArtifactFacts(
   await enrichFrames(
     artifact,
     executor,
+    candidatePort,
     frameCandidates,
     progress,
     processed,

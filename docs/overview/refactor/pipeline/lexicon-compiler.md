@@ -8,18 +8,17 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sylis/lexicon-contracts": "workspace:*",
-    "@sylis/ai-provider": "workspace:*"
+    "@sylis/lexicon-artifact": "workspace:*"
   }
 }
 ```
 
-它是独立 workspace package，不是 NestJS service。允许 Node 标准库、streaming parser/writer、schema validator 和 provider-neutral `StructuredGenerationPort`；禁止直接依赖 AI SDK、`@prisma/client`、API module、Railway CLI 或生产数据库。DeepSeek adapter 只在本地 CLI 或独立 Compiler Runner 的 composition root 装配，编译 pipeline 只接收注入端口。
+它是独立 workspace package，不是 NestJS app。允许 Node 标准库、streaming parser/writer 和 schema validator；禁止直接依赖 provider adapter/SDK、`@prisma/client`、API module、Railway CLI 或生产数据库。Compiler 自己定义最小 structured-generation port；本地 CLI 和 `lexicon-builder` 的 app-local adapter 都通过 Model Gateway 调用，library test 注入 fake。
 
 Artifact 公共契约不放在 compiler 内，而在 sibling package：
 
 ```text
-packages/lexicon-contracts/
+packages/lexicon-artifact/
   src/schema/artifact-v1.schema.json
   src/types/artifact-v1.ts
   src/types/controlled-vocabularies.ts
@@ -27,7 +26,7 @@ packages/lexicon-contracts/
   src/validators/references.ts
 ```
 
-它不依赖 compiler、importer、NestJS 或 Prisma。compiler 和 importer 都只向它依赖，第三方可单独取得 JSON Schema。compiler 内仍拥有 candidate schema 和语言学/题目语义验证，因为这些不是 artifact consumer contract。
+它不依赖 compiler、publisher、NestJS 或 Prisma。compiler 和 publisher 都只向它依赖，第三方可单独取得 JSON Schema。compiler 内仍拥有 candidate schema 和语言学/题目语义验证，因为这些不是 artifact consumer contract。
 
 ## 2. 目录
 
@@ -134,7 +133,7 @@ pnpm --filter @sylis/lexicon-compiler compile \
 pnpm --filter @sylis/lexicon-compiler validate \
   --input "$PWD/.work/sylis-lexicon-v1.json.zst"
 
-# 本地全量诊断构建；正式全量构建由 Railway Compiler Runner 执行
+# 本地全量诊断构建；正式全量构建由 Railway Lexicon Builder 执行
 pnpm --filter @sylis/lexicon-compiler compile \
   --manifest "$PWD/lexicon.sources.json" \
   --profile core-20000 \
@@ -252,7 +251,7 @@ export LEXICON_SOURCE_MANIFEST="$PWD/.work/lexicon-pilot-input/source-manifest.j
 pnpm lexicon:pilot
 ```
 
-prepare 命令拒绝任何 tracked/staged diff，也拒绝 `packages/ai-provider`、`packages/lexicon-contracts`、`packages/lexicon-compiler`、`tools/lexicon` 和相关根配置中的未跟踪文件；这些条件证明执行代码与 `HEAD` 一致。受保护 pilot 所有权外的未跟踪个人文件不会参与 compiler，也不会再无意义地阻塞 pilot。命令不修改模板；它固定当前 `HEAD`，并把模板中的相对本地 source/headword/rich-target 路径解析为绝对路径，避免运行 manifest 移到 `.work` 后改变路径语义。它只输出路径、commit 和 manifest SHA-256，不解析或打印任何 source checksum 环境变量与密钥。
+prepare 命令拒绝任何 tracked/staged diff，也拒绝 `apps/backends/model-gateway`、`apps/backends/lexicon-builder`、`packages/lexicon-artifact`、`packages/lexicon-compiler`、`tools/lexicon` 和相关根配置中的未跟踪文件；这些条件证明执行代码与 `HEAD` 一致。受保护 pilot 所有权外的未跟踪个人文件不会参与 compiler，也不会再无意义地阻塞 pilot。命令不修改模板；它固定当前 `HEAD`，并把模板中的相对本地 source/headword/rich-target 路径解析为绝对路径，避免运行 manifest 移到 `.work` 后改变路径语义。它只输出路径、commit 和 manifest SHA-256，不解析或打印任何 source checksum 环境变量与密钥。
 
 ### 4.1 固定词头集合
 
@@ -349,7 +348,7 @@ profile 选择和实际 count 写进 manifest，不能把 raw row 数称为单�
 ```typescript
 export interface CompileOptions {
   manifestPath: string;
-  profile: "fixture" | "pilot-200" | "core-20000";
+  profile: CompileProfile;
   outputPath: string;
   resumeRunId?: string;
   ai?: { enabled: boolean; budgetUsd: string; concurrency: number };
@@ -364,38 +363,33 @@ export async function compileLexicon(
   options: CompileOptions,
   dependencies: CompileDependencies,
 ): Promise<CompileResult>;
-export async function validateArtifactStream(
-  inputPath: string,
-  options?: ArtifactStreamValidationOptions,
-): Promise<ArtifactStreamValidationResult>;
 ```
 
-package 根入口只公开上述 compile、stream validation、结果类型和 `CompileProgressPort`。candidate、source adapter、resolver、enricher、checkpoint、cache、canonical writer 与具体 validator 都是实现；Runner 和 importer 不得 deep import。测试需要的内存 cache 和受保护环境覆盖通过包内 internal seam 注入，不扩大公共 interface。
+Compiler package 根入口公开 compile、source materialization、structured-generation port、结果类型和 progress port。candidate、source adapter、resolver、enricher、checkpoint、cache 与 writer 都是实现；Builder 不得 deep import。
 
-`sylisLexiconArtifactV1Schema`、artifact TypeScript types 和通用 shape/reference validator 由 `@sylis/lexicon-contracts` 导出。importer 不依赖 compiler，也不调用 compiler pipeline。
+`sylisLexiconArtifactV1Schema`、artifact TypeScript types、canonical/order、shape/reference/rights/linguistic/profile 和 streaming validator 全部由 `@sylis/lexicon-artifact` 根入口导出。Compiler 和 Publisher 都只依赖这个唯一 Artifact owner；Publisher 不依赖 compiler，也不调用 compiler pipeline。
 
-当 `ai.enabled=true` 时缺少 `structuredGeneration` 必须在 PREFLIGHT 失败；port 还必须先通过一次 strict structured-output capability probe，失败时不得读取 source 或执行任何生成 task。禁用 AI 时 pipeline 不加载 provider adapter。本地 `src/cli/composition.ts` 可从 validated compiler-only 环境创建 DeepSeek adapter；正式构建由 Runner 注入同一 port，library test 注入 fake。Compiler 不接收 `StreamingGenerationPort`，因为 artifact enrichment 只允许 schema-validated structured result。
+当 `ai.enabled=true` 时缺少 structured generation interface 必须在 PREFLIGHT 失败；Model Gateway route 还必须先通过 strict structured-output capability probe，失败时不得读取 source 或执行生成 task。禁用 AI 时 pipeline 不创建模型调用。本地受控 CLI 和正式 Builder 都注入 Model Gateway client，library test 注入 fake。Compiler 不接收 streaming chat interface，因为 artifact enrichment 只允许 schema-validated structured result。
 
 ## 10. 本地先行门禁
 
 任何全量构建前必须依次通过：fixture、无 AI pilot、真实 AI 200 词 pilot、golden diff、预算预测。pilot 覆盖规则词、不规则词、多义词、同形词、multiword、affix、过去分词、词源冲突、来源缺失、五类 PedagogicalMaterial、material-as-stimulus 和含真题/练习的有道记录。
 
-## 11. Railway Compiler Runner
+## 11. Railway Lexicon Builder
 
-正式全量构建不在 API、通用 Worker 或 GitHub Actions 长时间运行，而由独立 `@sylis/lexicon-compiler-runner` 执行：
+正式全量构建不在 API、Automation Executor 或 GitHub Actions 长时间运行，而由独立 `@sylis/lexicon-builder` 执行：
 
 ```text
-services/lexicon-compiler-runner/
+apps/backends/lexicon-builder/
   src/
     main.ts
-    runner.module.ts
     runtime/       claim、lease、checkpoint、progress、shutdown
-    handlers/      lexicon-build.handler.ts
-    adapters/      database、object-storage、ai-provider、source-fetch
+    handlers/      build-lexicon.ts
+    adapters/      database、object-storage、model-gateway-client、source-fetch
 ```
 
-Runner 只 claim `LEXICON_BUILD`，从 typed `BuildRun` 读取已批准 manifest/profile/budget/model policy，装配 source fetch、DeepSeek `StructuredGenerationPort`、artifact storage 和 progress port，再调用 `compileLexicon`。阶段 checkpoint 同时记录 input hash、compiler/schema/handler version 与对象存储中的可恢复中间制品；Railway 重启后只有 hash/version 全匹配才 resume。
+Builder 只 claim Lexicon Build activation Job，从 typed `BuildRun` 读取已批准 manifest/profile/budget/ProviderRouteRelease，取得一次性 ModelExecutionPermit，装配 source fetch、Gateway structured generation、Artifact storage 和 progress，再调用 `compileLexicon`。Checkpoint 同时记录 input hash、compiler/schema/handler/route release version 与对象存储中的可恢复中间制品；Railway 重启后只有 hash/version 全匹配才恢复。
 
-Runner 将 stage、processed/total、吞吐、AI token/cost、warning 和 heartbeat 写入统一 `BackgroundJob`；最终只上传通过 schema、语义、rights、content hash 和重新流式读取验收的 `sylis-lexicon-v1.json.zst`，并把不可变 artifact URI/hash 作为 result reference。它不执行 import、validation activation 或 production DB 词典写入。
+Builder 将 stage、processed/total、吞吐、AI token/cost、warning 和 heartbeat 写入当前 Job；最终只上传通过 schema、语义、rights、content hash 和重新流式读取验收的 `sylis-lexicon-v1.json.zst`，并把不可变 Artifact URI/hash 作为 result reference。它不执行 publish、activation 或 production DB 词典写入。
 
 GitHub protected workflow 负责代码/manifest/pilot/预算审批以及 artifact publish/activation 门禁；Railway 承担长计算。详细目录与依赖见 [后端目录与 NestJS 模块边界](../implementation/backend-structure.md)，CI 与权限见 [CI/CD、Railway 与密钥](../delivery/cicd-security.md)。

@@ -1,3 +1,8 @@
+import {
+  CandidateCollocationComponentRole,
+  CandidateCollocationType,
+} from "../../candidates/candidate-v1";
+
 export interface ExampleGenerationCandidate {
   example: {
     text: string;
@@ -30,10 +35,10 @@ export const exampleGenerationCandidateSchema = {
 export interface CollocationEnrichmentCandidate {
   collocations: Array<{
     text: string;
-    relationType: "FREE" | "RESTRICTED" | "IDIOMATIC" | "UNKNOWN";
+    relationType: CandidateCollocationType;
     components: Array<{
       surfaceText: string;
-      role: "HEAD" | "PARTNER" | "FUNCTION";
+      role: CandidateCollocationComponentRole;
       targetText: string | null;
     }>;
   }>;
@@ -55,7 +60,7 @@ export const collocationEnrichmentCandidateSchema = {
           text: { type: "string", minLength: 3, maxLength: 160 },
           relationType: {
             type: "string",
-            enum: ["FREE", "RESTRICTED", "IDIOMATIC", "UNKNOWN"],
+            enum: Object.values(CandidateCollocationType),
           },
           components: {
             type: "array",
@@ -73,7 +78,7 @@ export const collocationEnrichmentCandidateSchema = {
                 },
                 role: {
                   type: "string",
-                  enum: ["HEAD", "PARTNER", "FUNCTION"],
+                  enum: Object.values(CandidateCollocationComponentRole),
                 },
                 targetText: {
                   anyOf: [

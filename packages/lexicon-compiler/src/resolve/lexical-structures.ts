@@ -1,7 +1,7 @@
 import type {
   SenseUsage,
   SylisLexiconArtifactV1,
-} from "@sylis/lexicon-contracts";
+} from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 
 import type {

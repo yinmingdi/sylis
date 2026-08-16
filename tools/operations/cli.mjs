@@ -12,18 +12,24 @@ import {
 } from "./lib/arguments.mjs";
 import { createEvidenceManifest, writeEvidence } from "./lib/evidence.mjs";
 import { rollbackDeployment } from "./lib/railway-api.mjs";
+import {
+  deploymentEndpoints,
+  deploymentEndpointsFromOrigins,
+  readDeploymentManifest,
+  rehearseDeployment,
+} from "./lib/deployment-rehearsal.mjs";
 
 const usage = `Usage: pnpm ops -- <command> [options]
 
 Commands:
-  health-rehearsal        --health-url <url> [--health-url <url>]
+  health-rehearsal        --manifest <path> --service-url <service>=<url> [--service-url ...]
   application-rollback    --deployment-id <id> --confirm <id>
   lexicon-release         --action <validate|preview|request|approve|activate> [options]
   lexicon-rollback        Alias of lexicon-release for a previous VALIDATED release
-  job-resume              --job-id <id> --reason <text> --confirm <id>
-  admin-session-revoke    --user-id <id> --session-id <id> --reason <text> --confirm <id>
-  source-withdraw         --post-id <id> --reason <text> --confirm <id>
-  ai-kill-switch          --state <disabled|enabled> --reason <text> --confirm <state>
+  job-retry               --job-id <id> --reason <text> --confirm <id>
+  job-cancel              --job-id <id> --reason <text> --confirm <id>
+  user-session-revoke     --user-id <id> --reason <text> --confirm <id>
+  source-synchronize      --version-id <id> [--idempotency-key <key>]
   evidence-manifest
 `;
 
@@ -37,6 +43,26 @@ const publicInputs = (options) =>
 const adminCommand = async (path, init) => createAdminApi()(path, init);
 
 async function healthRehearsal(options) {
+  const manifestPath =
+    option(options, "manifest") || process.env.SYLIS_DEPLOYMENT_MANIFEST;
+  if (manifestPath) {
+    const manifest = await readDeploymentManifest(manifestPath);
+    const configuredEndpoints = deploymentEndpoints(
+      optionsList(options, "service-url"),
+      process.env.SYLIS_DEPLOYMENT_ENDPOINTS,
+    );
+    return rehearseDeployment({
+      manifest,
+      endpoints:
+        configuredEndpoints.size > 0
+          ? configuredEndpoints
+          : deploymentEndpointsFromOrigins(manifest, {
+              apiOrigin: process.env.SYLIS_API_URL,
+              webOrigin: process.env.SYLIS_WEB_URL,
+              adminOrigin: process.env.SYLIS_ADMIN_URL,
+            }),
+    });
+  }
   const urls = [
     ...optionsList(options, "health-url"),
     ...(process.env.SYLIS_HEALTH_URLS || "")
@@ -69,7 +95,7 @@ async function healthRehearsal(options) {
   );
 }
 
-async function lexiconRollback(options) {
+async function lexiconReleaseCommand(options) {
   const action = choice(options, "action", [
     "validate",
     "preview",
@@ -80,15 +106,19 @@ async function lexiconRollback(options) {
   if (action === "approve") {
     const approvalId = option(options, "approval-id", { required: true });
     const reason = option(options, "reason", { required: true });
-    return adminCommand(`/api/admin/v1/approvals/${approvalId}/decisions`, {
-      method: "POST",
-      body: { decision: "APPROVE", reason },
-    });
+    const actionDigest = option(options, "action-digest", { required: true });
+    return adminCommand(
+      `/api/admin/v1/lexicon/activation-requests/${approvalId}/decisions`,
+      {
+        method: "POST",
+        body: { decision: "APPROVE", reason, actionDigest },
+      },
+    );
   }
   const releaseId = option(options, "release-id", { required: true });
   if (action === "validate") {
     return adminCommand(
-      `/api/admin/v1/lexicon-releases/${releaseId}/validation-jobs`,
+      `/api/admin/v1/lexicon/releases/${releaseId}/validations`,
       {
         method: "POST",
         idempotencyKey: option(options, "idempotency-key") || randomUUID(),
@@ -96,8 +126,8 @@ async function lexiconRollback(options) {
     );
   }
   const preview = await adminCommand(
-    `/api/admin/v1/lexicon-releases/${releaseId}/activation-previews`,
-    { method: "POST" },
+    `/api/admin/v1/lexicon/releases/${releaseId}/activation-preview`,
+    { method: "GET" },
   );
   const expectedContentHash = option(options, "expected-content-hash");
   if (expectedContentHash && preview?.contentHash !== expectedContentHash) {
@@ -111,7 +141,7 @@ async function lexiconRollback(options) {
   const reason = option(options, "reason", { required: true });
   if (action === "request") {
     return adminCommand(
-      `/api/admin/v1/lexicon-releases/${releaseId}/activation-requests`,
+      `/api/admin/v1/lexicon/releases/${releaseId}/activation-requests`,
       {
         method: "POST",
         body: { reason },
@@ -120,10 +150,10 @@ async function lexiconRollback(options) {
   }
   confirm(options, releaseId);
   const approvalId = option(options, "approval-id", { required: true });
-  return adminCommand(
-    `/api/admin/v1/lexicon-releases/${releaseId}/activate?approvalId=${encodeURIComponent(approvalId)}`,
-    { method: "POST", body: { reason } },
-  );
+  return adminCommand(`/api/admin/v1/lexicon/releases/${releaseId}/activate`, {
+    method: "POST",
+    body: { approvalId, reason },
+  });
 }
 
 async function execute(command, options) {
@@ -137,44 +167,36 @@ async function execute(command, options) {
     }
     case "lexicon-release":
     case "lexicon-rollback":
-      return lexiconRollback(options);
-    case "job-resume": {
+      return lexiconReleaseCommand(options);
+    case "job-retry":
+    case "job-cancel": {
       const id = option(options, "job-id", { required: true });
       const reason = option(options, "reason", { required: true });
       confirm(options, id);
-      return adminCommand(`/api/admin/v1/jobs/${id}/resume`, {
+      const action = command === "job-retry" ? "retry" : "cancel";
+      return adminCommand(`/api/admin/v1/jobs/${id}/${action}`, {
         method: "POST",
         body: { reason },
-        idempotencyKey: randomUUID(),
       });
     }
-    case "admin-session-revoke": {
+    case "user-session-revoke": {
       const userId = option(options, "user-id", { required: true });
-      const sessionId = option(options, "session-id", { required: true });
       const reason = option(options, "reason", { required: true });
-      confirm(options, sessionId);
+      confirm(options, userId);
       return adminCommand(
-        `/api/admin/v1/users/${userId}/admin-sessions/${sessionId}/revoke`,
+        `/api/admin/v1/user-support/users/${userId}/session-revocations`,
         { method: "POST", body: { reason } },
       );
     }
-    case "source-withdraw": {
-      const postId = option(options, "post-id", { required: true });
-      const reason = option(options, "reason", { required: true });
-      confirm(options, postId);
+    case "source-synchronize": {
+      const versionId = option(options, "version-id", { required: true });
       return adminCommand(
-        `/api/admin/v1/sources/reddit/${encodeURIComponent(postId)}/withdraw`,
-        { method: "POST", body: { reason } },
+        `/api/admin/v1/source-datasets/versions/${versionId}/synchronizations`,
+        {
+          method: "POST",
+          idempotencyKey: option(options, "idempotency-key") || randomUUID(),
+        },
       );
-    }
-    case "ai-kill-switch": {
-      const state = choice(options, "state", ["disabled", "enabled"]);
-      const reason = option(options, "reason", { required: true });
-      confirm(options, state);
-      return adminCommand("/api/admin/v1/runtime-ai-control", {
-        method: "POST",
-        body: { enabled: state === "enabled", reason },
-      });
     }
     case "evidence-manifest":
       return createEvidenceManifest();

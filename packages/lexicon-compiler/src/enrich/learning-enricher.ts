@@ -1,24 +1,28 @@
-import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-contracts";
+import type { SylisLexiconArtifactV1 } from "@sylis/lexicon-artifact";
+import { canonicalJsonChunks } from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 
 import { ensureGeneratedProvenance } from "./generated-provenance";
-import { canonicalJsonChunks } from "../export/canonicalize";
-import type {
-  RichTargetSelector,
-  RichTargetSet,
-  SourceManifest,
+import {
+  PedagogicalMaterialKind,
+  type RichTargetSelector,
+  type RichTargetSet,
+  type SourceManifest,
 } from "../manifest/source-manifest";
 import {
   normalizeComparableText,
   normalizeIdentityText,
 } from "../normalize/text-profile";
-import type { CompileProgressPort } from "../progress/reporter";
+import { CompileStage, type CompileProgressPort } from "../progress/reporter";
 import { stableId } from "../sources/source-context";
 import {
   type StudyHintCandidate,
   studyHintCandidateSchema,
 } from "./schemas/fact-enrichment";
 import {
+  CandidateMaterialBlockRole,
+  CandidateMaterialLanguageTag,
+  CandidateVerificationVerdict,
   type CandidateVerification,
   candidateVerificationSchema,
   type ExerciseGenerationCandidate,
@@ -189,28 +193,33 @@ function findMention(text: string, forms: string[]) {
 
 function validateMaterial(
   candidate: PedagogicalMaterialGenerationCandidate,
-  kind: "MNEMONIC" | "MICRO_STORY",
+  kind: PedagogicalMaterialKind,
   target: ResolvedRichTarget,
 ): string | null {
   if (candidate.materialKind !== kind) return "MATERIAL_KIND_MISMATCH";
-  if (kind === "MNEMONIC") {
+  if (kind === PedagogicalMaterialKind.MNEMONIC) {
     const text = candidate.blocks.map((block) => block.text).join(" ");
     if (/\b(?:etymology|originates?|derived from|comes from)\b/i.test(text)) {
       return "MNEMONIC_FALSE_ETYMOLOGY_RISK";
     }
     return candidate.blocks.some(
       (block) =>
-        block.languageTag === "zh-CN" &&
-        (block.role === "EXPLANATION" || block.role === "TAKEAWAY"),
+        block.languageTag === CandidateMaterialLanguageTag.ZH_CN &&
+        (block.role === CandidateMaterialBlockRole.EXPLANATION ||
+          block.role === CandidateMaterialBlockRole.TAKEAWAY),
     )
       ? null
       : "MNEMONIC_BLOCKS_INVALID";
   }
   const story = candidate.blocks.find(
-    (block) => block.role === "STORY" && block.languageTag === "en",
+    (block) =>
+      block.role === CandidateMaterialBlockRole.STORY &&
+      block.languageTag === CandidateMaterialLanguageTag.EN,
   );
   const translation = candidate.blocks.find(
-    (block) => block.role === "TRANSLATION" && block.languageTag === "zh-CN",
+    (block) =>
+      block.role === CandidateMaterialBlockRole.TRANSLATION &&
+      block.languageTag === CandidateMaterialLanguageTag.ZH_CN,
   );
   if (!story || !translation) return "MICRO_STORY_BLOCKS_INVALID";
   return findMention(story.text, target.forms)
@@ -324,7 +333,10 @@ async function generateMaterials(
       },
       maxTokens: 300,
     });
-    if (verification.result.value.verdict !== "APPROVED") {
+    if (
+      verification.result.value.verdict !==
+      CandidateVerificationVerdict.APPROVED
+    ) {
       throw new Error(
         `AI_MATERIAL_REJECTED:${target.selector.key}:${kind}:${verification.result.value.reasonCodes.join(",")}`,
       );
@@ -385,7 +397,7 @@ async function generateMaterials(
         languageTag: block.languageTag,
         text: block.text,
       });
-      if (block.role === "STORY") {
+      if (block.role === CandidateMaterialBlockRole.STORY) {
         const mention = findMention(block.text, target.forms);
         if (mention) {
           artifact.learning.pedagogicalMaterialMentions.push({
@@ -401,7 +413,7 @@ async function generateMaterials(
         }
       }
     }
-    if (kind === "MICRO_STORY") {
+    if (kind === PedagogicalMaterialKind.MICRO_STORY) {
       attachMaterialStimulus(artifact, target, revisionId, provenanceId);
     }
     generatedCount += 1;
@@ -542,7 +554,10 @@ async function verifyOrGenerateExercise(
       },
       maxTokens: 350,
     });
-    if (verification.result.value.verdict !== "APPROVED") {
+    if (
+      verification.result.value.verdict !==
+      CandidateVerificationVerdict.APPROVED
+    ) {
       throw new Error(
         `AI_EXERCISE_REJECTED:${target.selector.key}:${verification.result.value.reasonCodes.join(",")}`,
       );
@@ -595,7 +610,9 @@ async function verifyOrGenerateExercise(
     },
     maxTokens: 350,
   });
-  if (verification.result.value.verdict !== "APPROVED") {
+  if (
+    verification.result.value.verdict !== CandidateVerificationVerdict.APPROVED
+  ) {
     throw new Error(
       `AI_EXERCISE_REJECTED:${target.selector.key}:${verification.result.value.reasonCodes.join(",")}`,
     );
@@ -720,7 +737,7 @@ export async function enrichLearningContent(
     await verifyOrGenerateExercise(artifact, target, executor);
     processed += 1;
     await progress.report({
-      stage: "PEDAGOGICAL_MATERIALS",
+      stage: CompileStage.PEDAGOGICAL_MATERIALS,
       processed,
       total,
       aiCostMicros: executor.spentMicros,

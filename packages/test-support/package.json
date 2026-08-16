@@ -1,0 +1,49 @@
+{
+  "name": "@sylis/test-support",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "sylis-test-coverage": "./dist/cli/check-coverage.js",
+    "sylis-openapi-coverage": "./dist/cli/check-openapi-coverage.js",
+    "sylis-test-evidence-merge": "./dist/cli/merge-test-evidence.js",
+    "sylis-coverage-reconcile": "./dist/cli/reconcile-coverage.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:integration": "RUN_TESTCONTAINERS=true vitest run test/*.integration.test.ts --testTimeout=120000 --hookTimeout=120000",
+    "coverage-manifest:check": "node dist/cli/check-coverage.js",
+    "coverage-manifest:write": "node dist/cli/check-coverage.js --write",
+    "coverage-evidence:merge": "node dist/cli/merge-test-evidence.js",
+    "coverage-reconcile": "node dist/cli/reconcile-coverage.js",
+    "openapi-coverage:check": "node dist/cli/check-openapi-coverage.js",
+    "openapi-coverage:write": "node dist/cli/check-openapi-coverage.js --write"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1103.0",
+    "@sylis/utils": "workspace:*",
+    "@testcontainers/postgresql": "12.1.0",
+    "@testcontainers/redis": "12.1.0",
+    "ioredis": "5.6.1",
+    "pg": "8.22.0",
+    "testcontainers": "12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "8.21.0",
+    "typescript": "5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

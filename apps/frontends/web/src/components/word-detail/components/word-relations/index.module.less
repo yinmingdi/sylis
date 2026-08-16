@@ -1,0 +1,52 @@
+.wordRelations {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.relationGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .pos {
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  .relationList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+    padding-left: 20px;
+  }
+
+  .relationItem {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+
+    .word {
+      color: var(--color-text-primary);
+      cursor: pointer;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--color-primary);
+      }
+    }
+
+    .meaning {
+      color: var(--color-text-secondary);
+      font-size: 13px;
+    }
+
+    .separator {
+      color: var(--color-text-tertiary);
+    }
+  }
+}

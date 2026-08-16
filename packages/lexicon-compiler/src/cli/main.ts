@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
+import { validateArtifactStream } from "@sylis/lexicon-artifact";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-import { compileLexicon, type CompileProfile } from "../compiler";
-import { createCompilerGenerationFromEnv } from "./composition";
+import { SourceAdapterKind } from "../candidates/candidate-v1";
+import { compileLexicon, CompileProfile } from "../compiler";
 import { compilerCliExitCode } from "./exit-code";
-import { validateArtifactStream } from "../export/artifact-stream-validator";
 import {
   parseSourceManifest,
   resolveManifestSources,
@@ -39,18 +39,12 @@ function required(args: string[], name: string): string {
   return found;
 }
 
-function positiveInteger(args: string[], name: string): number {
-  const parsed = Number(required(args, name));
-  if (!Number.isSafeInteger(parsed) || parsed < 1) {
-    throw new Error(`${name} must be a positive integer.`);
+function compileProfile(value: string | undefined): CompileProfile {
+  const profile = value ?? CompileProfile.PILOT_200;
+  if (!Object.values(CompileProfile).includes(profile as CompileProfile)) {
+    throw new Error(`Invalid --profile ${profile}.`);
   }
-  return parsed;
-}
-
-function requiredEnvironment(name: string): string {
-  const found = process.env[name];
-  if (!found) throw new Error(`Missing ${name}.`);
-  return found;
+  return profile as CompileProfile;
 }
 
 function formatBytes(value: number): string {
@@ -95,16 +89,15 @@ async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   if (command === "compile") {
     const manifestPath = required(args, "--manifest");
-    const profile = (value(args, "--profile") ?? "pilot-200") as CompileProfile;
+    const profile = compileProfile(value(args, "--profile"));
     const outputPath =
       value(args, "--output") ?? ".work/sylis-lexicon-v1.json.zst";
     const aiEnabled = args.includes("--ai");
-    const requestedAiModel = aiEnabled
-      ? requiredEnvironment("LEXICON_AI_MODEL")
-      : null;
-    const generation = aiEnabled
-      ? createCompilerGenerationFromEnv()
-      : undefined;
+    if (aiEnabled) {
+      throw new Error(
+        "LEXICON_AI_REQUIRES_BUILDER:paid generation is only available through an approved Model Gateway permit",
+      );
+    }
     const result = await compileLexicon(
       {
         manifestPath,
@@ -112,34 +105,9 @@ async function main(): Promise<void> {
         outputPath,
         workRoot: value(args, "--work-root"),
         resumeRunId: value(args, "--resume"),
-        ai: aiEnabled
-          ? {
-              enabled: true,
-              budgetUsd: required(args, "--ai-budget-usd"),
-              concurrency: positiveInteger(args, "--ai-concurrency"),
-              pricing: {
-                inputUsdPerMillion: required(
-                  args,
-                  "--ai-input-usd-per-million",
-                ),
-                outputUsdPerMillion: required(
-                  args,
-                  "--ai-output-usd-per-million",
-                ),
-                cacheHitUsdPerMillion: value(
-                  args,
-                  "--ai-cache-hit-usd-per-million",
-                ),
-              },
-              promptVersion: "lexicon-enrichment-prompts/v1",
-              schemaVersion: "sylis.ai-candidate/1",
-              modelPolicyVersion: `compiler-ai-policy/v1:${requestedAiModel}`,
-              requestedProvider: "deepseek",
-              requestedModel: requestedAiModel!,
-            }
-          : undefined,
+        ai: undefined,
       },
-      { structuredGeneration: generation, progress: createConsoleProgress() },
+      { progress: createConsoleProgress() },
     );
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -178,7 +146,10 @@ async function main(): Promise<void> {
 
   if (command === "sources:slice") {
     const adapter = required(args, "--adapter") as SliceableSourceAdapter;
-    if (adapter !== "ECDICT" && adapter !== "WIKTEXTRACT_EN") {
+    if (
+      adapter !== SourceAdapterKind.ECDICT &&
+      adapter !== SourceAdapterKind.WIKTEXTRACT_EN
+    ) {
       throw new Error("--adapter must be ECDICT or WIKTEXTRACT_EN.");
     }
     const result = await materializeSourceSlice({

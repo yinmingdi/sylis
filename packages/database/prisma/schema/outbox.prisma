@@ -15,15 +15,17 @@ model OutboxEvent {
 }
 
 model IdempotencyRecord {
-  id          String   @id @default(uuid()) @db.Uuid
-  actorId     String   @db.Uuid
-  operation   String
-  key         String
-  requestHash String
-  responseRef String
-  statusCode  Int
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  expiresAt   DateTime @db.Timestamptz(3)
+  id              String         @id @default(uuid()) @db.Uuid
+  actorId         String         @db.Uuid
+  operation       String
+  key             String
+  requestHash     String
+  responseRef     String
+  statusCode      Int
+  agentProposalId String?        @unique @db.Uuid
+  createdAt       DateTime       @default(now()) @db.Timestamptz(3)
+  expiresAt       DateTime       @db.Timestamptz(3)
+  agentProposal   AgentProposal? @relation(fields: [agentProposalId], references: [id], onDelete: Restrict)
 
   @@unique([actorId, operation, key])
   @@index([expiresAt])

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generator": {
-    "name": "@sylis/harness",
+    "name": "@sylis/engineering-harness",
     "version": "0.1.0"
   },
   "files": [
@@ -63,7 +63,7 @@
       "path": "docs/overview/generated/command-registry.md",
       "kind": "generated",
       "template": "docs/generated/command-registry.md",
-      "hash": "89eb2d0a41c7192c779a577c5bba455ce6f4ff43706c30b09bdc74d7f1db9c99"
+      "hash": "1e1e4430273a78f02089beff400d694e20f0df2d9bd01f0242ca63001bcafec1"
     },
     {
       "path": "docs/overview/generated/harness-migration-map.md",
@@ -75,13 +75,13 @@
       "path": "docs/overview/generated/harnessability-report.md",
       "kind": "generated",
       "template": "docs/generated/harnessability-report.md",
-      "hash": "76dfd5db54826dfad5187a8fca0c3c934cf8367e119498dfa1ac418ba5e21d0c"
+      "hash": "ff5d9cc232b89d5983032e7a05f2a3558d3a6524426899618ce86c2fce03d8a2"
     },
     {
       "path": "docs/overview/generated/project-profile.md",
       "kind": "generated",
       "template": "docs/generated/project-profile.md",
-      "hash": "f166a9d4f10d6d9c853a31c33e982a2571f0a64e95b6907238eaaf5cd0a2a3a3"
+      "hash": "7c7e91e503af3804b0d551a4f90d70f3b6644e09d3fc47da046dc3af0d7880f3"
     },
     {
       "path": "docs/overview/generated/tool-capabilities.md",

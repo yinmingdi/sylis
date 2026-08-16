@@ -15,25 +15,26 @@ manifest 是 release 元数据的唯一来源；`lexicon` bundle 不再重复放
 
 ## 2. Manifest、受控词表和来源
 
-| Artifact 路径                                          | PostgreSQL                                                  | 类型                       | 规则                                                                                       |
-| ------------------------------------------------------ | ----------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
-| `manifest.lexiconKey/sourceLanguageTag`                | `Lexicon`                                                   | identity upsert            | key/language 不一致拒绝导入                                                                |
-| `manifest.releaseVersion/contentHash/canonicalization` | `LexiconRelease`                                            | build metadata             | importer 创建 DRAFT；artifact 不提供 DB status/id/time                                     |
-| `manifest.builder/build/inputs/ai`                     | `LexiconReleaseBuildMetadata` + `LexiconReleaseSourceInput` | immutable build provenance | requested/resolved AI identity 分开；source input 必须解析到同 artifact 的 dataset version |
-| `manifest.textProfile`                                 | `TextProcessingProfile`                                     | immutable value            | 按 content hash 复用                                                                       |
-| `manifest.learningLanguageTags`                        | `LexiconReleaseLearningLanguage`                            | DIRECT                     | release 内唯一；保留 manifest 顺序                                                         |
-| `vocabularies.bundles`                                 | `VocabularyBundle`                                          | DIRECT                     | release 固定一个 bundle                                                                    |
-| `vocabularies.namespaceVersions`                       | `VocabularyNamespaceVersion`                                | DIRECT                     | URI + version + checksum 精确固定                                                          |
-| `vocabularies.terms`                                   | `VocabularyTerm`                                            | DIRECT                     | 所有语言学 code 解析到 bundle 内 term                                                      |
-| `sources.datasets`                                     | `SourceDataset`                                             | identity upsert            | stable source key                                                                          |
-| `sources.datasetVersions`                              | `SourceDatasetVersion`                                      | DIRECT                     | version/URI/checksum/rights immutable                                                      |
-| `sources.records`                                      | `SourceRecord`                                              | DIRECT                     | raw content 可只保存 hash +受控 URI；不强制嵌入受限全文                                    |
-| `sources.rightsPolicies`                               | `SourceRightsPolicy`                                        | DIRECT                     | build/serve/export policy                                                                  |
-| `sources.restrictions`                                 | `SourceRestrictionEvent`                                    | DIRECT                     | artifact 记录 build 时有效快照/事件                                                        |
-| `provenance.bundles`                                   | `ContentProvenance`                                         | DIRECT                     | 正式 fact 只能引用存在 bundle                                                              |
-| `provenance.evidence`                                  | `ContentEvidence`                                           | SPLIT/XOR                  | target 是 sourceRecord 或 upstreamProvenance，恰好一个                                     |
+| Artifact 路径                                          | PostgreSQL                                                  | 类型                       | 规则                                                                                         |
+| ------------------------------------------------------ | ----------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------- |
+| `manifest.lexiconKey/sourceLanguageTag`                | `Lexicon`                                                   | identity upsert            | key/language 不一致拒绝导入                                                                  |
+| `manifest.releaseVersion/contentHash/canonicalization` | `LexiconRelease`                                            | build metadata             | Publisher 创建 DRAFT；Artifact 不提供 DB status/id/time                                      |
+| `manifest.builder/build/inputs/ai`                     | `LexiconReleaseBuildMetadata` + `LexiconReleaseSourceInput` | immutable build provenance | requested/resolved AI identity 分开；source input 必须解析到同 artifact 的 dataset version   |
+| `manifest.candidatePromotionLineage`                   | `CandidatePromotionMap`                                     | operational commit mapping | 只接受当前 BuildRun 的 approved revision；entityType 对应集合且 finalId 必须属于本次 release |
+| `manifest.textProfile`                                 | `TextProcessingProfile`                                     | immutable value            | 按 content hash 复用                                                                         |
+| `manifest.learningLanguageTags`                        | `LexiconReleaseLearningLanguage`                            | DIRECT                     | release 内唯一；保留 manifest 顺序                                                           |
+| `vocabularies.bundles`                                 | `VocabularyBundle`                                          | DIRECT                     | release 固定一个 bundle                                                                      |
+| `vocabularies.namespaceVersions`                       | `VocabularyNamespaceVersion`                                | DIRECT                     | URI + version + checksum 精确固定                                                            |
+| `vocabularies.terms`                                   | `VocabularyTerm`                                            | DIRECT                     | 所有语言学 code 解析到 bundle 内 term                                                        |
+| `sources.datasets`                                     | `SourceDataset`                                             | identity upsert            | stable source key                                                                            |
+| `sources.datasetVersions`                              | `SourceDatasetVersion`                                      | DIRECT                     | version/URI/checksum/rights immutable                                                        |
+| `sources.records`                                      | `SourceRecord`                                              | DIRECT                     | raw content 可只保存 hash +受控 URI；不强制嵌入受限全文                                      |
+| `sources.rightsPolicies`                               | `SourceRightsPolicy`                                        | DIRECT                     | 有效 RightsDecision 的 build-time immutable snapshot；保留 decision reference/hash           |
+| `sources.restrictions`                                 | `SourceRestrictionEvent`                                    | DIRECT                     | artifact 记录 build 时有效快照/事件                                                          |
+| `provenance.bundles`                                   | `ContentProvenance`                                         | DIRECT                     | 正式 fact 只能引用存在 bundle                                                                |
+| `provenance.evidence`                                  | `ContentEvidence`                                           | SPLIT/XOR                  | target 是 sourceRecord 或 upstreamProvenance，恰好一个                                       |
 
-`ProcessingRun`、`Candidate` 和模型 response cache 不放入公开 artifact；manifest 只保存可复现所需的 builder/model/schema/version 摘要。
+`BuildRun`、Candidate payload/review/decision 和模型 response cache 不放入公开 artifact。manifest 只额外保存已批准 `CandidateRevision` 的不透明 UUID 及 localId/entityType/artifactId promotion lineage；它不允许反查私有 payload，Publisher 用 artifact hash + 当前 revision + release target 三重校验后才写 `CandidatePromotionMap`。
 
 ## 3. 词典主轴
 
@@ -63,7 +64,7 @@ manifest 是 release 元数据的唯一来源；`lexicon` bundle 不再重复放
 | `lexicon.senseLineages`           | `SenseLineage`                               | DIRECT；effective release + source/target stable ID |
 | `lexicon.conceptLineages`         | `ConceptLineage`                             | DIRECT；effective release + source/target stable ID |
 
-一个 artifact 内每个 `artifactRole=CURRENT` 的 stable Headword/Entry/Sense/Concept 必须恰好有一个对应 revision；`LINEAGE_ANCHOR` 必须被 lineage 使用且可以没有 revision。stable row 只含稳定身份字段，显示文本、POS、parent、顺序和 status 只在 revision row。Artifact 内任何 row 都不携带数据库 `releaseId`；Importer 创建 `LexiconRelease` 后把该 ID 注入所有 release-scoped staging/正式行。这样不会把跨 release identity、artifact local reference 与数据库身份混在一个对象里。
+一个 Artifact 内每个 `artifactRole=CURRENT` 的 stable Headword/Entry/Sense/Concept 必须恰好有一个对应 revision；`LINEAGE_ANCHOR` 必须被 lineage 使用且可以没有 revision。stable row 只含稳定身份字段，显示文本、POS、parent、顺序和 status 只在 revision row。Artifact 内任何 row 都不携带数据库 `releaseId`；Publisher 创建 `LexiconRelease` 后把该 ID 注入所有 release-scoped staging/正式行。这样不会把跨 release identity、Artifact local reference 与数据库身份混在一个对象里。
 
 ## 4. 内容与关系
 
@@ -80,7 +81,7 @@ manifest 是 release 元数据的唯一来源；`lexicon` bundle 不再重复放
 | `lexicon.senseCollocations`     | `SenseCollocation`     | DIRECT |
 | `lexicon.collocationComponents` | `CollocationComponent` | DIRECT |
 
-relation 的 level 由数组决定，不能由 importer 猜测。artifact validator 在连接数据库前就拒绝把 hypernym 放入 Sense relation、把 inflection 放入 Entry relation或把 synonym 挂 Headword。
+relation 的 level 由数组决定，不能由 Publisher 猜测。Artifact validator 在连接数据库前就拒绝把 hypernym 放入 Sense relation、把 inflection 放入 Entry relation或把 synonym 挂 Headword。
 
 ## 5. SynSem、形态、词源和语料
 
@@ -150,7 +151,7 @@ relation 的 level 由数组决定，不能由 importer 猜测。artifact valida
 | `learning.assessmentSections`           | `AssessmentSection`                                            | DIRECT recursive                       |
 | `learning.assessmentSelectionRules`     | quota/scope/pinned-item typed tables                           | SPLIT by rule kind                     |
 
-题目已在最终 JSON 中完成生成、去重和验证。importer 不生成选项、不修补答案、不调用 AI，只把 typed union 投影到对应表。
+题目已在最终 JSON 中完成生成、去重和验证。Publisher 不生成选项、不修补答案、不调用 AI，只把 typed union 投影到对应表。
 
 每个 `ExerciseRevision` artifact row 的 `exerciseTaskKind`、`evidenceKind`、`responseKind`、`responseCardinality`、`responsePlacement`、`gradingMode`、`validationLevel` 和 `authoredDifficultyTier` 直接写入同名列，并由共享 contract validator 先检查允许矩阵。`NO_CAPTURE` 不写 correct/text/audio response，只投影配置并要求 `REVEAL` stimulus 与运行时 self-report。Objective 中不存在 cue/answer 映射；任何呈现内容必须来自 Exercise/Stimulus 数组。
 
@@ -189,9 +190,9 @@ API 展示的四种 completeness 来自导入后的 evaluation/requirement rows�
 ### 8.2 运维和构建事实
 
 - `LexiconReleaseActivation`：由显式 activation 事务生成；
-- `ProcessingRun`, `Candidate`, `CandidatePromotionMap`, provider cache：由 compiler/importer 运行生成；
+- `BuildRun`, `Candidate/CandidateRevision`, `CandidatePromotionMap`, provider cache：由 compiler/builder 运行生成；
 - `ValidationIssue`：完整 issue 存受控构建/DB 运维域，artifact 的 `quality` 只含可公开的规则摘要与 count；
-- importer checkpoint、heartbeat、staging partition：均为运行时状态。
+- Publisher checkpoint、heartbeat、staging partition：均为运行时状态。
 - background job/progress、outbox、approval、deployment release 和 security audit：均为平台运行事实。
 
 ### 8.3 首版不建立校准事实
@@ -209,4 +210,4 @@ API 展示的四种 completeness 来自导入后的 evaluation/requirement rows�
 5. books、objectives、pedagogical materials、stimuli、exercises、blueprints；
 6. 全局引用、profile、count 和数据库 summary 验证。
 
-CI 从 JSON Schema 中枚举所有 artifact arrays，并与 importer mapping registry 做双向比较：缺 mapper、重复 mapper、目标表未声明 owner 或 runtime 表被错误映射都直接失败。这项测试防止新增 JSON 字段后被 importer 静默忽略。
+CI 从 JSON Schema 中枚举所有 Artifact arrays，并与 Publisher mapping registry 做双向比较：缺 mapper、重复 mapper、目标表未声明 owner 或 runtime 表被错误映射都直接失败。这项测试防止新增 JSON 字段后被 Publisher 静默忽略。

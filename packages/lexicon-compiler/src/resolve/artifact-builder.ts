@@ -1,21 +1,31 @@
 import {
+  ARTIFACT_VALIDATOR_VERSION,
   type ArtifactManifest,
   createEmptyArtifact,
   type SylisLexiconArtifactV1,
   updateManifestCounts,
-} from "@sylis/lexicon-contracts";
+} from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 
 import { resolveFormStatus } from "./form";
 import { LexicalStructureBuilder } from "./lexical-structures";
 import { semanticSignature, shouldAlignSenses } from "./sense";
+import {
+  ensureDerivedCandidateProvenance,
+  recordCandidatePromotionLineage,
+} from "../candidates/candidate-provenance";
+import {
+  CandidateEntryRelationType,
+  CandidateFormType,
+  CandidateSenseRelationType,
+} from "../candidates/candidate-v1";
 import type {
   CandidateEntryRelation,
   CandidateRelation,
   CandidateSense,
   NormalizedSourceRecord,
 } from "../candidates/candidate-v1";
-import { ensureGeneratedProvenance } from "../enrich/generated-provenance";
+import { LexicalCandidatePromotionEntityType } from "../candidates/lexical-candidate";
 import type {
   HeadwordSet,
   ResolvedSource,
@@ -28,7 +38,6 @@ import {
   normalizeSearchKey,
 } from "../normalize/text-profile";
 import { stableId } from "../sources/source-context";
-import { ARTIFACT_VALIDATOR_VERSION } from "../validate/validation-summary";
 
 interface SenseCluster {
   sense: CandidateSense;
@@ -58,6 +67,20 @@ interface PendingEntryRelation {
   provenanceId: string;
 }
 
+export enum LexicalConceptType {
+  LOCAL_SENSE = "LOCAL_SENSE",
+  SYNSET = "SYNSET",
+}
+
+const relationEndpoints = (
+  sourceId: string,
+  targetId: string,
+  symmetric: boolean,
+): readonly [string, string] =>
+  symmetric && sourceId > targetId
+    ? [targetId, sourceId]
+    : [sourceId, targetId];
+
 const SOURCE_PRIORITY: Record<NormalizedSourceRecord["adapter"], number> = {
   WN_LMF: 0,
   WIKTEXTRACT_EN: 1,
@@ -79,9 +102,7 @@ function entryType(headword: string): "WORD" | "MULTIWORD" | "AFFIX" {
 }
 
 function sourceDate(source: ResolvedSource): string {
-  const configured = (source as ResolvedSource & { retrievedAt?: string })
-    .retrievedAt;
-  return configured ?? "1970-01-01T00:00:00.000Z";
+  return source.retrievedAt;
 }
 
 function sortByStableKey<T>(values: T[], key: (value: T) => string): void {
@@ -283,6 +304,7 @@ class FactProvenanceRegistry {
     } else {
       this.artifact.provenance.bundles.push({
         id: provenanceId,
+        kind: "DERIVED",
         contentHash,
         resolverVersion: "source-merge/v1",
         decisionReason: `Identical normalized fact merged from ${sortedDirectIds.length} source records.`,
@@ -319,41 +341,28 @@ function provenanceForSenseAlignment(
   record: NormalizedSourceRecord,
   sense: CandidateSense,
 ): string {
-  if (!sense.alignmentKey || !sense.alignmentCandidateKey) {
+  if (
+    !sense.alignmentKey ||
+    !sense.alignmentCandidateKey ||
+    !sense.alignmentCandidateRevisionId ||
+    !sense.alignmentCandidateLocalId
+  ) {
     return provenanceFor(record);
   }
-  const provenanceId = stableId(
-    "provenance",
-    "sense-alignment",
+  return ensureDerivedCandidateProvenance(
+    artifact,
     sense.alignmentCandidateKey,
-    sense.alignmentKey,
+    sense.alignmentCandidateRevisionId,
+    {
+      taskType: "SENSE_ALIGNMENT",
+      alignmentKey: sense.alignmentKey,
+      localId: sense.alignmentCandidateLocalId,
+    },
+    provenanceFor(record),
+    "Ambiguous cross-source Senses were grouped by an approved AI candidate and local partition validation.",
+    "sense-alignment-ai/v1",
+    sense.alignmentCandidateLocalId,
   );
-  if (
-    !artifact.provenance.bundles.some((bundle) => bundle.id === provenanceId)
-  ) {
-    artifact.provenance.bundles.push({
-      id: provenanceId,
-      contentHash: hash(`${sense.alignmentCandidateKey}:${sense.alignmentKey}`),
-      resolverVersion: "sense-alignment-ai/v1",
-      decisionReason:
-        "Ambiguous cross-source Senses were grouped by a schema-valid AI candidate and local partition validation.",
-    });
-  }
-  const upstreamProvenanceId = provenanceFor(record);
-  const evidenceId = stableId("evidence", provenanceId, upstreamProvenanceId);
-  if (
-    !artifact.provenance.evidence.some((evidence) => evidence.id === evidenceId)
-  ) {
-    artifact.provenance.evidence.push({
-      id: evidenceId,
-      provenanceId,
-      evidenceKind: "GENERATED",
-      sourceRecordId: null,
-      upstreamProvenanceId,
-      note: `candidate:${sense.alignmentCandidateKey}`,
-    });
-  }
-  return provenanceId;
 }
 
 function recordSenses(record: NormalizedSourceRecord): CandidateSense[] {
@@ -500,6 +509,13 @@ export function buildArtifact(
   const lexicalStructures = new LexicalStructureBuilder(artifact);
   const factProvenance = new FactProvenanceRegistry(artifact);
   const sourceByKey = new Map(sources.map((source) => [source.key, source]));
+  const sourceRecordCounts = new Map<string, number>();
+  for (const record of records) {
+    sourceRecordCounts.set(
+      record.datasetKey,
+      (sourceRecordCounts.get(record.datasetKey) ?? 0) + 1,
+    );
+  }
 
   for (const source of sources) {
     const datasetId = stableId("dataset", source.key);
@@ -516,6 +532,16 @@ export function buildArtifact(
       sourceUri: source.sourceUri,
       checksum: `sha256:${source.checksum}`,
       retrievedAt: sourceDate(source),
+      adapter: source.adapter,
+      parserVersion: source.parserVersion,
+      schemaVersion: "sylis.lexicon-candidate/1",
+      validationSummary: {
+        recordCount: sourceRecordCounts.get(source.key) ?? 0,
+        errorCount: 0,
+        warningCount: 0,
+        validatorVersion: ARTIFACT_VALIDATOR_VERSION,
+      },
+      status: "VALIDATED",
       rightsPolicyId: stableId("rightsPolicy", source.key, source.version),
     });
     artifact.sources.rightsPolicies.push({
@@ -527,8 +553,8 @@ export function buildArtifact(
       mayExport: source.rights.mayExport,
       requiresAttribution: source.rights.requiresAttribution,
       attribution: source.rights.attribution ?? null,
-      effectiveFrom: sourceDate(source),
-      effectiveTo: null,
+      effectiveFrom: source.rights.effectiveFrom,
+      effectiveTo: source.rights.effectiveTo,
     });
   }
 
@@ -547,6 +573,7 @@ export function buildArtifact(
     });
     artifact.provenance.bundles.push({
       id: provenanceId,
+      kind: "SOURCE",
       contentHash: hash(
         `${record.sourceRecordId}:${record.rawPayloadHash}:lexical-identity/v1`,
       ),
@@ -839,6 +866,18 @@ export function buildArtifact(
           `${record.sourceRecordId}:${sourceSense.sourceSenseKey}`,
           cluster.senseId,
         );
+        if (
+          sourceSense.alignmentCandidateRevisionId &&
+          sourceSense.alignmentCandidateLocalId
+        ) {
+          recordCandidatePromotionLineage(
+            artifact,
+            sourceSense.alignmentCandidateRevisionId,
+            sourceSense.alignmentCandidateLocalId,
+            LexicalCandidatePromotionEntityType.SENSE_ALIGNMENT,
+            cluster.senseId,
+          );
+        }
         const clusterHierarchyPaths =
           hierarchyPathsByCluster.get(cluster.senseId) ?? new Set<string>();
         clusterHierarchyPaths.add(hierarchyPath);
@@ -1078,7 +1117,7 @@ export function buildArtifact(
             });
             artifact.lexicon.conceptRevisions.push({
               conceptId,
-              conceptType: "SYNSET",
+              conceptType: LexicalConceptType.SYNSET,
               provenanceId: provenanceFor(record),
             });
           }
@@ -1098,6 +1137,32 @@ export function buildArtifact(
         }
       }
     }
+  }
+
+  for (const sense of artifact.lexicon.senseRevisions) {
+    const hasCanonicalConcept = artifact.lexicon.senseConceptMemberships.some(
+      (membership) =>
+        membership.senseId === sense.senseId && membership.canonical,
+    );
+    if (hasCanonicalConcept) continue;
+    const conceptId = stableId("concept", "local", sense.senseId);
+    artifact.lexicon.concepts.push({
+      id: conceptId,
+      identityKey: `local-sense:${sense.senseId}`,
+      artifactRole: "CURRENT",
+    });
+    artifact.lexicon.conceptRevisions.push({
+      conceptId,
+      conceptType: LexicalConceptType.LOCAL_SENSE,
+      provenanceId: sense.provenanceId,
+    });
+    artifact.lexicon.senseConceptMemberships.push({
+      senseId: sense.senseId,
+      conceptId,
+      membershipType: "LEXICALIZED_BY",
+      canonical: true,
+      provenanceId: sense.provenanceId,
+    });
   }
 
   for (const pending of pendingSenseParents) {
@@ -1213,7 +1278,7 @@ export function buildArtifact(
         formId,
         {
           text: record.headword,
-          formType: "INFLECTED",
+          formType: CandidateFormType.INFLECTED,
           features,
           formOf: targetText,
         },
@@ -1242,28 +1307,51 @@ export function buildArtifact(
       unresolvedEntryRelationCount += 1;
       continue;
     }
+    const symmetric =
+      pending.relation.relationType ===
+      CandidateEntryRelationType.DERIVATIONALLY_RELATED;
+    const [sourceEntryId, relationTargetEntryId] = relationEndpoints(
+      pending.sourceEntryId,
+      targetEntryId,
+      symmetric,
+    );
     const id = stableId(
       "entryRelation",
-      pending.sourceEntryId,
+      sourceEntryId,
       pending.relation.relationType,
-      targetEntryId,
+      relationTargetEntryId,
     );
     if (
       artifact.lexicon.entryRelations.some((relation) => relation.id === id)
     ) {
       continue;
     }
-    artifact.lexicon.entryRelations.push({
+    const entryRelation = {
       id,
-      sourceId: pending.sourceEntryId,
-      targetId: targetEntryId,
-      relationType: pending.relation.relationType,
-      direction:
-        pending.relation.relationType === "DERIVATIONALLY_RELATED"
-          ? "SYMMETRIC"
-          : "DIRECTED",
+      sourceId: sourceEntryId,
+      targetId: relationTargetEntryId,
       provenanceId: pending.provenanceId,
-    });
+    };
+    if (
+      pending.relation.relationType ===
+      CandidateEntryRelationType.DERIVATIONALLY_RELATED
+    ) {
+      artifact.lexicon.entryRelations.push({
+        ...entryRelation,
+        relationType: "DERIVATIONALLY_RELATED",
+        direction: "SYMMETRIC",
+      });
+    } else {
+      artifact.lexicon.entryRelations.push({
+        ...entryRelation,
+        relationType:
+          pending.relation.relationType ===
+          CandidateEntryRelationType.ABBREVIATION_OF
+            ? "ABBREVIATION_OF"
+            : "VARIANT_OF",
+        direction: "DIRECTED",
+      });
+    }
   }
 
   const entriesByNormalizedHeadword = new Map<string, string[]>();
@@ -1320,10 +1408,19 @@ export function buildArtifact(
     const targetProvenanceId = artifact.lexicon.senseRevisions.find(
       (sense) => sense.senseId === targetSenseId,
     )?.provenanceId;
+    if (
+      pending.relation.resolutionCandidateKey &&
+      !pending.relation.resolutionCandidateRevisionId
+    ) {
+      throw new Error(
+        `RELATION_RESOLUTION_REVISION_MISSING:${pending.sourceSenseId}`,
+      );
+    }
     const relationProvenanceId = pending.relation.resolutionCandidateKey
-      ? ensureGeneratedProvenance(
+      ? ensureDerivedCandidateProvenance(
           artifact,
           pending.relation.resolutionCandidateKey,
+          pending.relation.resolutionCandidateRevisionId!,
           {
             taskType: "RELATION_RESOLUTION",
             decision: "RESOLVED",
@@ -1342,8 +1439,8 @@ export function buildArtifact(
         )
       : pending.provenanceId;
     if (
-      pending.relation.relationType === "HYPERNYM" ||
-      pending.relation.relationType === "HYPONYM"
+      pending.relation.relationType === CandidateSenseRelationType.HYPERNYM ||
+      pending.relation.relationType === CandidateSenseRelationType.HYPONYM
     ) {
       const sourceConceptId = conceptBySense.get(pending.sourceSenseId);
       const targetConceptId = conceptBySense.get(targetSenseId);
@@ -1357,6 +1454,15 @@ export function buildArtifact(
         pending.relation.relationType,
         targetConceptId,
       );
+      if (pending.relation.resolutionCandidateRevisionId) {
+        recordCandidatePromotionLineage(
+          artifact,
+          pending.relation.resolutionCandidateRevisionId,
+          "relation",
+          LexicalCandidatePromotionEntityType.CONCEPT_RELATION,
+          id,
+        );
+      }
       if (emittedConceptRelationIds.has(id)) continue;
       emittedConceptRelationIds.add(id);
       artifact.lexicon.conceptRelations.push({
@@ -1368,26 +1474,64 @@ export function buildArtifact(
         provenanceId: relationProvenanceId,
       });
     } else {
+      const symmetric =
+        pending.relation.relationType === CandidateSenseRelationType.SYNONYM ||
+        pending.relation.relationType === CandidateSenseRelationType.ANTONYM;
+      const [sourceSenseId, relationTargetSenseId] = relationEndpoints(
+        pending.sourceSenseId,
+        targetSenseId,
+        symmetric,
+      );
       const id = stableId(
         "senseRelation",
-        pending.sourceSenseId,
+        sourceSenseId,
         pending.relation.relationType,
-        targetSenseId,
+        relationTargetSenseId,
       );
+      if (pending.relation.resolutionCandidateRevisionId) {
+        recordCandidatePromotionLineage(
+          artifact,
+          pending.relation.resolutionCandidateRevisionId,
+          "relation",
+          LexicalCandidatePromotionEntityType.SENSE_RELATION,
+          id,
+        );
+      }
       if (emittedSenseRelationIds.has(id)) continue;
       emittedSenseRelationIds.add(id);
-      artifact.lexicon.senseRelations.push({
+      const senseRelation = {
         id,
-        sourceId: pending.sourceSenseId,
-        targetId: targetSenseId,
-        relationType: pending.relation.relationType,
-        direction:
-          pending.relation.relationType === "SYNONYM" ||
-          pending.relation.relationType === "ANTONYM"
-            ? "SYMMETRIC"
-            : "DIRECTED",
+        sourceId: sourceSenseId,
+        targetId: relationTargetSenseId,
         provenanceId: relationProvenanceId,
-      });
+      };
+      switch (pending.relation.relationType) {
+        case CandidateSenseRelationType.SYNONYM:
+          artifact.lexicon.senseRelations.push({
+            ...senseRelation,
+            relationType: "SYNONYM",
+            direction: "SYMMETRIC",
+          });
+          break;
+        case CandidateSenseRelationType.ANTONYM:
+          artifact.lexicon.senseRelations.push({
+            ...senseRelation,
+            relationType: "ANTONYM",
+            direction: "SYMMETRIC",
+          });
+          break;
+        case CandidateSenseRelationType.RELATED:
+          artifact.lexicon.senseRelations.push({
+            ...senseRelation,
+            relationType: "RELATED",
+            direction: "DIRECTED",
+          });
+          break;
+        default:
+          throw new Error(
+            `SENSE_RELATION_TYPE_INVALID:${pending.relation.relationType}`,
+          );
+      }
     }
   }
 

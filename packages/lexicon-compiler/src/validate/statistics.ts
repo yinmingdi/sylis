@@ -1,7 +1,7 @@
 import type {
   NamedCount,
   SylisLexiconArtifactV1,
-} from "@sylis/lexicon-contracts";
+} from "@sylis/lexicon-artifact";
 
 function increment(counts: Map<string, number>, key: string): void {
   counts.set(key, (counts.get(key) ?? 0) + 1);

@@ -1,4 +1,4 @@
-import type { GenerationUsage } from "@sylis/ai-provider/contracts";
+import type { GenerationUsage } from "../ports/structured-generation";
 
 export interface TokenPricing {
   inputUsdPerMillion: string;

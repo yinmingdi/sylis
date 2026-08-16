@@ -1,7 +1,12 @@
 import {
   assertValidArtifact,
+  canonicalContentHash,
+  canonicalJsonChunks,
+  sortArtifactArrays,
   type SylisLexiconArtifactV1,
-} from "@sylis/lexicon-contracts";
+  validateArtifactStream,
+  validateLinguistics,
+} from "@sylis/lexicon-artifact";
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -10,14 +15,10 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createZstdDecompress } from "node:zlib";
 
-import { sortArtifactArrays } from "./artifact-order";
-import { validateArtifactStream } from "./artifact-stream-validator";
-import { canonicalContentHash, canonicalJsonChunks } from "./canonicalize";
 import {
   createSingleFrameZstdCompress,
   inspectSingleZstdFrame,
 } from "./zstd-envelope";
-import { validateLinguistics } from "../validate/linguistics";
 
 export interface ArtifactWriteResult {
   path: string;
@@ -30,7 +31,7 @@ export interface ArtifactWriteResult {
 async function sha256File(path: string): Promise<string> {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
-  return hash.digest("hex");
+  return `sha256:${hash.digest("hex")}`;
 }
 
 export async function writeArtifact(

@@ -4,6 +4,10 @@ import { open } from "node:fs/promises";
 import { createGunzip } from "node:zlib";
 
 import { sourceContext } from "./source-context";
+import {
+  CandidateSenseRelationType,
+  SourceAdapterKind,
+} from "../candidates/candidate-v1";
 import type {
   CandidateFrame,
   CandidateRelation,
@@ -53,13 +57,14 @@ function relationType(
 ): CandidateRelation["relationType"] | null {
   if (typeof value !== "string") return null;
   const normalized = value.toLocaleLowerCase().replaceAll("_", "-");
-  if (normalized.includes("hypernym")) return "HYPERNYM";
-  if (normalized.includes("hyponym")) return "HYPONYM";
-  if (normalized.includes("antonym")) return "ANTONYM";
+  if (normalized.includes("hypernym"))
+    return CandidateSenseRelationType.HYPERNYM;
+  if (normalized.includes("hyponym")) return CandidateSenseRelationType.HYPONYM;
+  if (normalized.includes("antonym")) return CandidateSenseRelationType.ANTONYM;
   if (normalized.includes("synonym") || normalized === "similar")
-    return "SYNONYM";
+    return CandidateSenseRelationType.SYNONYM;
   return normalized.includes("also") || normalized.includes("related")
-    ? "RELATED"
+    ? CandidateSenseRelationType.RELATED
     : null;
 }
 
@@ -219,7 +224,7 @@ export async function* readOewn(
       },
     );
 
-    yield sourceContext(source, "WN_LMF", {
+    yield sourceContext(source, SourceAdapterKind.WN_LMF, {
       sourceKey: typeof rawEntry.id === "string" ? rawEntry.id : word,
       rawPayload: {
         entryId: typeof rawEntry.id === "string" ? rawEntry.id : null,

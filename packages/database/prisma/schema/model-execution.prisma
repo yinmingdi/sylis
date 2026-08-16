@@ -1,0 +1,422 @@
+model ProviderRouteRelease {
+  id                   String                       @id @default(uuid()) @db.Uuid
+  providerKey          String
+  modelId              String
+  endpointClass        ModelEndpointClass
+  capabilities         ModelCapabilityKind[]
+  adapterVersion       String
+  pricingVersion       String
+  pricing              Json
+  policyVersion        String
+  releaseDigest        String                       @unique
+  status               ImmutableReleaseStatus
+  revokedAt            DateTime?                    @db.Timestamptz(3)
+  createdAt            DateTime                     @default(now()) @db.Timestamptz(3)
+  securityEvents       ProviderRouteSecurityEvent[]
+  permits              ModelExecutionPermit[]
+  invocations          ModelInvocation[]
+  healthObservations   ProviderHealthObservation[]
+  agentRuns            AgentRun[]
+  agentInstructions    AgentInstruction[]
+  capabilityAllowances CapabilityRouteAllowance[]
+  buildRuns            BuildRun[]
+  quotaPolicies        QuotaPolicy[]
+  usageEntries         ModelUsageLedger[]
+
+  @@unique([providerKey, modelId, adapterVersion, policyVersion])
+}
+
+model ProviderRouteSecurityEvent {
+  id             String                         @id @default(uuid()) @db.Uuid
+  routeReleaseId String                         @db.Uuid
+  kind           ProviderRouteSecurityEventKind
+  reason         String
+  actorRef       String
+  actionDigest   String
+  occurredAt     DateTime                       @default(now()) @db.Timestamptz(3)
+  route          ProviderRouteRelease           @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+
+  @@index([routeReleaseId, occurredAt])
+}
+
+model CredentialProfile {
+  id                String                    @id @default(uuid()) @db.Uuid
+  ownerKind         CredentialOwnerKind
+  ownerUserId       String?                   @db.Uuid
+  providerKey       String
+  label             String
+  status            CredentialStatus          @default(PENDING)
+  currentRevisionId String?                   @unique @db.Uuid
+  createdAt         DateTime                  @default(now()) @db.Timestamptz(3)
+  ownerUser         User?                     @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  revisions         CredentialRevision[]      @relation("CredentialProfileRevisions")
+  currentRevision   CredentialRevision?       @relation("CurrentCredentialRevision", fields: [id, currentRevisionId], references: [profileId, id], onDelete: Restrict)
+  securityEvents    CredentialSecurityEvent[]
+
+  @@unique([id, currentRevisionId])
+  @@index([ownerKind, ownerUserId, providerKey])
+}
+
+model CredentialRevision {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  profileId          String                    @db.Uuid
+  revisionNo         Int
+  credentialType     CredentialType
+  status             CredentialStatus          @default(PENDING)
+  ciphertext         Bytes
+  nonce              Bytes
+  authTag            Bytes
+  encryptedDek       Bytes
+  dekNonce           Bytes
+  dekAuthTag         Bytes
+  kekVersion         String
+  aadSchemaVersion   String
+  fingerprint        String
+  fingerprintVersion String
+  maskedHint         String
+  metadata           Json
+  validatedAt        DateTime?                 @db.Timestamptz(3)
+  expiresAt          DateTime?                 @db.Timestamptz(3)
+  revokedAt          DateTime?                 @db.Timestamptz(3)
+  createdAt          DateTime                  @default(now()) @db.Timestamptz(3)
+  profile            CredentialProfile         @relation("CredentialProfileRevisions", fields: [profileId], references: [id], onDelete: Restrict)
+  currentFor         CredentialProfile?        @relation("CurrentCredentialRevision")
+  securityEvents     CredentialSecurityEvent[]
+  permits            ModelExecutionPermit[]
+  invocations        ModelInvocation[]
+  agentRuns          AgentRun[]
+  agentInstructions  AgentInstruction[]
+  buildRuns          BuildRun[]
+
+  @@unique([profileId, revisionNo])
+  @@unique([profileId, fingerprint])
+  @@unique([profileId, id])
+}
+
+model CredentialSecurityEvent {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  profileId            String                      @db.Uuid
+  credentialRevisionId String?                     @db.Uuid
+  kind                 CredentialSecurityEventKind
+  reason               String
+  actorRef             String
+  actionDigest         String
+  occurredAt           DateTime                    @default(now()) @db.Timestamptz(3)
+  profile              CredentialProfile           @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  revision             CredentialRevision?         @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+
+  @@index([profileId, occurredAt])
+}
+
+model ModelExecutionPermit {
+  id                   String                                   @id @default(uuid()) @db.Uuid
+  callerServiceKey     String
+  purpose              ModelPurposeKind
+  ownerType            ModelExecutionOwnerType
+  ownerUserId          String?                                  @db.Uuid
+  routeReleaseId       String                                   @db.Uuid
+  credentialRevisionId String                                   @db.Uuid
+  capabilityReleaseId  String?                                  @db.Uuid
+  operation            ModelOperationKind
+  inputDigest          String
+  maxInputTokens       Int
+  maxOutputTokens      Int
+  maxCostMicros        BigInt
+  retentionMode        ModelRetentionMode
+  requestKey           String                                   @unique
+  status               ModelPermitStatus                        @default(ISSUED)
+  expiresAt            DateTime                                 @db.Timestamptz(3)
+  claimedAt            DateTime?                                @db.Timestamptz(3)
+  consumedAt           DateTime?                                @db.Timestamptz(3)
+  claimTokenHash       String?
+  createdAt            DateTime                                 @default(now()) @db.Timestamptz(3)
+  route                ProviderRouteRelease                     @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+  credentialRevision   CredentialRevision                       @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+  capabilityRelease    CapabilityRelease?                       @relation(fields: [capabilityReleaseId], references: [id], onDelete: Restrict)
+  invocation           ModelInvocation?
+  ownerUser            User?                                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  agentRunTarget       ModelExecutionPermitAgentRunTarget?
+  buildRunTarget       ModelExecutionPermitBuildRunTarget?
+  evaluationRunTarget  ModelExecutionPermitEvaluationRunTarget?
+  assetRevisionTarget  ModelExecutionPermitAssetRevisionTarget?
+  usageEntries         ModelUsageLedger[]
+
+  @@index([callerServiceKey, status, expiresAt])
+  @@index([capabilityReleaseId, status, expiresAt])
+}
+
+model ModelExecutionPermitAgentRunTarget {
+  permitId   String               @id @db.Uuid
+  agentRunId String               @db.Uuid
+  permit     ModelExecutionPermit @relation(fields: [permitId], references: [id], onDelete: Restrict)
+  agentRun   AgentRun             @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+
+  @@index([agentRunId])
+}
+
+model ModelExecutionPermitBuildRunTarget {
+  permitId   String               @id @db.Uuid
+  buildRunId String               @db.Uuid
+  permit     ModelExecutionPermit @relation(fields: [permitId], references: [id], onDelete: Restrict)
+  buildRun   BuildRun             @relation(fields: [buildRunId], references: [id], onDelete: Restrict)
+
+  @@index([buildRunId])
+}
+
+model ModelExecutionPermitEvaluationRunTarget {
+  permitId        String               @id @db.Uuid
+  evaluationRunId String               @db.Uuid
+  permit          ModelExecutionPermit @relation(fields: [permitId], references: [id], onDelete: Restrict)
+  evaluationRun   AgentEvaluationRun   @relation(fields: [evaluationRunId], references: [id], onDelete: Restrict)
+
+  @@index([evaluationRunId])
+}
+
+model ModelExecutionPermitAssetRevisionTarget {
+  permitId        String               @id @db.Uuid
+  assetRevisionId String               @db.Uuid
+  permit          ModelExecutionPermit @relation(fields: [permitId], references: [id], onDelete: Restrict)
+  assetRevision   ContentAssetRevision @relation(fields: [assetRevisionId], references: [id], onDelete: Restrict)
+
+  @@index([assetRevisionId])
+}
+
+model ModelInvocation {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  permitId             String                  @unique @db.Uuid
+  purpose              ModelPurposeKind
+  ownerType            ModelExecutionOwnerType
+  ownerId              String                  @db.Uuid
+  routeReleaseId       String                  @db.Uuid
+  credentialRevisionId String                  @db.Uuid
+  responseId           String?
+  status               ModelInvocationStatus   @default(RUNNING)
+  inputTokens          Int                     @default(0)
+  outputTokens         Int                     @default(0)
+  cacheHitTokens       Int                     @default(0)
+  costMicros           BigInt                  @default(0)
+  latencyMs            Int?
+  errorClass           String?
+  idempotencyKey       String                  @unique
+  inputDigest          String
+  outputDigest         String?
+  createdAt            DateTime                @default(now()) @db.Timestamptz(3)
+  completedAt          DateTime?               @db.Timestamptz(3)
+  permit               ModelExecutionPermit    @relation(fields: [permitId], references: [id], onDelete: Restrict)
+  route                ProviderRouteRelease    @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+  credentialRevision   CredentialRevision      @relation(fields: [credentialRevisionId], references: [id], onDelete: Restrict)
+  exchanges            ModelExchange[]
+  attempts             ModelInvocationAttempt[]
+  fragments            ModelContentFragment[]
+  agentRunStep          AgentRunStep?
+}
+
+model ModelInvocationAttempt {
+  id                String                       @id @default(uuid()) @db.Uuid
+  invocationId      String                       @db.Uuid
+  ordinal           Int
+  providerRequestId String?
+  status            ModelInvocationAttemptStatus @default(STARTED)
+  retryReason       String?
+  errorClass        String?
+  inputTokens       Int                          @default(0)
+  outputTokens      Int                          @default(0)
+  costMicros        BigInt                       @default(0)
+  acceptedBlockCount Int                         @default(0)
+  acceptedFragmentCount Int                      @default(0)
+  acceptedToolCallCount Int                      @default(0)
+  usageObserved     Boolean                      @default(false)
+  latencyMs         Int?
+  startedAt         DateTime                     @default(now()) @db.Timestamptz(3)
+  completedAt       DateTime?                    @db.Timestamptz(3)
+  invocation        ModelInvocation              @relation(fields: [invocationId], references: [id], onDelete: Restrict)
+
+  @@unique([invocationId, ordinal])
+  @@index([invocationId, status])
+}
+
+model ModelContentBody {
+  id                String                     @id @default(uuid()) @db.Uuid
+  ownerKind         ModelContentOwnerKind
+  ownerUserId       String?                    @db.Uuid
+  ownerResourceId   String?                    @db.Uuid
+  purpose           ModelPurposeKind
+  ciphertext        Bytes
+  nonce             Bytes
+  authTag           Bytes
+  encryptedDek      Bytes
+  dekNonce          Bytes
+  dekAuthTag        Bytes
+  kekVersion        String
+  aadSchemaVersion  String
+  contentHash       String
+  requestKey        String                     @unique
+  visibility        ModelContentVisibility
+  retentionClass    ModelContentRetentionClass
+  hiddenAt          DateTime?                  @db.Timestamptz(3)
+  purgeAfter        DateTime?                  @db.Timestamptz(3)
+  purgedAt          DateTime?                  @db.Timestamptz(3)
+  sealedAt          DateTime?                  @db.Timestamptz(3)
+  createdAt         DateTime                   @default(now()) @db.Timestamptz(3)
+  ownerUser         User?                      @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  instructions      AgentInstruction[]
+  runGoals          AgentRun[]                 @relation("AgentRunGoal")
+  proposalPayloads  AgentProposal[]            @relation("AgentProposalPayload")
+  artifactRevisions AgentArtifactRevision[]
+  memoryClaims      AgentMemoryCard[]
+  toolInputs        AgentToolCall[]            @relation("AgentToolInput")
+  toolResults       AgentToolCall[]            @relation("AgentToolResult")
+  agentEvents       AgentEvent[]               @relation("AgentEventContent")
+  exchangeParts     ModelExchangePart[]
+  fragments         ModelContentFragment[]
+  messageBlockContents AgentMessageBlockContent[] @relation("AgentMessageBlockContentBody")
+  messageBlockTableCells AgentMessageBlockTableCell[] @relation("AgentMessageBlockTableCellBody")
+
+  @@index([ownerKind, ownerUserId, hiddenAt])
+  @@index([ownerKind, ownerResourceId, hiddenAt])
+}
+
+model ModelContentFragment {
+  id               String           @id @default(uuid()) @db.Uuid
+  bodyId           String           @db.Uuid
+  invocationId     String           @db.Uuid
+  modelPosition    Int
+  modelSubPosition Int
+  fragmentSequence Int
+  ciphertext       Bytes
+  nonce            Bytes
+  authTag          Bytes
+  encryptedDek     Bytes
+  dekNonce         Bytes
+  dekAuthTag       Bytes
+  kekVersion       String
+  aadSchemaVersion String
+  fragmentHash     String
+  byteLength       Int
+  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
+  body             ModelContentBody @relation(fields: [bodyId], references: [id], onDelete: Restrict)
+  invocation       ModelInvocation  @relation(fields: [invocationId], references: [id], onDelete: Restrict)
+
+  @@unique([invocationId, modelPosition, modelSubPosition, fragmentSequence])
+  @@index([bodyId, fragmentSequence])
+}
+
+model ModelExchange {
+  id             String                              @id @default(uuid()) @db.Uuid
+  invocationId   String                              @db.Uuid
+  exchangeKind   ModelExchangeKind
+  retentionClass ModelContentRetentionClass
+  hiddenAt       DateTime?                           @db.Timestamptz(3)
+  purgeAfter     DateTime?                           @db.Timestamptz(3)
+  purgedAt       DateTime?                           @db.Timestamptz(3)
+  createdAt      DateTime                            @default(now()) @db.Timestamptz(3)
+  invocation     ModelInvocation                     @relation(fields: [invocationId], references: [id], onDelete: Restrict)
+  parts          ModelExchangePart[]
+  deletionTarget ContentDeletionModelExchangeTarget?
+
+  @@index([invocationId, createdAt])
+}
+
+model ModelExchangePart {
+  id               String                     @id @default(uuid()) @db.Uuid
+  exchangeId       String                     @db.Uuid
+  sequence         Int
+  role             ModelExchangePartRole
+  kind             ModelExchangePartKind
+  contentBodyId    String?                    @db.Uuid
+  assetRevisionId  String?                    @db.Uuid
+  consentRecordId  String                     @db.Uuid
+  visibility       ModelContentVisibility
+  languageTag      String?
+  schemaName       String?
+  toolKey          String?
+  finishReason     ModelExchangeFinishReason?
+  redactionVersion String
+  retentionClass   ModelContentRetentionClass
+  hiddenAt         DateTime?                  @db.Timestamptz(3)
+  purgeAfter       DateTime?                  @db.Timestamptz(3)
+  purgedAt         DateTime?                  @db.Timestamptz(3)
+  createdAt        DateTime                   @default(now()) @db.Timestamptz(3)
+  exchange         ModelExchange              @relation(fields: [exchangeId], references: [id], onDelete: Restrict)
+  contentBody      ModelContentBody?          @relation(fields: [contentBodyId], references: [id], onDelete: Restrict)
+  assetRevision    ContentAssetRevision?      @relation(fields: [assetRevisionId], references: [id], onDelete: Restrict)
+  consentRecord    ConsentRecord              @relation(fields: [consentRecordId], references: [id], onDelete: Restrict)
+
+  @@unique([exchangeId, sequence])
+  @@index([consentRecordId])
+}
+
+model ModelUsageLedger {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  userId              String?                 @db.Uuid
+  purpose             ModelPurposeKind
+  ownerType           ModelExecutionOwnerType
+  ownerId             String                  @db.Uuid
+  routeReleaseId      String                  @db.Uuid
+  permitId            String                  @db.Uuid
+  credentialOwnerKind CredentialOwnerKind
+  entryType           ModelUsageEntryType
+  units               BigInt
+  costMicros          BigInt
+  currency            String                  @default("USD")
+  idempotencyKey      String
+  occurredAt          DateTime                @default(now()) @db.Timestamptz(3)
+  user                User?                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  route               ProviderRouteRelease    @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+  permit              ModelExecutionPermit    @relation(fields: [permitId], references: [id], onDelete: Restrict)
+
+  @@unique([idempotencyKey, entryType])
+  @@unique([permitId, entryType])
+  @@index([userId, purpose, occurredAt])
+  @@index([ownerType, ownerId, purpose, occurredAt])
+  @@index([routeReleaseId, occurredAt])
+}
+
+model BudgetPolicy {
+  id            String               @id @default(uuid()) @db.Uuid
+  scopeKind     ModelPolicyScopeKind
+  scopeId       String?
+  purpose       ModelPurposeKind
+  maxUnits      BigInt
+  maxCostMicros BigInt
+  windowSeconds Int
+  policyVersion String
+  effectiveAt   DateTime             @db.Timestamptz(3)
+  createdByRef  String
+  actionDigest  String
+
+  @@unique([scopeKind, scopeId, purpose, policyVersion])
+}
+
+model QuotaPolicy {
+  id             String                @id @default(uuid()) @db.Uuid
+  scopeKind      ModelPolicyScopeKind
+  scopeId        String?
+  purpose        ModelPurposeKind
+  routeReleaseId String?               @db.Uuid
+  maxRequests    BigInt
+  maxUnits       BigInt
+  windowSeconds  Int
+  policyVersion  String
+  effectiveAt    DateTime              @db.Timestamptz(3)
+  createdByRef   String
+  actionDigest   String
+  route          ProviderRouteRelease? @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+
+  @@unique([scopeKind, scopeId, purpose, routeReleaseId, policyVersion])
+  @@index([scopeKind, scopeId, purpose, effectiveAt])
+}
+
+model ProviderHealthObservation {
+  id             String                  @id @default(uuid()) @db.Uuid
+  routeReleaseId String                  @db.Uuid
+  probeKind      ProviderHealthProbeKind
+  status         ProviderHealthStatus
+  latencyMs      Int?
+  errorClass     String?
+  rateLimit      Json?
+  observedAt     DateTime                @default(now()) @db.Timestamptz(3)
+  route          ProviderRouteRelease    @relation(fields: [routeReleaseId], references: [id], onDelete: Restrict)
+
+  @@index([routeReleaseId, observedAt])
+}

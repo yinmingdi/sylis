@@ -1,0 +1,786 @@
+{
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "sylis_session": {
+        "in": "cookie",
+        "name": "sylis_session",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {},
+    "description": "",
+    "title": "Sylis Agent API",
+    "version": "0.0.1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/agent/v1/artifacts": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_artifacts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/artifacts/{artifactId}": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_artifact",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/artifacts/{artifactId}/accept-as-asset": {
+      "get": {
+        "operationId": "PublicArtifactAssetsOpenApiController_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicArtifactAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "PublicArtifactAssetsOpenApiController_accept",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicArtifactAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/artifacts/{artifactId}/revisions": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_reviseArtifact",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/assets": {
+      "get": {
+        "operationId": "PublicAssetsOpenApiController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/assets/{assetId}": {
+      "delete": {
+        "operationId": "PublicAssetsOpenApiController_deleteAsset",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "get": {
+        "operationId": "PublicAssetsOpenApiController_asset",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/assets/{assetId}/finalize": {
+      "post": {
+        "operationId": "PublicAssetsOpenApiController_finalize",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/assets/{assetId}/revisions/{revisionId}": {
+      "get": {
+        "operationId": "PublicAssetsOpenApiController_revision",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/assets/upload-intents": {
+      "post": {
+        "operationId": "PublicAssetsOpenApiController_createUploadIntent",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAssetsOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/capabilities": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_capabilities",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/diagnostic-bundles": {
+      "get": {
+        "operationId": "PublicDiagnosticBundlesOpenApiController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicDiagnosticBundlesOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "PublicDiagnosticBundlesOpenApiController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicDiagnosticBundlesOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/diagnostic-bundles/{bundleId}": {
+      "get": {
+        "operationId": "PublicDiagnosticBundlesOpenApiController_bundle",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicDiagnosticBundlesOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/diagnostic-bundles/{bundleId}/revisions": {
+      "post": {
+        "operationId": "PublicDiagnosticBundlesOpenApiController_revise",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicDiagnosticBundlesOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/diagnostic-bundles/{bundleId}/revisions/{revisionId}/confirm": {
+      "post": {
+        "operationId": "PublicDiagnosticBundlesOpenApiController_confirm",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicDiagnosticBundlesOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/memory-cards": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_memoryCards",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/memory-cards/{memoryCardId}": {
+      "delete": {
+        "operationId": "PublicAgentOpenApiController_suppressMemoryCard",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "patch": {
+        "operationId": "PublicAgentOpenApiController_updateMemoryCard",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/model-exchanges/{exchangeId}": {
+      "delete": {
+        "operationId": "PublicAgentOpenApiController_deleteModelExchange",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/proposals/{proposalId}": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_proposal",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/proposals/{proposalId}/decisions": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_decideProposal",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/runs/{runId}": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_run",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/runs/{runId}/cancel": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_cancelRun",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/runs/{runId}/retry": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_retryRun",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/runs/{runId}/wait-conditions/{waitId}/responses": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_respondToWait",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_listSessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "post": {
+        "operationId": "PublicAgentOpenApiController_createSession",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions/{sessionId}": {
+      "delete": {
+        "operationId": "PublicAgentOpenApiController_deleteSession",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "get": {
+        "operationId": "PublicAgentOpenApiController_session",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      },
+      "patch": {
+        "operationId": "PublicAgentOpenApiController_updateSession",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions/{sessionId}/events": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_streamEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions/{sessionId}/instructions": {
+      "post": {
+        "operationId": "PublicAgentOpenApiController_submitInstruction",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions/{sessionId}/messages": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_messages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/sessions/{sessionId}/runs": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_runs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    },
+    "/api/agent/v1/usage": {
+      "get": {
+        "operationId": "PublicAgentOpenApiController_usage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "sylis_session": []
+          }
+        ],
+        "tags": [
+          "PublicAgentOpenApi"
+        ],
+        "x-sylis-audience": "AGENT",
+        "x-sylis-authentication": "USER_SESSION"
+      }
+    }
+  },
+  "servers": [],
+  "tags": []
+}

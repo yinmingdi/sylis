@@ -8,7 +8,7 @@ alwaysApply: true
 - 后端api: NestJS、Prisma、PostgreSQL、redis、typescript,prisma使用6.7.0文件拆分
 - 后端speechService: python3、kaldi
 - 架构:前后端同构(isomorphic)
-- 代码结构:Monorepo,包含多个 workspace(如 apps/api、apps/web、packages/shared 等)
+- 代码结构: Monorepo，包含 `apps/frontends/*`、`apps/backends/*`、`packages/*` 和 `tools/*`
 
 - 前端文件要求
   - 所有的组件都优先使用antd-mobile已有的

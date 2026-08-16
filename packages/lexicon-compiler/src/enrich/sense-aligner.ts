@@ -1,7 +1,14 @@
 import { createHash } from "node:crypto";
 
 import type { NormalizedSourceRecord } from "../candidates/candidate-v1";
-import type { CompileProgressPort } from "../progress/reporter";
+import {
+  executeLexicalCandidateTasks,
+  type LexicalCandidatePort,
+  LexicalCandidateRiskClass,
+  LexicalCandidateTargetKind,
+  LexicalCandidateTaskType,
+} from "../candidates/lexical-candidate";
+import { CompileStage, type CompileProgressPort } from "../progress/reporter";
 import { senseSimilarity } from "../resolve/sense";
 import {
   type SenseAlignmentCandidate,
@@ -85,6 +92,7 @@ function validateAlignment(
 export async function alignAmbiguousSourceSenses(
   records: NormalizedSourceRecord[],
   executor: StructuredTaskExecutor,
+  candidatePort: LexicalCandidatePort,
   progress: CompileProgressPort,
 ): Promise<void> {
   const groups = new Map<string, SenseReference[]>();
@@ -109,22 +117,45 @@ export async function alignAmbiguousSourceSenses(
       tags: sense.tags,
     })),
   }));
-  const executions = await executor.executeAll<SenseAlignmentCandidate>(
-    planned.map(([, references], index) => ({
-      taskType: "SENSE_ALIGNMENT",
-      schemaName: "sylis_sense_alignment",
-      schema: senseAlignmentCandidateSchema,
-      systemPrompt:
-        "Partition every supplied source Sense into candidate-local canonical groups. Merge only semantically equivalent Senses of the same Entry; keep polysemy and parent/child Senses separate. Use every source Sense exactly once and return stable reason codes.",
-      input: inputs[index],
-      maxTokens: 1_200,
-      semanticValidator: (candidate) =>
-        validateAlignment(candidate, references),
-    })),
-  );
+  const executions =
+    await executeLexicalCandidateTasks<SenseAlignmentCandidate>(
+      executor,
+      candidatePort,
+      planned.map(([, references], index) => ({
+        taskType: LexicalCandidateTaskType.SENSE_ALIGNMENT,
+        target: {
+          kind: LexicalCandidateTargetKind.SOURCE_SENSE_SET,
+          targetKey: inputs[index]!.targetKey,
+        },
+        riskClass: LexicalCandidateRiskClass.HIGH,
+        sourceRecordIds: references.map(
+          (reference) => reference.record.sourceRecordId,
+        ),
+        schemaName: "sylis_sense_alignment",
+        schema: senseAlignmentCandidateSchema,
+        systemPrompt:
+          "Partition every supplied source Sense into candidate-local canonical groups. Merge only semantically equivalent Senses of the same Entry; keep polysemy and parent/child Senses separate. Use every source Sense exactly once and return stable reason codes.",
+        input: inputs[index],
+        maxTokens: 1_200,
+        semanticValidator: (candidate) =>
+          validateAlignment(candidate, references),
+      })),
+    );
 
   for (const [index, [targetKey, references]] of planned.entries()) {
     const execution = executions[index]!;
+    if (!execution.value) {
+      await progress.report({
+        stage: CompileStage.SENSE_ALIGNMENT,
+        processed: index + 1,
+        total: planned.length,
+        aiInputTokens: execution.usage.inputTokens,
+        aiOutputTokens: execution.usage.outputTokens,
+        aiCostMicros: executor.spentMicros,
+        message: `${targetKey}:${execution.disposition}`,
+      });
+      continue;
+    }
     const referenceByKey = new Map(
       references.map((reference) => [
         referenceKey({
@@ -134,7 +165,7 @@ export async function alignAmbiguousSourceSenses(
         reference,
       ]),
     );
-    for (const group of execution.result.value.groups) {
+    for (const group of execution.value.groups) {
       const memberKeys = group.members.map(referenceKey).sort();
       const alignmentKey = createHash("sha256")
         .update(execution.candidateKey)
@@ -145,14 +176,17 @@ export async function alignAmbiguousSourceSenses(
         const reference = referenceByKey.get(memberKey)!;
         reference.sense.alignmentKey = alignmentKey;
         reference.sense.alignmentCandidateKey = execution.candidateKey;
+        reference.sense.alignmentCandidateRevisionId =
+          execution.candidateRevisionId!;
+        reference.sense.alignmentCandidateLocalId = group.localId;
       }
     }
     await progress.report({
-      stage: "SENSE_ALIGNMENT",
+      stage: CompileStage.SENSE_ALIGNMENT,
       processed: index + 1,
       total: planned.length,
-      aiInputTokens: execution.result.usage.inputTokens,
-      aiOutputTokens: execution.result.usage.outputTokens,
+      aiInputTokens: execution.usage.inputTokens,
+      aiOutputTokens: execution.usage.outputTokens,
       aiCostMicros: executor.spentMicros,
       message: targetKey,
     });

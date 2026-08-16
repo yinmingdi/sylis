@@ -12,11 +12,17 @@ import { Agent } from "node:https";
 import { isIP, type LookupFunction } from "node:net";
 import { basename, resolve } from "node:path";
 
-export type ObjectPublishStage =
-  | "VERIFY_LOCAL"
-  | "CHECK_REMOTE"
-  | "UPLOAD"
-  | "VERIFY_REMOTE";
+export enum ObjectPublishStage {
+  VERIFY_LOCAL = "VERIFY_LOCAL",
+  CHECK_REMOTE = "CHECK_REMOTE",
+  UPLOAD = "UPLOAD",
+  VERIFY_REMOTE = "VERIFY_REMOTE",
+}
+
+export enum ObjectStorageEndpointProtocol {
+  HTTPS = "https:",
+  HTTP = "http:",
+}
 
 export interface ObjectPublishProgressEvent {
   stage: ObjectPublishStage;
@@ -144,7 +150,7 @@ async function verifyLocalFile(
   const hash = createHash("sha256");
   let processedBytes = 0;
   progress.report({
-    stage: "VERIFY_LOCAL",
+    stage: ObjectPublishStage.VERIFY_LOCAL,
     processedBytes,
     totalBytes: byteSize,
     reused: false,
@@ -154,7 +160,7 @@ async function verifyLocalFile(
     processedBytes += Buffer.byteLength(chunk);
   }
   progress.report({
-    stage: "VERIFY_LOCAL",
+    stage: ObjectPublishStage.VERIFY_LOCAL,
     processedBytes,
     totalBytes: byteSize,
     reused: false,
@@ -180,7 +186,13 @@ export function s3ObjectStorageConfigFromEnv(
 ): S3ObjectStorageConfig {
   const endpoint = requiredEnvironment(env, "AWS_ENDPOINT_URL");
   const parsedEndpoint = new URL(endpoint);
-  if (parsedEndpoint.protocol !== "https:") {
+  const insecureHttpAllowed =
+    parsedEndpoint.protocol === ObjectStorageEndpointProtocol.HTTP &&
+    env.AWS_ENDPOINT_ALLOW_INSECURE === "true";
+  if (
+    parsedEndpoint.protocol !== ObjectStorageEndpointProtocol.HTTPS &&
+    !insecureHttpAllowed
+  ) {
     throw new Error("AWS_ENDPOINT_URL must use HTTPS.");
   }
   const urlStyle = env.AWS_S3_URL_STYLE ?? "virtual";
@@ -298,7 +310,7 @@ export async function publishContentAddressedObject(
 
   const key = `sha256/${expectedSha256}/${objectName}`;
   progress.report({
-    stage: "CHECK_REMOTE",
+    stage: ObjectPublishStage.CHECK_REMOTE,
     processedBytes: 0,
     totalBytes: file.size,
     reused: false,
@@ -307,7 +319,7 @@ export async function publishContentAddressedObject(
   if (existing) {
     assertRemoteObject(existing, file.size, expectedSha256);
     progress.report({
-      stage: "VERIFY_REMOTE",
+      stage: ObjectPublishStage.VERIFY_REMOTE,
       processedBytes: file.size,
       totalBytes: file.size,
       reused: true,
@@ -325,7 +337,7 @@ export async function publishContentAddressedObject(
   }
 
   progress.report({
-    stage: "UPLOAD",
+    stage: ObjectPublishStage.UPLOAD,
     processedBytes: 0,
     totalBytes: file.size,
     reused: false,
@@ -338,7 +350,7 @@ export async function publishContentAddressedObject(
     contentType,
     onProgress(processedBytes) {
       progress.report({
-        stage: "UPLOAD",
+        stage: ObjectPublishStage.UPLOAD,
         processedBytes,
         totalBytes: file.size,
         reused: false,
@@ -348,7 +360,7 @@ export async function publishContentAddressedObject(
   const published = await storage.head(key);
   assertRemoteObject(published, file.size, expectedSha256);
   progress.report({
-    stage: "VERIFY_REMOTE",
+    stage: ObjectPublishStage.VERIFY_REMOTE,
     processedBytes: file.size,
     totalBytes: file.size,
     reused: false,

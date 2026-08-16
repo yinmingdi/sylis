@@ -5,7 +5,11 @@ import { gzipSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
 
-import type { SourceAdapterKind } from "../src/candidates/candidate-v1";
+import {
+  CandidateFormationType,
+  CandidateMorphemeRole,
+  SourceAdapterKind,
+} from "../src/candidates/candidate-v1";
 import type { ResolvedSource } from "../src/manifest/source-manifest";
 import { readOewn } from "../src/sources/oewn";
 import { readWiktextract } from "../src/sources/wiktextract";
@@ -17,6 +21,7 @@ function source(path: string, adapter: SourceAdapterKind): ResolvedSource {
   return {
     key: "fixture",
     version: "fixture-1",
+    retrievedAt: "2026-08-07T00:00:00.000Z",
     adapter,
     uri: path,
     sha256: "0".repeat(64),
@@ -25,10 +30,13 @@ function source(path: string, adapter: SourceAdapterKind): ResolvedSource {
       mayServe: true,
       mayExport: true,
       requiresAttribution: false,
+      effectiveFrom: "2026-08-07T00:00:00.000Z",
+      effectiveTo: null,
     },
     path,
     sourceUri: "urn:sylis:fixture:source",
     checksum: "0".repeat(64),
+    parserVersion: "fixture-parser/1",
   };
 }
 
@@ -60,17 +68,23 @@ describe("source adapters", () => {
     );
 
     const [record] = await collect(
-      readWiktextract(source(path, "WIKTEXTRACT_EN")),
+      readWiktextract(source(path, SourceAdapterKind.WIKTEXTRACT_EN)),
     );
 
     expect(record.wordFormations).toEqual([
       expect.objectContaining({
-        formationType: "DERIVATION",
+        formationType: CandidateFormationType.DERIVATION,
         inputPattern: "help + ful",
         outputPattern: "helpful",
         segments: [
-          expect.objectContaining({ surfaceText: "help", role: "ROOT" }),
-          expect.objectContaining({ surfaceText: "ful", role: "SUFFIX" }),
+          expect.objectContaining({
+            surfaceText: "help",
+            role: CandidateMorphemeRole.ROOT,
+          }),
+          expect.objectContaining({
+            surfaceText: "ful",
+            role: CandidateMorphemeRole.SUFFIX,
+          }),
         ],
       }),
     ]);
@@ -111,7 +125,7 @@ describe("source adapters", () => {
     );
 
     const parsed = await collect(
-      readWiktextract(source(path, "WIKTEXTRACT_EN")),
+      readWiktextract(source(path, SourceAdapterKind.WIKTEXTRACT_EN)),
     );
 
     expect(new Set(parsed.map((record) => record.sourceKey)).size).toBe(2);
@@ -124,8 +138,12 @@ describe("source adapters", () => {
     const gzipPath = join(root, "oewn-release-asset.bin");
     await writeFile(gzipPath, gzipSync(await readFile(xmlPath)));
 
-    const plain = await collect(readOewn(source(xmlPath, "WN_LMF")));
-    const compressed = await collect(readOewn(source(gzipPath, "WN_LMF")));
+    const plain = await collect(
+      readOewn(source(xmlPath, SourceAdapterKind.WN_LMF)),
+    );
+    const compressed = await collect(
+      readOewn(source(gzipPath, SourceAdapterKind.WN_LMF)),
+    );
 
     expect(compressed).toEqual(plain);
     expect(compressed.length).toBeGreaterThan(0);
@@ -159,7 +177,9 @@ describe("source adapters", () => {
       `${JSON.stringify(record("CET4_3", "CET4_3_1", 1))}\n${JSON.stringify(record("IELTS_3", "IELTS_3_9", 9))}\n`,
     );
 
-    const records = await collect(readYoudao(source(path, "YOUDAO_NDJSON")));
+    const records = await collect(
+      readYoudao(source(path, SourceAdapterKind.YOUDAO_NDJSON)),
+    );
 
     expect(records.map((value) => value.sourceKey)).toEqual([
       "CET4_3:CET4_3_1",

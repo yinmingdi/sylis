@@ -1,4 +1,5 @@
-import type { JsonValue } from "@sylis/lexicon-contracts";
+import type { JsonValue } from "@sylis/lexicon-artifact";
+import { stableArtifactId } from "@sylis/utils/stable-uuid";
 import { createHash } from "node:crypto";
 
 import type {
@@ -30,7 +31,7 @@ export function hashText(value: string): string {
 }
 
 export function stableId(prefix: string, ...parts: string[]): string {
-  return `${prefix}_${hashText(parts.join("\u001f")).slice(0, 24)}`;
+  return stableArtifactId(prefix, ...parts);
 }
 
 export function sourceContext(

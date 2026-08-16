@@ -1,119 +1,122 @@
-# BackgroundJob、Worker 与进度协议
+# Job 与执行协议
 
-## 1. 一个执行真相
+## 1. 两种状态不能混用
 
-`BackgroundJob` 是全系统唯一执行状态机。`ReadingGeneration`、`GrammarDiagnosis`、`DataExportRequest`、`BuildRun` 和 `ImportJob` 保存各领域的 typed request/result，并以 unique `jobId` 引用它；它们不复制 `status`、attempt、progress 或错误状态。
+`AgentRun`、`BuildRun`、`PublishRun`、`DataExportRequest` 等描述领域流程；`Job` 只描述一次可调度执行激活。领域对象可以等待批准或用户输入，Job 不允许暂停。
 
-PostgreSQL 保存 Job 真相。Redis 只发布 `job.available { jobId }` 唤醒信号；消息丢失由数据库轮询补偿，重复消息由 lease claim 去重，Redis 清空不改变任何 Job 状态。API、Worker 和 Admin 不从 queue depth 推断业务进度。
+PostgreSQL 保存全部执行真相。Redis 只发布可丢失、可重复的 wakeup 和短期进度 delta；数据库轮询负责补偿。实现无关契约归 `@sylis/job-contracts`，claim/lease/heartbeat/fencing 和 executor lifecycle 归 `@sylis/job-runtime`。
 
-实现无关契约唯一归 `@sylis/background-jobs`：`JobKind`、状态/转换、payload/progress/checkpoint/result schema、`BackgroundJobHandler`、`JobControl` 与纯 validator。该包不依赖 NestJS、Prisma、Redis、AI provider、Railway 或 app 源码。API `jobs` module 实现 enqueue/query/cancel/SSE adapter；Worker、Compiler Runner 与 Importer 分别实现 executor adapter。目录和依赖细则见 [后端目录与 NestJS 模块边界](../implementation/backend-structure.md)。
-
-## 2. 状态机
+## 2. Job 状态机
 
 ```mermaid
 stateDiagram-v2
   [*] --> QUEUED
-  QUEUED --> RUNNING: claim lease
-  RETRY_SCHEDULED --> RUNNING: due + claim lease
-  RUNNING --> RETRY_SCHEDULED: retryable failure
-  RUNNING --> PAUSED: policy/manual pause
-  PAUSED --> QUEUED: authorized resume
-  QUEUED --> CANCELLED: accept cancellation
-  RETRY_SCHEDULED --> CANCELLED: accept cancellation
-  PAUSED --> CANCELLED: accept cancellation
-  RUNNING --> CANCELLED: handler acknowledges cancellation
-  RUNNING --> SUCCEEDED: commit result
-  RUNNING --> FAILED: permanent/exhausted failure
+  QUEUED --> RUNNING: JobAttempt claims lease
+  RETRY_SCHEDULED --> RUNNING: due Attempt claims lease
+  RUNNING --> RETRY_SCHEDULED: transient failure
+  QUEUED --> CANCELLED: cancel accepted
+  RETRY_SCHEDULED --> CANCELLED: cancel accepted
+  RUNNING --> CANCELLED: executor acknowledges cancellation
+  RUNNING --> SUCCEEDED: result committed
+  RUNNING --> FAILED: permanent or exhausted failure
   SUCCEEDED --> [*]
   FAILED --> [*]
   CANCELLED --> [*]
 ```
 
-- 非终态为 `QUEUED | RUNNING | RETRY_SCHEDULED | PAUSED`；终态为 `SUCCEEDED | FAILED | CANCELLED`。
-- cancel request 先原子写 `cancelRequestedAt`。未运行 Job 可立即终结；运行中 handler 在安全边界检查后清理临时资源并终结，不使用进程强杀伪造成功清理。
-- `PAUSED` 必须有稳定 `pauseReasonCode`，只允许 `BUDGET_APPROVAL_REQUIRED`、`CONTENT_REVIEW_REQUIRED`、`SOURCE_RIGHTS_BLOCKED`、`HANDLER_UPGRADE_REQUIRED`、`OPERATOR_PAUSED` 或注册表声明的领域原因。
-- terminal 行禁止修改；需要重跑时创建一个有 `supersedesJobId` 的新 Job，不能把 FAILED 改回 QUEUED。
+Job 状态固定为 `QUEUED | RUNNING | RETRY_SCHEDULED | SUCCEEDED | FAILED | CANCELLED`。Terminal 行不可修改；人工重试或领域恢复创建新 Job。不存在 `PAUSED`、`resume Job` 或把 FAILED 改回 QUEUED 的操作。
 
-## 3. JobKind 注册表
+## 3. JobAttempt
 
-每个 kind 必须静态注册，不从数据库字符串动态加载代码：
+每次 claim 或瞬时重试创建不可变身份的 `JobAttempt`。Attempt 拥有：
+
+- `attemptNumber`、handlerVersion 和 checkpointSchemaVersion；
+- `leaseOwner`、`leaseToken`、`leaseExpiresAt` 和 `heartbeatAt`；
+- 单调递增 `fencingToken`；
+- started/completed time、failureClass、errorCode 和 redacted evidence；
+- 该 Attempt 使用的 checkpoint/result refs。
+
+只有数据库当前 fencing token 的持有者能写 checkpoint、progress 或 terminal result。旧 executor 即使网络恢复，也不能提交晚到结果。`Job` 保存最终状态、调度时间、幂等键和当前 Attempt 指针，不把 lease 字段复制到 Job。
+
+## 4. 激活规则
+
+| 领域事件                     | 执行事实                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| AgentRun 初次启动            | 创建 activation Job                                                          |
+| AgentRun 进入 WAITING        | 当前 Job 成功结束并记录 wait result                                          |
+| WaitCondition 满足           | 为同一 Run 创建新 activation Job                                             |
+| User retry 一个失败 Run      | 创建新 Job，并用 `supersedesJobId` 关联                                      |
+| executor timeout/429/5xx     | 同一 Job 创建新 JobAttempt                                                   |
+| unknown external side effect | 标记 `UNKNOWN_OUTCOME`，不盲目重试；先 reconcile，无法确认则 FAILED/人工处理 |
+
+创建领域 request、Job 和 outbox wake event 必须在同一 PostgreSQL 事务中完成。相同 actor、operation、idempotency key 与 request hash 返回已有结果；同 key 不同 hash 返回 conflict。
+
+## 5. Kind 注册表与控制策略
+
+每个 Job kind 静态声明 owner、executor、input/result/checkpoint schema、timeout、retry policy、cancellation policy 和 side-effect policy。数据库字符串不能动态加载 handler。
 
 ```typescript
-interface JobKindDefinition<InputRef, ResultRef, Checkpoint> {
+interface JobDefinition<InputRef, ResultRef, Checkpoint> {
   kind: JobKind;
-  ownerContext: "AI_TUTOR" | "IDENTITY" | "OPERATIONS" | "READING" | "LEXICON";
-  executor: "WORKER" | "COMPILER_RUNNER" | "IMPORTER_RUNNER";
+  ownerContext: JobOwnerContext;
+  executor: ExecutorKind;
   handlerVersion: string;
   checkpointSchemaVersion: string;
   maxAttempts: number;
   timeoutMs: number;
-  cancellable: boolean;
+  retryPolicy: JobRetryPolicy;
+  cancellationPolicy: JobCancellationPolicy;
+  sideEffectPolicy: JobSideEffectPolicy;
   validateInputRef(value: unknown): InputRef;
   validateCheckpoint(value: unknown): Checkpoint;
   validateResultRef(value: unknown): ResultRef;
 }
 ```
 
-| JobKind              | 领域请求                   | Executor        | 说明                                      |
-| -------------------- | -------------------------- | --------------- | ----------------------------------------- |
-| `TUTOR_RESPONSE`     | assistant `TutorMessage`   | WORKER          | 流式生成同一条 assistant message          |
-| `READING_GENERATION` | `ReadingGeneration`        | WORKER          | 结构化生成、验证并发布 reading revision   |
-| `GRAMMAR_DIAGNOSIS`  | `GrammarDiagnosis`         | WORKER          | 结构化 observation/evidence/suggestion    |
-| `DATA_EXPORT`        | `DataExportRequest`        | WORKER          | owner-scoped 可审计导出                   |
-| `SOURCE_SYNC`        | `SourceSynchronization`    | WORKER          | 只同步运行时允许的外部内容，不写词典      |
-| `LEXICON_BUILD`      | `BuildRun`                 | COMPILER_RUNNER | 运行离线 Compiler，不在 API/Worker 内编译 |
-| `LEXICON_IMPORT`     | `ImportJob`                | IMPORTER_RUNNER | 导入固定 artifact，不自动激活             |
-| `LEXICON_VALIDATE`   | `LexiconValidationRequest` | IMPORTER_RUNNER | 全局验证 DRAFT，不自动激活                |
+handler 注册表是 code-owned；每个 kind 必须显式声明重试、取消和副作用策略，遗漏任一项不能注册。Operator control 使用独立、版本化 `JobKindPolicy`，固定每种 kind 在哪些 Job/领域状态允许 cancel、retry、resume-domain-run 或 reconciliation，以及可重试 failure class、reconciliation rule 和 ANY/ALL 角色表达式。v0.0.1 seed 为全部 17 个 kind 写入确定性 policy 行，未知或未配置 kind 默认拒绝所有控制。Admin 不能编辑 input、checkpoint、Attempt 或 handler version。`resume` 只表示 owner 领域对象满足 wait 后创建新 activation Job，永远不是把 terminal Job 改回 RUNNING。
 
-增加 kind 必须同时提交 registry、typed domain request、checkpoint schema、retry policy、权限、进度 stage 和 contract tests。通用 `BackgroundJob.input JSON` 不承载领域 payload，只保存 typed request reference 与 hash。
+人工 retry 不修改 FAILED Job，而是原子创建一个新的 `QUEUED` Job，以唯一 `supersedesJobId` 指向旧 Job，并复用 typed `inputRef.requestId` 解析原领域 request。相同失败 Job 重复提交 retry 返回已存在 successor；retry chain 因而是一对一、可审计且幂等。`UNKNOWN_OUTCOME` 和要求 reconciliation 的 kind 返回 `JOB_RECONCILIATION_REQUIRED`，不得生成 successor。
 
-Registry definition、schema 和接口位于 `@sylis/background-jobs`；Nest provider registry/claim loop 位于各 executor。纯 contract 包不能通过动态 import 或 dependency injection 偷带某个 handler implementation。
+Admin API 先校验 Operator 的领域角色与 JobKindPolicy，再让 transaction owner 执行状态转换。`UNKNOWN_OUTCOME` 只显示 reconciliation，不能显示 retry；未知 kind 默认没有任何控制按钮。
 
-## 4. Claim、lease 与 checkpoint
+| Kind family                             | Executor              |
+| --------------------------------------- | --------------------- |
+| Agent Run activation、tool continuation | `agent-executor`      |
+| 数据导出、来源同步、retention purge     | `automation-executor` |
+| Lexicon candidate build                 | `lexicon-builder`     |
+| Artifact publish 与 release validation  | `lexicon-publisher`   |
 
-Executor 通过一条带 `FOR UPDATE SKIP LOCKED` 或等价 compare-and-swap 的事务 claim 到期 Job：校验 executor/kind、`nextAttemptAt`、未取消状态和 lease 过期条件，写入 `RUNNING`、`leaseOwner`、`leaseExpiresAt`、heartbeat，并递增 attempt。只有持有当前 lease token 的进程能写 checkpoint、progress 或 terminal result。
+通用 Job 只保存 typed input/result reference 与 hash，不用任意 JSON 承载领域 request。
 
-handler 每隔不超过 15 秒 heartbeat，lease 默认 60 秒；外部调用超时时间必须短于 lease 或主动续租。进程退出后 lease 到期，另一个 executor 从最新 `JobCheckpoint` 恢复。checkpoint 必须包含 handler/schema version、已提交边界和 state hash；版本不兼容时 Job 进入 `PAUSED/HANDLER_UPGRADE_REQUIRED`，不能猜测旧状态。
+## 6. Claim、checkpoint 与关闭
 
-副作用以 Job ID + step key 做幂等：数据库写与 checkpoint 尽量同事务；外部 provider 调用先持久化 `ModelInvocation` 和 idempotency key，重启后先查询已存在结果。重试采用带 jitter 的指数退避，只有 registry 分类的 timeout、429、5xx 和临时连接错误可重试；schema、权限、rights 和不变量失败直接 FAILED 或 PAUSED。
+Executor 用 `FOR UPDATE SKIP LOCKED` 或等价 CAS claim 到期 Job，在一个事务内创建 Attempt、递增 fencing token、写 lease 和 heartbeat。默认 lease 为 60 秒，heartbeat 不超过 15 秒；外部请求必须短于 lease 或主动续租。
 
-## 5. Handler 接口与关闭
+lease 过期时先把旧 Attempt 记为 `UNKNOWN_OUTCOME`。只有 `IDEMPOTENT` 且 retry policy/attempt budget 允许的 kind 可以创建接管 Attempt；`RECONCILIATION_REQUIRED` kind 立即把 Job 终结为 FAILED 并写 `JOB_RECONCILIATION_REQUIRED`，不能把“不知道是否已经发生”的外部副作用重新播放。
 
-```typescript
-interface BackgroundJobHandler<Context, Checkpoint> {
-  readonly kind: JobKind;
-  run(context: Context, control: JobControl<Checkpoint>): Promise<JobResultRef>;
-}
+Checkpoint 包含 handler/schema version、输入 hash、已提交边界、state hash 和对象引用。版本不兼容是永久失败或显式 migration，不创建暂停状态。副作用使用稳定 `jobId + stepKey` 幂等；数据库写与 checkpoint 尽量同事务。
 
-interface JobControl<Checkpoint> {
-  readonly jobId: string;
-  readonly attempt: number;
-  readonly checkpoint: Checkpoint | null;
-  heartbeat(): Promise<void>;
-  report(event: JobProgressInput): Promise<void>;
-  checkpointAt(value: Checkpoint): Promise<void>;
-  isCancellationRequested(): Promise<boolean>;
-}
-```
+收到 `SIGTERM` 后，executor 停止 claim，readiness 失败，当前 handler 在安全边界保存 checkpoint并继续续租，随后释放 lease 或终结 Attempt。不能先断开数据库再尝试保存进度。
 
-收到 `SIGTERM` 后 executor 立即停止 claim 新 Job，通知 handler 在 checkpoint 边界收敛，继续续租至 Railway grace deadline 前，然后释放 lease 或以明确错误终结；不能先断 DB 再尝试保存 checkpoint。readiness 在 draining 时失败，liveness 保持到收敛完成。
+## 7. 重试分类
 
-## 6. 进度与事件
+- `TRANSIENT`：timeout、429、明确可重试的 5xx、临时连接错误；同一 Job 新建 Attempt，使用带 jitter 的指数退避。
+- `PERMANENT`：schema、权限、rights、内容不变量或不兼容 checkpoint；Job 直接 FAILED。
+- `CANCELLED`：User/Operator 请求且 handler 已在安全边界确认。
+- `UNKNOWN_OUTCOME`：外部调用结果不明；先用 provider idempotency key/reconciliation 查询，无法证明时不得重放。
 
-`JobProgressEvent` 是 append-only，sequence 在数据库事务中按 Job 单调递增。`processed` 不得倒退，`total` 未知时为 null，ETA 无可靠样本时为 `estimating`；至少每 30 秒写 heartbeat/progress。SSE 从 PostgreSQL event cursor 读取，Redis pub/sub 只能降低延迟。
+at-least-once 只描述 handler 可能再次执行，不表示副作用可以重复发生。每个有副作用的 step 必须有稳定幂等键或明确的不可自动重试策略。
 
-统一事件为 `job.started`、`job.progress`、`job.warning`、`job.paused`、`job.completed`、`job.failed`、`job.cancelled`。事件仅含安全 projection；checkpoint、输入正文、provider body 和 secret 不进入 SSE。
+## 8. 进度与 SSE
 
-## 7. 创建与事务边界
+`JobProgressEvent` append-only，`sequence` 对 Job 单调递增。事件包含 stage、processed、total、rate、ETA reliability、warning、token/cost、attemptId 和 occurredAt；`processed` 在同一 `(attemptId, stage)` 内不得倒退，不同 stage 可以使用不同单位并从零开始。terminal progress 继承该 Attempt 最近一次有效 processed/total，不伪造新的计数；total 未知为 null。长阶段至少每 5 秒或每个明确批次边界写一次 progress，数据库 heartbeat 最长间隔 15 秒；无可靠 total/ETA 时显式使用 `null` 与 `estimating`，不能伪造百分比。
 
-API command 在一个 PostgreSQL 事务中创建领域 request、`BackgroundJob` 和 outbox wake event；commit 后 dispatcher 尝试发 Redis。相同 actor + operation + idempotency key + request hash 返回原 Job，不同 hash 返回 409。Executor 在自己的事务中提交领域结果引用与 `SUCCEEDED`，因此不会出现结果已发布而 Job 仍显示失败。
+SSE 以 PostgreSQL cursor 为真相并支持 `Last-Event-ID`；Redis pub/sub 只降低延迟。heartbeat event 不推进业务 progress sequence。cursor 已超过在线 retention 时返回稳定 problem code，client 重新读取 Job snapshot 后继续。事件只含安全 projection，checkpoint 正文、provider payload、User 内容和 secret 不进入 SSE。
 
-Lexicon activation 不是后台 handler 的隐式最后一步。`LEXICON_IMPORT` 与 `LEXICON_VALIDATE` 共同产生状态为 `VALIDATED`、尚未激活的 `LexiconRelease`，激活仍是独立、审批且可审计的同步 command。
+## 9. 验收
 
-## 8. 验收
-
-- queue 消息丢失、重复、乱序和 Redis 重启不会丢 Job 或重复领域结果。
-- crash、lease expiry、部署 draining 和 handler upgrade 能从合法 checkpoint 恢复。
-- cancellation、pause/resume、最大重试和 terminal immutability 有状态机 property test。
-- 每个 JobKind 有 fake handler、真实数据库 claim 竞争和幂等副作用测试。
-- SSE 的 `Last-Event-ID`、过期 cursor、terminal reconnect 和 owner/audience 隔离通过。
+- Redis 消息丢失、重复、乱序和重启不丢 Job 或重复领域结果。
+- 多 executor 竞争只产生一个有效 fencing token；旧 lease 不能提交晚到结果。
+- crash、lease expiry、deploy drain 和兼容 checkpoint 能正确接管。
+- 每个 Job kind 通过共享 contract suite、真实 PostgreSQL claim 竞争和幂等测试。
+- JobKindPolicy 的 allow/deny、UNKNOWN_OUTCOME reconciliation、cancellation、最大 Attempt、terminal immutability、SSE reconnect 和 owner/audience 隔离均有自动化验证。

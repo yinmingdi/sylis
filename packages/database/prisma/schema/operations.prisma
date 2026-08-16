@@ -1,83 +1,247 @@
+model ApprovalPolicy {
+  id                     String            @id @default(uuid()) @db.Uuid
+  actionType             String
+  policyVersion          String
+  requiredRoleExpression String
+  requiredQuorum         Int               @default(1)
+  effectiveAt            DateTime          @db.Timestamptz(3)
+  createdAt              DateTime          @default(now()) @db.Timestamptz(3)
+  requests               ApprovalRequest[]
+
+  @@unique([actionType, policyVersion])
+}
+
 model ApprovalRequest {
-  id           String                     @id @default(uuid()) @db.Uuid
-  actionType   String
-  actionDigest String                     @unique
-  requiredRole OperatorRole
-  requesterId  String                     @db.Uuid
-  status       String                     @default("PENDING")
-  expiresAt    DateTime                   @db.Timestamptz(3)
-  createdAt    DateTime                   @default(now()) @db.Timestamptz(3)
-  requester    User                       @relation("ApprovalRequester", fields: [requesterId], references: [id], onDelete: Restrict)
-  decisions    ApprovalDecision[]
-  activations  LexiconReleaseActivation[]
+  id                     String                     @id @default(uuid()) @db.Uuid
+  policyId               String                     @db.Uuid
+  actionType             String
+  actionDigest           String
+  targetRevision         String
+  policyVersion          String
+  requiredRoleExpression String
+  requiredQuorum         Int
+  requesterId            String                     @db.Uuid
+  status                 ApprovalRequestStatus      @default(PENDING)
+  expiresAt              DateTime                   @db.Timestamptz(3)
+  createdAt              DateTime                   @default(now()) @db.Timestamptz(3)
+  policy                 ApprovalPolicy             @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  requester              User                       @relation("ApprovalRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  decisions              ApprovalDecision[]
+  activations            LexiconReleaseActivation[]
+
+  @@unique([actionType, actionDigest, policyVersion])
 }
 
 model ApprovalDecision {
-  id                String          @id @default(uuid()) @db.Uuid
-  requestId         String          @db.Uuid
-  actorUserId       String          @db.Uuid
-  decision          String
+  id                String               @id @default(uuid()) @db.Uuid
+  requestId         String               @db.Uuid
+  actorUserId       String               @db.Uuid
+  decision          ApprovalDecisionKind
   reason            String
-  reauthenticatedAt DateTime        @db.Timestamptz(3)
-  decidedAt         DateTime        @default(now()) @db.Timestamptz(3)
-  request           ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
-  actor             User            @relation("ApprovalActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  actionDigest      String
+  reauthenticatedAt DateTime             @db.Timestamptz(3)
+  decidedAt         DateTime             @default(now()) @db.Timestamptz(3)
+  request           ApprovalRequest      @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actor             User                 @relation("ApprovalActor", fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@unique([requestId, actorUserId])
 }
 
 model LexiconReleaseActivation {
-  id            String           @id @default(uuid()) @db.Uuid
-  lexiconId     String           @db.Uuid
-  fromReleaseId String?          @db.Uuid
-  toReleaseId   String           @db.Uuid
-  approvalId    String?          @db.Uuid
-  actorUserId   String           @db.Uuid
+  id            String          @id @default(uuid()) @db.Uuid
+  lexiconId     String          @db.Uuid
+  fromReleaseId String?         @db.Uuid
+  toReleaseId   String          @db.Uuid
+  approvalId    String          @db.Uuid
+  actorUserId   String          @db.Uuid
   reason        String
-  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
-  lexicon       Lexicon          @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
-  fromRelease   LexiconRelease?  @relation("ActivationFromRelease", fields: [fromReleaseId], references: [id], onDelete: Restrict)
-  toRelease     LexiconRelease   @relation("ActivationToRelease", fields: [toReleaseId], references: [id], onDelete: Restrict)
-  approval      ApprovalRequest? @relation(fields: [approvalId], references: [id], onDelete: Restrict)
-  actor         User             @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  lexicon       Lexicon         @relation(fields: [lexiconId], references: [id], onDelete: Restrict)
+  fromRelease   LexiconRelease? @relation("ActivationFromRelease", fields: [fromReleaseId], references: [id], onDelete: Restrict)
+  toRelease     LexiconRelease  @relation("ActivationToRelease", fields: [toReleaseId], references: [id], onDelete: Restrict)
+  approval      ApprovalRequest @relation(fields: [approvalId], references: [id], onDelete: Restrict)
+  actor         User            @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([lexiconId, createdAt])
 }
 
 model DeploymentRelease {
-  id           String    @id @default(uuid()) @db.Uuid
-  version      String
-  gitSha       String
-  environment  String
-  imageDigests Json
-  buildProof   Json
-  status       String
-  deployedAt   DateTime? @db.Timestamptz(3)
-  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  id                    String                 @id @default(uuid()) @db.Uuid
+  version               String                 @unique
+  gitSha                String                 @unique
+  imageDigests          Json
+  stagingEvidence       Json
+  releaseDigest         String                 @unique
+  approvalRef           String
+  productionEnvironment DeploymentEnvironment
+  workflowUrl           String
+  deploymentUrl         String
+  createdByServiceKey   String
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  deployedAt            DateTime               @db.Timestamptz(3)
+}
 
-  @@unique([environment, version])
-  @@unique([environment, gitSha])
+model RightsDecision {
+  id                     String                   @id @default(uuid()) @db.Uuid
+  sourceDatasetVersionId String                   @db.Uuid
+  policyVersion          String
+  mayBuild               Boolean
+  mayServe               Boolean
+  mayExport              Boolean
+  attribution            String?
+  restrictions           String[]
+  decidedByUserId        String                   @db.Uuid
+  effectiveAt            DateTime                 @db.Timestamptz(3)
+  actionDigest           String
+  sourceDatasetVersion   SourceDatasetVersion     @relation(fields: [sourceDatasetVersionId], references: [id], onDelete: Restrict)
+  decidedBy              User                     @relation("RightsDecisionDecider", fields: [decidedByUserId], references: [id], onDelete: Restrict)
+  evidence               RightsDecisionEvidence[]
+
+  @@unique([sourceDatasetVersionId, policyVersion])
+  @@unique([id, sourceDatasetVersionId])
+}
+
+model RightsDecisionEvidence {
+  id                     String             @id @default(uuid()) @db.Uuid
+  rightsDecisionId       String             @db.Uuid
+  sourceDatasetVersionId String             @db.Uuid
+  evidenceKind           RightsEvidenceKind
+  referenceUri           String
+  contentHash            String
+  note                   String?
+  capturedAt             DateTime           @db.Timestamptz(3)
+  decision               RightsDecision     @relation(fields: [rightsDecisionId, sourceDatasetVersionId], references: [id, sourceDatasetVersionId], onDelete: Restrict)
+
+  @@unique([rightsDecisionId, evidenceKind, referenceUri, contentHash])
+}
+
+model Candidate {
+  id                String                  @id @default(uuid()) @db.Uuid
+  buildRunId        String                  @db.Uuid
+  candidateKey      String
+  taskType          CandidateTaskType
+  currentRevisionId String?                 @unique @db.Uuid
+  riskClass         CandidateRiskClass
+  status            CandidateStatus
+  buildRun          BuildRun                @relation(fields: [buildRunId], references: [id], onDelete: Restrict)
+  revisions         CandidateRevision[]     @relation("CandidateRevisions")
+  currentRevision   CandidateRevision?      @relation("CurrentCandidateRevision", fields: [id, currentRevisionId], references: [candidateId, id], onDelete: Restrict)
+  promotionMappings CandidatePromotionMap[]
+
+  @@unique([buildRunId, candidateKey])
+  @@unique([id, currentRevisionId])
+}
+
+model CandidateRevision {
+  id                String                      @id @default(uuid()) @db.Uuid
+  candidateId       String                      @db.Uuid
+  revisionNo        Int
+  schemaVersion     String
+  payload           Json
+  contentHash       String
+  evidenceSetHash   String
+  validationSummary Json
+  createdBy         String
+  reason            String
+  createdAt         DateTime                    @default(now()) @db.Timestamptz(3)
+  candidate         Candidate                   @relation("CandidateRevisions", fields: [candidateId], references: [id], onDelete: Restrict)
+  currentFor        Candidate?                  @relation("CurrentCandidateRevision")
+  promotionMappings CandidatePromotionMap[]
+  reviewItems       ReviewItem[]
+  reviewDecisions   ReviewDecision[]
+  evidence          CandidateRevisionEvidence[]
+
+  @@unique([candidateId, revisionNo])
+  @@unique([candidateId, id])
+}
+
+model CandidateRevisionEvidence {
+  id                   String              @id @default(uuid()) @db.Uuid
+  candidateRevisionId  String              @db.Uuid
+  evidenceKind         ContentEvidenceKind
+  sourceRecordId       String?             @db.Uuid
+  upstreamProvenanceId String?             @db.Uuid
+  note                 String?
+  candidateRevision    CandidateRevision   @relation(fields: [candidateRevisionId], references: [id], onDelete: Restrict)
+  sourceRecord         SourceRecord?       @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+  upstreamProvenance   Provenance?         @relation("CandidateUpstreamEvidence", fields: [upstreamProvenanceId], references: [id], onDelete: Restrict)
+
+  @@unique([candidateRevisionId, evidenceKind, sourceRecordId, upstreamProvenanceId])
+}
+
+model CandidatePromotionMap {
+  id                  String                       @id @default(uuid()) @db.Uuid
+  candidateId         String                       @db.Uuid
+  candidateRevisionId String                       @db.Uuid
+  localId             String
+  entityType          CandidatePromotionEntityType
+  finalId             String                       @db.Uuid
+  candidate           Candidate                    @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  candidateRevision   CandidateRevision            @relation(fields: [candidateId, candidateRevisionId], references: [candidateId, id], onDelete: Restrict)
+
+  @@unique([candidateRevisionId, localId, entityType])
+}
+
+model ValidationIssue {
+  id                  String             @id @default(uuid()) @db.Uuid
+  buildRunId          String?            @db.Uuid
+  publishRunId        String?            @db.Uuid
+  releaseId           String?            @db.Uuid
+  candidateRevisionId String?            @db.Uuid
+  severity            ValidationSeverity
+  ruleCode            String
+  message             String
+  evidence            Json
+  createdAt           DateTime           @default(now()) @db.Timestamptz(3)
+  release             LexiconRelease?    @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+
+  @@index([buildRunId, severity])
+  @@index([releaseId, severity])
 }
 
 model ReviewBatch {
-  id               String           @id @default(uuid()) @db.Uuid
-  riskPolicy       String
-  candidateSetHash String
-  samplePlan       Json
-  status           String
-  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
-  decisions        ReviewDecision[]
+  id                String              @id @default(uuid()) @db.Uuid
+  buildRunId        String              @db.Uuid
+  riskPolicyVersion String
+  candidateSetHash  String
+  samplePlan        Json
+  queueKind         ReviewQueueKind
+  status            ReviewBatchStatus
+  createdAt         DateTime            @default(now()) @db.Timestamptz(3)
+  buildRun          BuildRun            @relation(fields: [buildRunId], references: [id], onDelete: Restrict)
+  items             ReviewItem[]
+  decisions         ReviewDecision[]
+  resumeActivation  BuildRunActivation?
+
+  @@unique([buildRunId, candidateSetHash])
+}
+
+model ReviewItem {
+  id                  String             @id @default(uuid()) @db.Uuid
+  batchId             String             @db.Uuid
+  candidateRevisionId String             @db.Uuid
+  riskClass           CandidateRiskClass
+  position            Int
+  batch               ReviewBatch        @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  candidateRevision   CandidateRevision  @relation(fields: [candidateRevisionId], references: [id], onDelete: Restrict)
+
+  @@unique([batchId, candidateRevisionId])
+  @@unique([batchId, position])
 }
 
 model ReviewDecision {
-  id          String      @id @default(uuid()) @db.Uuid
-  batchId     String      @db.Uuid
-  actorUserId String      @db.Uuid
-  decision    String
-  failureRate Decimal?    @db.Decimal(8, 5)
-  notes       String?
-  decidedAt   DateTime    @default(now()) @db.Timestamptz(3)
-  batch       ReviewBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  id                  String             @id @default(uuid()) @db.Uuid
+  batchId             String             @db.Uuid
+  candidateRevisionId String             @db.Uuid
+  actorUserId         String             @db.Uuid
+  decision            ReviewDecisionKind
+  failureRate         Decimal?           @db.Decimal(8, 5)
+  reason              String
+  actionDigest        String
+  decidedAt           DateTime           @default(now()) @db.Timestamptz(3)
+  batch               ReviewBatch        @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  candidateRevision   CandidateRevision  @relation(fields: [candidateRevisionId], references: [id], onDelete: Restrict)
+  actor               User               @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
-  @@unique([batchId, actorUserId])
+  @@unique([batchId, candidateRevisionId])
 }

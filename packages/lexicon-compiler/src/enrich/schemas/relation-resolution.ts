@@ -1,5 +1,10 @@
+export enum RelationResolutionDecision {
+  RESOLVED = "RESOLVED",
+  UNRESOLVED = "UNRESOLVED",
+}
+
 export interface RelationResolutionCandidate {
-  decision: "RESOLVED" | "UNRESOLVED";
+  decision: RelationResolutionDecision;
   target: {
     sourceRecordId: string;
     sourceSenseKey: string;
@@ -12,7 +17,10 @@ export const relationResolutionCandidateSchema = {
   additionalProperties: false,
   required: ["decision", "target", "reasonCode"],
   properties: {
-    decision: { type: "string", enum: ["RESOLVED", "UNRESOLVED"] },
+    decision: {
+      type: "string",
+      enum: Object.values(RelationResolutionDecision),
+    },
     target: {
       anyOf: [
         {

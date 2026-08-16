@@ -16,11 +16,22 @@ export async function loginUserThroughUi(
   await page.goto("/login");
   await page.getByPlaceholder("请输入邮箱地址").fill(user.email);
   await page.getByPlaceholder("请输入密码").fill(user.password);
+  const protectedSessionResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      response.request().method() === "GET" &&
+      url.pathname === "/api/v1/auth/session"
+    );
+  });
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page).toHaveURL(/\/(?:books|vocabulary-learning)(?:$|\?)/);
-  await expect
-    .poll(async () => (await page.request.get("/api/v1/auth/session")).status())
-    .toBe(200);
+  expect((await protectedSessionResponse).ok()).toBeTruthy();
+  await expect(
+    page
+      .getByText("词书选择", { exact: true })
+      .or(page.getByText("学习统计", { exact: true }))
+      .first(),
+  ).toBeVisible();
 }
 
 export async function authenticatedMutationHeaders(

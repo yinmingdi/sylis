@@ -591,6 +591,15 @@ test(
     });
     try {
       const secondPage = await secondContext.newPage();
+      // Emulate CI load so login must await the page's own auth readiness.
+      await secondPage.route(
+        "**/api/v1/auth/session",
+        async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          await route.continue();
+        },
+        { times: 1 },
+      );
       await loginUserThroughUi(secondPage, {
         email: nextEmail,
         password: account.password,

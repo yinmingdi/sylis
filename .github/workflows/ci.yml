@@ -564,15 +564,15 @@ jobs:
           test "${#executed[@]}" -eq 7
           planned_args=()
           executed_args=()
-          for file in "${planned[@]}"; do planned_args+=("--input=$file"); done
-          for file in "${executed[@]}"; do executed_args+=("--input=$file"); done
+          for file in "${planned[@]}"; do planned_args+=("--input=$GITHUB_WORKSPACE/$file"); done
+          for file in "${executed[@]}"; do executed_args+=("--input=$GITHUB_WORKSPACE/$file"); done
           pnpm --filter @sylis/test-support build
           pnpm --filter @sylis/test-support coverage-evidence:merge -- \
             --kind=planned "${planned_args[@]}" \
-            --output=tests/e2e/evidence/planned-tests.json
+            --output="$GITHUB_WORKSPACE/tests/e2e/evidence/planned-tests.json"
           pnpm --filter @sylis/test-support coverage-evidence:merge -- \
             --kind=executed "${executed_args[@]}" \
-            --output=tests/e2e/evidence/executed-tests.json
+            --output="$GITHUB_WORKSPACE/tests/e2e/evidence/executed-tests.json"
       - name: Collect and execute required Vitest evidence
         run: pnpm e2e:coverage-evidence -- --lane="$E2E_CI_LANE"
       - name: Reconcile declared, collected and executed evidence

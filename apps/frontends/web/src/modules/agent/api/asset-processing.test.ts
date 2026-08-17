@@ -31,6 +31,30 @@ describe('waitForAssetProcessing', () => {
     expect(loadAsset).toHaveBeenCalledTimes(3);
   });
 
+  it('waits for the next Job when the Asset projection briefly remains stale', async () => {
+    const loadAsset = vi
+      .fn<(assetId: string) => Promise<AgentAssetView>>()
+      .mockResolvedValueOnce(processingAsset('scan-job', JobKind.ASSET_SCAN))
+      .mockResolvedValueOnce(
+        processingAsset('extract-job', JobKind.ASSET_EXTRACT),
+      )
+      .mockResolvedValueOnce(readyAsset());
+    const waitForJob = vi.fn().mockResolvedValue(undefined);
+    const waitForProjection = vi.fn().mockResolvedValue(undefined);
+
+    await waitForAssetProcessing(
+      'asset-id',
+      'scan-job',
+      loadAsset,
+      waitForJob,
+      waitForProjection,
+    );
+
+    expect(waitForJob.mock.calls).toEqual([['scan-job'], ['extract-job']]);
+    expect(waitForProjection).toHaveBeenCalledOnce();
+    expect(loadAsset).toHaveBeenCalledTimes(3);
+  });
+
   it('fails closed when a processing Asset has no new Job to observe', async () => {
     await expect(
       waitForAssetProcessing(
@@ -39,6 +63,7 @@ describe('waitForAssetProcessing', () => {
         vi
           .fn()
           .mockResolvedValue(processingAsset('scan-job', JobKind.ASSET_SCAN)),
+        vi.fn().mockResolvedValue(undefined),
         vi.fn().mockResolvedValue(undefined),
       ),
     ).rejects.toThrow('文件处理任务链无进展');

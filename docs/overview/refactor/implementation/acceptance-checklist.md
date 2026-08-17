@@ -232,15 +232,27 @@
 - 最近完成：开发/E2E 采用本地 Vite 前端通过 `SYLIS_*_PROXY_TARGET` 环境变量访问 Docker API、Agent、PostgreSQL、MinIO；无需为每次前端修改重建 Docker。旧版样式恢复后的 learner 功能旅程已通过，认证 Axe 仍有明确的旧配色对比度冲突。
 - 最近完成：认证页与学习页恢复 `47c58b2f` 视觉基线，输入控件可访问名称、Agent 检查器首焦点/Escape/焦点恢复、上传状态语义与 Reddit 已读提交等待等非视觉修复保留；Web 12 files、32/32 unit 与 Web typecheck 通过。
 - 最近完成：只在最终验收构建一次 `sylis-web:worktree`；镜像实际启动后 `/health`、`/version.json`、首页与 Docker HEALTHCHECK 全部通过，临时容器已停止。
-- 当前状态：stale Agent Session 业务回归已在本地闭合；提交 `50544d9de0dfbff82f1e04d5011eb3f420f060d1` 的 GitHub run `31991246378` 首次出现两个 setup worker 瞬态退出超时，failed-jobs 重跑后 API、system-exclusive、merged evidence 与最终 `CI required` 全绿。Railway 生产发布不属于本次合并范围。
+- 当前状态：stale Agent Session 业务回归与 GitHub `CONTENT-004-E2E` 暴露的 Asset 最终一致性竞态均已在本地闭合；Web 21 files/56 tests、typecheck、lint（零 error）、fresh-stack 目标 E2E 4/4、文档、格式、密钥与 diff 门禁全绿，等待 GitHub 必需门禁。Railway 生产发布不属于本次合并范围。
 - 当前进展：W1-W7 与本地 W8 均已闭合。API deployment gateway 不写死端口，九个 endpoint 必须由 Railway target service `RAILWAY_PRIVATE_DOMAIN` + 显式 `PORT` reference variables 注入；缺失时 fail closed。
-- 当前风险：无已知实现阻断；GitHub 必需门禁已通过。首次两个 Playwright worker 退出超时未能在 CI failed-jobs 重跑或本地真实隔离栈复现，保留为已记录的 runner 瞬态事件，不用无证据的生产改动掩盖。
-- 下一批顺序：人工 Review 后合并 PR #17 到 `main`；不发布 Railway。
+- 当前风险：无已知实现阻断；仅 GitHub 必需门禁尚未完成。有界追赶最多 200ms × 25 次，只有发现新 Job 才重置；READY/REJECTED、处理链过长与永久无进展继续 fail-closed。
+- 下一批顺序：提交推送并监听 GitHub 必需门禁；不发布 Railway。
 - 验证策略：所有最终命令必须等待真实退出码并记录结果；复用 `sylis-e2e-*:local` 镜像，避免无关重建；数据库继续以 `schema.prisma` force-reset 加 `invariants.sql` 的声明式空库安装为唯一目标。
 - 记录纪律：每个最小工作项实现、验证、失败或出现新风险后，必须先同步对应验收项、本节和验收日志；数据库约束项还必须同步覆盖矩阵。所有适用账本一致前不得开始下一项或汇报完成。
 - 跨轮次纪律：恢复工作先核对本节、日志与工作树；完成项必须具备验收 ID、状态、证据和未决事项，禁止凭对话记忆跳过登记或重复执行未受影响的验证。
 
 ## 验收日志
+
+| 2026-08-17 | `WORKTREE` | Asset lagging projection 最终清理门禁复验 | 全绿：纯格式修正后 Web 21 files/56 tests、受影响文件 Prettier、docs、secret scan 与 diff whitespace 全部通过；受影响源码无 `[DEBUG-*]` 标记，最终本地门禁闭合 | A-00、A-05、I-02、E2E-13 |
+
+| 2026-08-17 | `WORKTREE` | Asset lagging projection 最终清理门禁首轮 | 有效红灯：docs、secret scan、diff whitespace 与受影响源码 debug 标记检查通过；Prettier 仅报告 `asset-processing.ts` 格式不一致，进入纯格式修正后定向复验，不改变已通过的业务语义 | A-00、I-02、E2E-13 |
+
+| 2026-08-17 | `WORKTREE` | Asset lagging projection 最终静态与浏览器回归 | 全绿：Web typecheck 通过，lint 零 error（8 条既有范围外 warning）；只重建包含当前源码的 Web 镜像，其余 11 个本地镜像复用；CI 模式 fresh PostgreSQL、真实 ClamAV、deterministic seed、`CONTENT-004-E2E` PDF/image 业务场景和 teardown 共 4/4 在 58.4s 内通过，无 retry/flaky，隔离栈已由 harness 清理 | A-00、A-03、A-05、D-07、G-03、I-02、I-03、I-04、E2E-03、E2E-08、E2E-10、E2E-13 |
+
+| 2026-08-17 | `WORKTREE` | Asset lagging projection 有界追赶回归收口 | 全绿：Web 21 files/56 tests；同一 scan Job 的陈旧投影只触发一次受注入控制的追赶等待，随后发现 extract Job 并继续到 READY；无新 Job 仍在 25 次上限后抛“文件处理任务链无进展”，16 阶段处理链上限及 REJECTED 终态未放宽 | A-05、D-07、G-03、I-02、E2E-08、E2E-10、E2E-13 |
+
+| 2026-08-17 | `WORKTREE` | Asset lagging projection 单元反馈环首轮 | 有效红灯：新增测试模拟 scan Job 已完成但首次 Asset 投影仍只含同一 Job、下一次才出现 extract Job；旧实现 0/1 并精确抛出“文件处理任务链无进展”，其余 Web 55/55 通过。该 5.18s 命令直接复现 CI 页面错误，不依赖随机负载 | A-00、D-07、G-03、I-02、E2E-08、E2E-10、E2E-13 |
+
+| 2026-08-17 | `7b2560e` | GitHub Asset 多阶段处理投影竞态红灯 | 有效红灯：run `31993359221` 的 core shard 3 中 `CONTENT-004-E2E` 首次上传 `bank-note.png` 后页面明确显示“文件处理任务链无进展”，retry 随即通过，14 passed/1 flaky 因 `failOnFlakyTests` 正确失败。截图、trace 和源码共同证明客户端在完成当前 Job 后若首次 Asset 读模型仍只含已观察 Job便立即失败；不是 5s locator 单纯过短，进入有界最终一致性追赶回归 | A-00、D-07、G-03、I-04、E2E-03、E2E-10、E2E-13 |
 
 | 2026-08-17 | `50544d9` | GitHub failed-jobs 重跑与 worker 退出最小复验 | 全绿：Node 24.19.0 下以真实 fresh PostgreSQL、deterministic seed、12 apps ready 和 teardown 运行 setup-only 最小栈，并将 `PWTEST_CHILD_PROCESS_TIMEOUT` 从 300s 收紧到 5s，3/3 在 54.5s 内通过且无残留容器；GitHub run `31991246378` attempt 2 的 API/system-exclusive 完整 journeys、merged evidence 与 `CI required` 全部成功。首次相同 worker 超时未复现，归类为 runner 瞬态，不修改业务或 harness 行为 | A-00、A-03、I-03、I-04、I-07、E2E-08、E2E-11、E2E-13 |
 

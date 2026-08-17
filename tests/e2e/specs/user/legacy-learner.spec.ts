@@ -402,6 +402,81 @@ test(
 );
 
 test(
+  "LEGACY-LEARNER-013-E2E stale persisted chat session reconciles before SSE connects",
+  {
+    tag: e2eTags(TestTag.BROWSER),
+  },
+  async ({ learnerPage: page, namespace }) => {
+    const staleSessionId = "00000000-0000-4000-8000-000000000001";
+
+    await registerUserViaApi(page, namespace, "legacy-stale-chat");
+    await page.goto("/chat");
+
+    const createResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "POST" &&
+        url.pathname === "/api/agent/v1/sessions"
+      );
+    });
+    await page.getByRole("button", { name: "新建对话" }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.ok()).toBeTruthy();
+    const serverSession = (await createResponse.json()) as { id: string };
+    expect(serverSession.id).toBeTruthy();
+
+    await page.evaluate((persistedSessionId) => {
+      localStorage.setItem(
+        "chat-store",
+        JSON.stringify({
+          state: { currentSessionId: persistedSessionId },
+          version: 0,
+        }),
+      );
+    }, staleSessionId);
+
+    const requests: Array<{ url: string; type: string }> = [];
+    const responseBodies: Array<Promise<string>> = [];
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/agent/v1/")) return;
+      requests.push({ url: request.url(), type: request.resourceType() });
+    });
+    page.on("response", (response) => {
+      if (
+        !response.url().includes("/api/agent/v1/") ||
+        response.request().resourceType() === "eventsource"
+      ) {
+        return;
+      }
+      responseBodies.push(response.text().catch(() => ""));
+    });
+
+    await page.reload();
+    await expect
+      .poll(
+        () =>
+          requests.filter(
+            ({ type, url }) =>
+              type === "eventsource" &&
+              new URL(url).pathname ===
+                `/api/agent/v1/sessions/${serverSession.id}/events`,
+          ).length,
+      )
+      .toBe(1);
+
+    expect(
+      requests.some(({ url }) => url.includes(staleSessionId)),
+    ).toBeFalsy();
+    expect(requests.filter(({ type }) => type === "eventsource")).toHaveLength(
+      1,
+    );
+    expect((await Promise.all(responseBodies)).join("\n")).not.toContain(
+      "AGENT_SESSION_NOT_FOUND",
+    );
+  },
+);
+
+test(
   "LEGACY-LEARNER-007-E2E the original recite-detail-quiz flow persists completion on the server",
   {
     tag: e2eTags(TestTag.BROWSER),

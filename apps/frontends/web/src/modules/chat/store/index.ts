@@ -70,8 +70,11 @@ export const useChatStore = create<ChatState>()(
           const { data } = await getSessionsApi({ includeArchived });
           set((state) => ({
             sessions: data.sessions,
-            currentSessionId:
-              state.currentSessionId ?? data.sessions[0]?.id ?? null,
+            currentSessionId: data.sessions.some(
+              ({ id }) => id === state.currentSessionId,
+            )
+              ? state.currentSessionId
+              : (data.sessions[0]?.id ?? null),
             isLoading: false,
           }));
         } catch (error) {

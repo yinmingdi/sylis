@@ -232,15 +232,19 @@
 - 最近完成：开发/E2E 采用本地 Vite 前端通过 `SYLIS_*_PROXY_TARGET` 环境变量访问 Docker API、Agent、PostgreSQL、MinIO；无需为每次前端修改重建 Docker。旧版样式恢复后的 learner 功能旅程已通过，认证 Axe 仍有明确的旧配色对比度冲突。
 - 最近完成：认证页与学习页恢复 `47c58b2f` 视觉基线，输入控件可访问名称、Agent 检查器首焦点/Escape/焦点恢复、上传状态语义与 Reddit 已读提交等待等非视觉修复保留；Web 12 files、32/32 unit 与 Web typecheck 通过。
 - 最近完成：只在最终验收构建一次 `sylis-web:worktree`；镜像实际启动后 `/health`、`/version.json`、首页与 Docker HEALTHCHECK 全部通过，临时容器已停止。
-- 当前状态：最终验收 `I-01` 至 `I-07` 与 `E2E-01` 至 `E2E-13` 均为 `ACCEPTED`；精确实现提交 `d0c0e6d37df0067ab192089c665b642614ca46dc` 的 GitHub run `31953506183` 全绿。Railway 生产发布不属于本次合并范围。
+- 当前状态：stale Agent Session 业务回归已在本地闭合；提交 `50544d9de0dfbff82f1e04d5011eb3f420f060d1` 的 GitHub run `31991246378` 首次出现两个 setup worker 瞬态退出超时，failed-jobs 重跑后 API、system-exclusive、merged evidence 与最终 `CI required` 全绿。Railway 生产发布不属于本次合并范围。
 - 当前进展：W1-W7 与本地 W8 均已闭合。API deployment gateway 不写死端口，九个 endpoint 必须由 Railway target service `RAILWAY_PRIVATE_DOMAIN` + 显式 `PORT` reference variables 注入；缺失时 fail closed。
-- 当前风险：无已知实现阻断；GitHub 显示 `MERGEABLE`，但分支保护要求人工 Review。现有 warning 均为非阻断项，已在验收日志中明示。
+- 当前风险：无已知实现阻断；GitHub 必需门禁已通过。首次两个 Playwright worker 退出超时未能在 CI failed-jobs 重跑或本地真实隔离栈复现，保留为已记录的 runner 瞬态事件，不用无证据的生产改动掩盖。
 - 下一批顺序：人工 Review 后合并 PR #17 到 `main`；不发布 Railway。
 - 验证策略：所有最终命令必须等待真实退出码并记录结果；复用 `sylis-e2e-*:local` 镜像，避免无关重建；数据库继续以 `schema.prisma` force-reset 加 `invariants.sql` 的声明式空库安装为唯一目标。
 - 记录纪律：每个最小工作项实现、验证、失败或出现新风险后，必须先同步对应验收项、本节和验收日志；数据库约束项还必须同步覆盖矩阵。所有适用账本一致前不得开始下一项或汇报完成。
 - 跨轮次纪律：恢复工作先核对本节、日志与工作树；完成项必须具备验收 ID、状态、证据和未决事项，禁止凭对话记忆跳过登记或重复执行未受影响的验证。
 
 ## 验收日志
+
+| 2026-08-17 | `50544d9` | GitHub failed-jobs 重跑与 worker 退出最小复验 | 全绿：Node 24.19.0 下以真实 fresh PostgreSQL、deterministic seed、12 apps ready 和 teardown 运行 setup-only 最小栈，并将 `PWTEST_CHILD_PROCESS_TIMEOUT` 从 300s 收紧到 5s，3/3 在 54.5s 内通过且无残留容器；GitHub run `31991246378` attempt 2 的 API/system-exclusive 完整 journeys、merged evidence 与 `CI required` 全部成功。首次相同 worker 超时未复现，归类为 runner 瞬态，不修改业务或 harness 行为 | A-00、A-03、I-03、I-04、I-07、E2E-08、E2E-11、E2E-13 |
+
+| 2026-08-17 | `50544d9` | GitHub stale Session 修复流水线红灯 | run `31991246378` 中 21 个前置/并行 job 成功；`api:system` 与 `system:exclusive` 均在 database install、seed、12 apps ready 后只记录 3 个 setup/teardown tests passed，随后 Playwright 报 `worker-1 process did not exit within 300000ms after stop, force-killed it`，业务 journeys 未开始。merged report 因两组 execution evidence 缺失而失败，`CI required` 为级联失败；进入共享 E2E harness 生命周期诊断，不重跑业务实现或发布 Railway | A-00、A-03、I-03、I-04、I-07、E2E-08、E2E-11、E2E-13 |
 
 | 2026-08-17 | `WORKTREE` | stale Session 修复最终清理门禁 | 移出本轮验证生成的仓库内 `.turbo` 缓存后，原 `pnpm format:check` 全绿；源码、测试与文档全部符合 Prettier。结合上一轮 docs、secret、diff 绿灯，当前仅剩最终 diff review、提交和 GitHub CI | A-00、A-04、H-03、I-01、I-07、E2E-13 |
 

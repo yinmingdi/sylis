@@ -199,6 +199,147 @@ describe("AgentRuntime.activate", () => {
     expect(firstAction.actionDigest).toBe(secondAction.actionDigest);
   });
 
+  it("continues after a budget-rejected Tool outcome", async () => {
+    const receipts: AgentStepReceipt[] = [];
+    const executed: string[] = [];
+    const invocationIds = [
+      "00000000-0000-4000-8000-000000000021",
+      "00000000-0000-4000-8000-000000000022",
+    ];
+    let modelInvocation = 0;
+    const runtime = createAgentRuntime({
+      maxParallelToolCalls: 4,
+      model: {
+        async *stream() {
+          const currentInvocationId = invocationIds[modelInvocation++];
+          if (!currentInvocationId) throw new Error("UNEXPECTED_MODEL_CALL");
+          yield {
+            type: ModelStreamEventType.INVOCATION_STARTED,
+            invocationId: currentInvocationId,
+            attemptOrdinal: 0,
+          } as const;
+          if (modelInvocation === 1) {
+            for (let index = 0; index < 5; index += 1) {
+              yield {
+                type: ModelStreamEventType.BLOCK_COMPLETED,
+                invocationId: currentInvocationId,
+                block: toolBlock(index, `call-${index}`),
+              } as const;
+            }
+            yield {
+              type: ModelStreamEventType.RESPONSE_COMPLETED,
+              invocationId: currentInvocationId,
+              finishReason: ModelResponseFinishReason.TOOL_CALLS,
+            } as const;
+            return;
+          }
+          yield {
+            type: ModelStreamEventType.BLOCK_COMPLETED,
+            invocationId: currentInvocationId,
+            block: textBlock(0, "Finished with the available evidence."),
+          } as const;
+          yield {
+            type: ModelStreamEventType.RESPONSE_COMPLETED,
+            invocationId: currentInvocationId,
+            finishReason: ModelResponseFinishReason.STOP,
+          } as const;
+        },
+        async persistVisibleFragment(input) {
+          return {
+            contentBodyId: input.contentBodyId,
+            contentFragmentId: stableUuid(
+              `${input.contentBodyId}:fragment:${input.fragmentSequence}`,
+            ),
+            contentHash: `sha256:${"a".repeat(64)}`,
+            byteLength: Buffer.byteLength(input.serializedContent),
+          };
+        },
+      },
+      step: {
+        async appendVisibleDelta() {},
+        async preflight(proposal) {
+          const rejected = proposal.actions.at(-1);
+          return {
+            runId,
+            stepId: proposal.stepId,
+            invocationId: proposal.invocationId,
+            directives: proposal.actions.map(
+              (action, index): AgentStepExecutionDirective => {
+                if (action.kind !== AgentStepActionKind.DOMAIN_TOOL) {
+                  throw new Error("UNEXPECTED_CONTROL_ACTION");
+                }
+                if (action.actionId === rejected?.actionId) {
+                  return {
+                    mode: AgentStepDirectiveMode.SETTLED,
+                    kind: AgentStepActionKind.DOMAIN_TOOL,
+                    actionId: action.actionId,
+                    modelPosition: action.modelPosition,
+                    concurrencyMode: AgentToolConcurrencyMode.PARALLEL_SAFE,
+                    settledOutcome: {
+                      actionId: action.actionId,
+                      modelPosition: action.modelPosition,
+                      status: AgentStepOutcomeStatus.REJECTED,
+                      errorCode: "AGENT_TOOL_GRANT_EXHAUSTED",
+                    },
+                  };
+                }
+                return {
+                  mode: AgentStepDirectiveMode.EXECUTE,
+                  kind: AgentStepActionKind.DOMAIN_TOOL,
+                  actionId: action.actionId,
+                  modelPosition: action.modelPosition,
+                  concurrencyMode: AgentToolConcurrencyMode.PARALLEL_SAFE,
+                  tool: {
+                    toolCallId: action.actionId,
+                    toolKey: action.toolKey,
+                    schemaVersion: action.schemaVersion,
+                    input: action.input,
+                    actionDigest: action.actionDigest,
+                    timeoutMs: 1_000,
+                  },
+                };
+              },
+            ),
+          };
+        },
+        async startToolCall() {},
+        async recordToolOutcome() {},
+        async commit(receipt) {
+          receipts.push(receipt);
+          return receipts.length === 1
+            ? {
+                status: AgentStepCommitStatus.CONTINUE,
+                nextActivation: { ...activation(), nextStepOrdinal: 1 },
+              }
+            : { status: AgentStepCommitStatus.COMPLETED };
+        },
+      },
+      tool: {
+        async execute(directive) {
+          executed.push(directive.toolCallId);
+          return { found: true };
+        },
+      },
+    });
+
+    await expect(
+      runtime.activate(activation(), {
+        signal: new AbortController().signal,
+      }),
+    ).resolves.toEqual({
+      runId,
+      status: AgentActivationResultStatus.COMPLETED,
+      completedSteps: 2,
+    });
+    expect(modelInvocation).toBe(2);
+    expect(executed).toHaveLength(4);
+    expect(receipts[0]?.outcomes).toHaveLength(5);
+    expect(receipts[0]?.outcomes.at(-1)).toMatchObject({
+      status: AgentStepOutcomeStatus.REJECTED,
+      errorCode: "AGENT_TOOL_GRANT_EXHAUSTED",
+    });
+  });
+
   it("resumes queued Tools while reusing already settled outcomes", async () => {
     const started: string[] = [];
     const recorded: string[] = [];

@@ -181,6 +181,87 @@ describe("activate Agent Run", () => {
       },
     });
   });
+
+  it("preserves the Agent API problem code when Step preflight fails", async () => {
+    const settlements: unknown[] = [];
+    const agentFetch = vi.fn(
+      async (input: string | URL | Request, init?: RequestInit) => {
+        const url = String(input);
+        if (init?.method === "GET") return Response.json(activationFixture());
+        if (url.endsWith("/steps/preflight")) {
+          return Response.json(
+            {
+              type: "https://sylis.app/problems/409",
+              title: "CONFLICT",
+              status: 409,
+              code: "AGENT_TOOL_GRANT_EXHAUSTED",
+              detail: "AGENT_TOOL_GRANT_EXHAUSTED",
+            },
+            {
+              status: 409,
+              headers: { "content-type": "application/problem+json" },
+            },
+          );
+        }
+        if (url.endsWith("/runtime-settlement")) {
+          settlements.push(JSON.parse(String(init?.body)) as unknown);
+          return new Response(null, { status: 204 });
+        }
+        throw new Error(`UNEXPECTED_AGENT_API_REQUEST:${url}`);
+      },
+    );
+    const modelFetch = vi.fn(async () =>
+      ndjsonResponse([
+        {
+          type: ModelStreamEventType.INVOCATION_STARTED,
+          invocationId,
+          attemptOrdinal: 0,
+        },
+        {
+          type: ModelStreamEventType.BLOCK_COMPLETED,
+          invocationId,
+          block: {
+            kind: ModelContentBlockKind.TOOL_CALL,
+            modelPosition: 0,
+            providerCallId: "provider-call-1",
+            providerName: "sylis_tool_0",
+            input: { query: "example" },
+          },
+        },
+        {
+          type: ModelStreamEventType.RESPONSE_COMPLETED,
+          invocationId,
+          finishReason: ModelResponseFinishReason.TOOL_CALLS,
+        },
+      ]),
+    );
+    const handler = createActivateAgentRunHandler({
+      agentApi: new AgentApiClient(
+        "https://agent-api.invalid",
+        "service-token",
+        agentFetch as typeof globalThis.fetch,
+      ),
+      modelGateway: new ModelGatewayClient(
+        "https://model-gateway.invalid",
+        "service-token",
+        modelFetch as typeof globalThis.fetch,
+      ),
+      tools: toolExecutor(),
+      maxParallelToolCalls: 2,
+    });
+
+    await expect(
+      handler(attemptFixture(), executorFixture(vi.fn())),
+    ).rejects.toThrow("AGENT_TOOL_GRANT_EXHAUSTED");
+    expect(settlements).toEqual([
+      {
+        runId,
+        status: AgentActivationResultStatus.FAILED,
+        completedSteps: 0,
+        errorCode: "AGENT_TOOL_GRANT_EXHAUSTED",
+      },
+    ]);
+  });
 });
 
 function activationFixture(): AgentActivation {

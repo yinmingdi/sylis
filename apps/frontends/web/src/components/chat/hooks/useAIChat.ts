@@ -1,219 +1,181 @@
-import { useState, useCallback, useRef } from 'react';
+import {
+  AgentRunStatus,
+  agentClient,
+  type AgentRunView,
+} from '@sylis/api-client/agent';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { MessageRole } from '@/legacy-dto';
+import { AgentStreamConnectionState } from '../../../modules/agent/api/event-stream';
+import { acquireAgentSessionEvents } from '../../../modules/agent/api/session-event-hub';
+import { submitAgentChat } from '../../../modules/chat/api';
+import { useChatStore } from '../../../modules/chat/store';
 
-import { streamChat, type ChatMessage } from '../../../modules/chat/api';
-
-export interface ChatState {
-  isLoading: boolean;
-  error: string | null;
-}
+const EMPTY_RUNS: readonly AgentRunView[] = [];
 
 export interface UseAIChatOptions {
-  onMessageUpdate?: (messages: ChatMessage[]) => void; // 消息更新回调
+  sessionId?: string | null;
   onError?: (error: Error) => void;
   onSessionCreated?: (sessionId: string, title?: string) => void;
-  onTitleGenerated?: (sessionId: string, title: string) => void;
 }
 
-export interface UseAIChatReturn extends ChatState {
-  sendMessageStream: (
-    message: string,
-    currentMessages: ChatMessage[], // 从外部传入当前消息列表
-    sessionId?: string,
-    configId?: string,
-    createSession?: boolean,
-  ) => Promise<void>;
-  refreshMessageStream: (
-    currentMessages: ChatMessage[],
-    assistantIndex: number,
-    sessionId?: string,
-    configId?: string,
-  ) => Promise<void>;
-  abort: () => void;
+export interface UseAIChatReturn {
+  isLoading: boolean;
+  error: string | null;
+  streamState: AgentStreamConnectionState;
+  latestRun?: AgentRunView;
+  sendMessage: (message: string, configId?: string) => Promise<void>;
+  retryRun: (runId: string) => Promise<void>;
+  cancelRun: () => Promise<void>;
 }
 
 export const useAIChat = (options: UseAIChatOptions = {}): UseAIChatReturn => {
-  const { onMessageUpdate, onError, onSessionCreated, onTitleGenerated } =
-    options;
-
-  const [state, setState] = useState<ChatState>({
-    isLoading: false,
-    error: null,
-  });
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const currentMessagesRef = useRef<ChatMessage[]>([]);
-
-  // 更新消息（通知外部）
-  const updateMessages = useCallback(
-    (messages: ChatMessage[]) => {
-      currentMessagesRef.current = messages;
-      onMessageUpdate?.(messages);
-    },
-    [onMessageUpdate],
+  const { sessionId, onError, onSessionCreated } = options;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [streamState, setStreamState] = useState(
+    AgentStreamConnectionState.CONNECTING,
+  );
+  const handledSequence = useRef(0);
+  const onErrorRef = useRef(onError);
+  const setSessionSnapshot = useChatStore((state) => state.setSessionSnapshot);
+  const applySessionEvent = useChatStore((state) => state.applySessionEvent);
+  const registerSession = useChatStore((state) => state.registerSession);
+  const upsertMessage = useChatStore((state) => state.upsertMessage);
+  const upsertRun = useChatStore((state) => state.upsertRun);
+  const runs = useChatStore((state) =>
+    sessionId ? (state.runsCache[sessionId] ?? EMPTY_RUNS) : EMPTY_RUNS,
+  );
+  const latestRun = useMemo(
+    () => runs.find((run) => run.parentRunId === null),
+    [runs],
   );
 
-  // 发送流式消息
-  const sendMessageStream = useCallback(
-    async (
-      message: string,
-      currentMessages: ChatMessage[],
-      sessionId?: string,
-      configId?: string,
-      createSession = false,
-    ) => {
-      try {
-        setState({ isLoading: true, error: null });
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
-        // 添加用户消息
-        const userMessage: ChatMessage = {
-          role: MessageRole.user,
-          content: message,
-        };
-        const messagesWithUser = [...currentMessages, userMessage];
-        updateMessages(messagesWithUser);
-
-        let fullContent = '';
-
-        // 调用后端 SSE 流式聊天
-        await streamChat(
-          {
-            sessionId,
-            messages: messagesWithUser,
-            configId,
-            createSession,
-          },
-          {
-            onStart: () => {
-              // 添加 loading 状态的助手消息占位符
-              const messagesWithAssistant = [
-                ...messagesWithUser,
-                { role: MessageRole.assistant, content: '' },
-              ];
-              updateMessages(messagesWithAssistant);
-            },
-            onChunk: (content: string) => {
-              fullContent += content;
-              // 更新最后一条助手消息
-              const messages = [...currentMessagesRef.current];
-              const lastIndex = messages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                messages[lastIndex].role === MessageRole.assistant
-              ) {
-                messages[lastIndex] = {
-                  ...messages[lastIndex],
-                  content: fullContent,
-                };
-                updateMessages(messages);
-              }
-            },
-            onComplete: () => {
-              setState({ isLoading: false, error: null });
-            },
-            onError: (error: string) => {
-              setState({ error, isLoading: false });
-              onError?.(new Error(error));
-            },
-            onSession: (data) => {
-              onSessionCreated?.(data.sessionId, data.title);
-            },
-            onTitle: (data) => {
-              onTitleGenerated?.(data.sessionId, data.title);
-            },
-          },
-        );
-      } catch (error) {
-        const err = error as Error;
-        setState({ error: err.message, isLoading: false });
-        onError?.(err);
-      }
-    },
-    [updateMessages, onError, onSessionCreated, onTitleGenerated],
-  );
-
-  // 刷新助手消息流
-  const refreshMessageStream = useCallback(
-    async (
-      currentMessages: ChatMessage[],
-      assistantIndex: number,
-      sessionId?: string,
-      configId?: string,
-    ) => {
-      try {
-        setState({ isLoading: true, error: null });
-
-        // 删除助手消息及之后的所有消息
-        const filteredMessages = currentMessages.filter(
-          (_, index) => index !== assistantIndex,
-        );
-        updateMessages(filteredMessages);
-
-        const messagesToChat = filteredMessages.slice(0, assistantIndex);
-        let fullContent = '';
-
-        // 重新请求
-        await streamChat(
-          {
-            sessionId,
-            messages: messagesToChat,
-            configId,
-          },
-          {
-            onStart: () => {
-              const messagesWithAssistant = [
-                ...filteredMessages,
-                { role: MessageRole.assistant, content: '' },
-              ];
-              updateMessages(messagesWithAssistant);
-            },
-            onChunk: (content: string) => {
-              fullContent += content;
-              const messages = [...currentMessagesRef.current];
-              const lastIndex = messages.length - 1;
-              if (
-                lastIndex >= 0 &&
-                messages[lastIndex].role === MessageRole.assistant
-              ) {
-                messages[lastIndex] = {
-                  ...messages[lastIndex],
-                  content: fullContent,
-                };
-                updateMessages(messages);
-              }
-            },
-            onComplete: () => {
-              setState({ isLoading: false, error: null });
-            },
-            onError: (error: string) => {
-              setState({ error, isLoading: false });
-              onError?.(new Error(error));
-            },
-          },
-        );
-      } catch (error) {
-        const err = error as Error;
-        setState({ error: err.message, isLoading: false });
-        onError?.(err);
-      }
-    },
-    [updateMessages, onError],
-  );
-
-  // 取消请求
-  const abort = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setState({ isLoading: false, error: null });
+  const reportError = useCallback((value: unknown) => {
+    const next = value instanceof Error ? value : new Error('Agent 执行失败');
+    setError(next.message);
+    onErrorRef.current?.(next);
   }, []);
 
+  useEffect(() => {
+    handledSequence.current = 0;
+    setError(null);
+    if (!sessionId) {
+      setStreamState(AgentStreamConnectionState.CLOSED);
+      return;
+    }
+    const events = acquireAgentSessionEvents(sessionId);
+    const unsubscribe = events.subscribe({
+      onSnapshot: (snapshot) => {
+        handledSequence.current = snapshot.cursor;
+        registerSession(snapshot.session);
+        setSessionSnapshot(sessionId, snapshot.messages, snapshot.runs);
+      },
+      onEvent: (event) => {
+        if (event.sequence <= handledSequence.current) return;
+        handledSequence.current = event.sequence;
+        applySessionEvent(sessionId, event);
+      },
+      onStateChange: setStreamState,
+    });
+    void events.ready().catch(reportError);
+    return () => {
+      unsubscribe();
+      events.close();
+    };
+  }, [
+    applySessionEvent,
+    registerSession,
+    reportError,
+    sessionId,
+    setSessionSnapshot,
+  ]);
+
+  const sendMessage = useCallback(
+    async (message: string, configId?: string) => {
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        const result = await submitAgentChat({
+          ...(sessionId ? { sessionId } : {}),
+          instruction: message,
+          ...(configId ? { configId } : {}),
+          runs,
+        });
+        const targetSessionId = result.session?.id ?? sessionId;
+        if (!targetSessionId) throw new Error('Agent 会话创建失败');
+        if (result.session) {
+          registerSession(result.session);
+          onSessionCreated?.(result.session.id, result.session.title);
+        }
+        if (result.submission) {
+          upsertRun(targetSessionId, result.submission.run);
+          if (result.submission.userMessage) {
+            upsertMessage(targetSessionId, result.submission.userMessage);
+          }
+        }
+      } catch (cause) {
+        reportError(cause);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [
+      onSessionCreated,
+      registerSession,
+      reportError,
+      runs,
+      sessionId,
+      upsertMessage,
+      upsertRun,
+    ],
+  );
+
+  const retryRun = useCallback(
+    async (runId: string) => {
+      if (!sessionId) return;
+      setIsSubmitting(true);
+      setError(null);
+      try {
+        upsertRun(
+          sessionId,
+          await agentClient.runs.retry(runId, crypto.randomUUID()),
+        );
+      } catch (cause) {
+        reportError(cause);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reportError, sessionId, upsertRun],
+  );
+
+  const cancelRun = useCallback(async () => {
+    if (!sessionId || !latestRun) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      upsertRun(sessionId, await agentClient.runs.cancel(latestRun.id));
+    } catch (cause) {
+      reportError(cause);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [latestRun, reportError, sessionId, upsertRun]);
+
+  const runActive =
+    latestRun?.status === AgentRunStatus.QUEUED ||
+    latestRun?.status === AgentRunStatus.RUNNING;
   return {
-    ...state,
-    sendMessageStream,
-    refreshMessageStream,
-    abort,
+    isLoading: isSubmitting || runActive,
+    error,
+    streamState,
+    latestRun,
+    sendMessage,
+    retryRun,
+    cancelRun,
   };
 };

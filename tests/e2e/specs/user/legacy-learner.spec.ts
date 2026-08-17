@@ -1,3 +1,4 @@
+import { AgentMessageBlockKind } from "@sylis/agent-contracts";
 import type { Page } from "@playwright/test";
 
 import {
@@ -338,6 +339,140 @@ test(
     await deletedSessionMenu.click();
     await page.getByRole("button", { name: "删除", exact: true }).click();
     await expect(deletedSessionMenu).toHaveCount(0);
+  },
+);
+
+test(
+  "LEGACY-LEARNER-012-E2E chat sends through one typed Session SSE without polling",
+  {
+    tag: e2eTags(TestTag.BROWSER),
+  },
+  async ({ learnerPage: page, namespace }) => {
+    const requests: Array<{ method: string; url: string; type: string }> = [];
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/agent/v1/")) return;
+      requests.push({
+        method: request.method(),
+        url: request.url(),
+        type: request.resourceType(),
+      });
+    });
+
+    await registerUserViaApi(page, namespace, "legacy-typed-chat");
+    await page.goto("/chat");
+    await page.getByRole("button", { name: "新建对话" }).click();
+    await expect
+      .poll(
+        () =>
+          requests.filter(
+            ({ type, url }) =>
+              type === "eventsource" &&
+              new URL(url).pathname.endsWith("/events"),
+          ).length,
+      )
+      .toBe(1);
+    requests.length = 0;
+
+    const instruction = "Explain bank in one sentence.";
+    await page.getByPlaceholder("输入你的学习问题").fill(instruction);
+    await page.getByPlaceholder("输入你的学习问题").press("Enter");
+    await expect(
+      page
+        .locator(`[data-block-kind="${AgentMessageBlockKind.PARAGRAPH}"]`)
+        .filter({ hasText: instruction })
+        .last(),
+    ).toBeVisible({ timeout: 30_000 });
+
+    expect(
+      requests.filter(
+        ({ method, url }) => method === "POST" && url.endsWith("/instructions"),
+      ),
+    ).toHaveLength(1);
+    expect(
+      requests.filter(
+        ({ method, url }) =>
+          method === "GET" &&
+          /\/(messages|runs|artifacts|proposals)(?:\?|\/|$)/.test(url),
+      ),
+    ).toHaveLength(0);
+    expect(requests.filter(({ type }) => type === "eventsource")).toHaveLength(
+      0,
+    );
+  },
+);
+
+test(
+  "LEGACY-LEARNER-013-E2E stale persisted chat session reconciles before SSE connects",
+  {
+    tag: e2eTags(TestTag.BROWSER),
+  },
+  async ({ learnerPage: page, namespace }) => {
+    const staleSessionId = "00000000-0000-4000-8000-000000000001";
+
+    await registerUserViaApi(page, namespace, "legacy-stale-chat");
+    await page.goto("/chat");
+
+    const createResponsePromise = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "POST" &&
+        url.pathname === "/api/agent/v1/sessions"
+      );
+    });
+    await page.getByRole("button", { name: "新建对话" }).click();
+    const createResponse = await createResponsePromise;
+    expect(createResponse.ok()).toBeTruthy();
+    const serverSession = (await createResponse.json()) as { id: string };
+    expect(serverSession.id).toBeTruthy();
+
+    await page.evaluate((persistedSessionId) => {
+      localStorage.setItem(
+        "chat-store",
+        JSON.stringify({
+          state: { currentSessionId: persistedSessionId },
+          version: 0,
+        }),
+      );
+    }, staleSessionId);
+
+    const requests: Array<{ url: string; type: string }> = [];
+    const responseBodies: Array<Promise<string>> = [];
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/agent/v1/")) return;
+      requests.push({ url: request.url(), type: request.resourceType() });
+    });
+    page.on("response", (response) => {
+      if (
+        !response.url().includes("/api/agent/v1/") ||
+        response.request().resourceType() === "eventsource"
+      ) {
+        return;
+      }
+      responseBodies.push(response.text().catch(() => ""));
+    });
+
+    await page.reload();
+    await expect
+      .poll(
+        () =>
+          requests.filter(
+            ({ type, url }) =>
+              type === "eventsource" &&
+              new URL(url).pathname ===
+                `/api/agent/v1/sessions/${serverSession.id}/events`,
+          ).length,
+      )
+      .toBe(1);
+
+    expect(
+      requests.some(({ url }) => url.includes(staleSessionId)),
+    ).toBeFalsy();
+    expect(requests.filter(({ type }) => type === "eventsource")).toHaveLength(
+      1,
+    );
+    expect((await Promise.all(responseBodies)).join("\n")).not.toContain(
+      "AGENT_SESSION_NOT_FOUND",
+    );
   },
 );
 

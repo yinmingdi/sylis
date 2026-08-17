@@ -6,6 +6,7 @@ import {
   AgentOwnerCommandKind,
   AgentReadingGenre,
   AgentResourceKind,
+  AgentToolKey,
   type AgentArticleDocument,
   type AgentArtifactRevisionSnapshot,
   type AgentResourceRef,
@@ -239,10 +240,52 @@ describe("AgentOperationsService owner commands", () => {
   });
 });
 
-function serviceFor(database: SylisDatabase, reading: ReadingService) {
+describe("AgentOperationsService tools", () => {
+  it("executes one release-pinned batch search for multiple lexical queries", async () => {
+    const input = {
+      queries: ["GitHub", "beginner", "YouTube", "on", "for"],
+      limitPerQuery: 10,
+    };
+    const result = {
+      lexiconId: "00000000-0000-4000-8000-000000000020",
+      releaseId: "00000000-0000-4000-8000-000000000021",
+      releaseVersion: "0.0.1",
+      results: input.queries.map((query) => ({ query, matches: {} })),
+    };
+    const lexicon = {
+      searchMany: vi.fn(async () => result),
+    } as unknown as LexiconQueryService;
+    const argumentsValue = { __schemaVersion: "0.0.2", ...input };
+
+    await expect(
+      serviceFor(
+        {} as SylisDatabase,
+        {} as ReadingService,
+        lexicon,
+      ).executeTool("agent-executor", {
+        userId,
+        toolKey: AgentToolKey.LEXICON_SEARCH,
+        toolCallId: "00000000-0000-4000-8000-000000000022",
+        actionDigest: digest({
+          toolKey: AgentToolKey.LEXICON_SEARCH,
+          schemaVersion: "0.0.2",
+          input,
+        }),
+        arguments: argumentsValue,
+      }),
+    ).resolves.toEqual({ data: result });
+    expect(lexicon.searchMany).toHaveBeenCalledWith(input.queries, 10);
+  });
+});
+
+function serviceFor(
+  database: SylisDatabase,
+  reading: ReadingService,
+  lexicon: LexiconQueryService = {} as LexiconQueryService,
+) {
   return new AgentOperationsService(
     database,
-    {} as LexiconQueryService,
+    lexicon,
     {} as StudyService,
     reading,
     {} as NotebooksService,

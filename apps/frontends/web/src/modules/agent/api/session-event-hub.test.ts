@@ -7,6 +7,8 @@ import {
   AgentMessageVisibility,
   AgentRichTextSpanKind,
   AgentRunStatus,
+  AgentWaitKind,
+  AgentWaitStatus,
 } from '@sylis/api-client/agent';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,6 +28,7 @@ describe('Agent session event hub', () => {
     expect(FakeEventSource.instances).toHaveLength(1);
     const source = FakeEventSource.instances[0]!;
     source.onopen?.(new Event('open'));
+    emitSnapshot(source, 'session-id');
     await Promise.all([first.ready(), second.ready()]);
 
     const chunks: string[] = [];
@@ -137,6 +140,7 @@ describe('Agent session event hub', () => {
     const lease = acquireAgentSessionEvents('failed-session-id');
     const source = FakeEventSource.instances[0]!;
     source.onopen?.(new Event('open'));
+    emitSnapshot(source, 'failed-session-id');
     await lease.ready();
 
     const result = lease.waitForRun({
@@ -160,7 +164,67 @@ describe('Agent session event hub', () => {
     );
     lease.close();
   });
+
+  it('resolves immediately when a Run requests learner input', async () => {
+    const lease = acquireAgentSessionEvents('waiting-session-id');
+    const source = FakeEventSource.instances[0]!;
+    source.onopen?.(new Event('open'));
+    emitSnapshot(source, 'waiting-session-id');
+    await lease.ready();
+
+    const result = lease.waitForRun({
+      runId: 'waiting-run-id',
+      after: 0,
+      timeoutMs: 10,
+    });
+    source.emit(AgentEventType.WAIT_REQUESTED.toLocaleLowerCase(), '1', {
+      runId: 'waiting-run-id',
+      type: AgentEventType.WAIT_REQUESTED,
+      payload: {
+        waitId: 'wait-id',
+        kind: AgentWaitKind.USER_INPUT,
+        wait: {
+          id: 'wait-id',
+          runId: 'waiting-run-id',
+          kind: AgentWaitKind.USER_INPUT,
+          status: AgentWaitStatus.ACTIVE,
+          correlationKey: 'missing-context',
+          expiresAt: null,
+          satisfiedAt: null,
+          cancelledAt: null,
+          resultRef: { reasonCode: 'LEARNER_INPUT_REQUIRED' },
+        },
+      },
+      occurredAt: '2026-08-14T00:00:00.000Z',
+    });
+
+    await expect(result).resolves.toMatchObject({
+      runId: 'waiting-run-id',
+      status: AgentRunStatus.WAITING,
+      wait: {
+        id: 'wait-id',
+        kind: AgentWaitKind.USER_INPUT,
+      },
+    });
+    lease.close();
+  });
 });
+
+function emitSnapshot(source: FakeEventSource, sessionId: string): void {
+  source.emit('session_snapshot', '0', {
+    type: 'SESSION_SNAPSHOT',
+    cursor: 0,
+    session: {
+      id: sessionId,
+      title: 'Session',
+      status: 'ACTIVE',
+      createdAt: '2026-08-14T00:00:00.000Z',
+      archivedAt: null,
+    },
+    messages: [],
+    runs: [],
+  });
+}
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];

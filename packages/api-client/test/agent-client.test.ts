@@ -1,4 +1,5 @@
 import {
+  AgentApiProblem,
   AgentCredentialSource,
   CapabilityKey,
   createAgentClient,
@@ -83,5 +84,25 @@ describe("agent client", () => {
     expect(client.sessions.eventsUrl("session-id", 27)).toBe(
       "https://agent.test/api/agent/v1/sessions/session-id/events?after=27",
     );
+  });
+
+  it("uses a stable fallback code for an incomplete problem response", async () => {
+    const client = createAgentClient({
+      baseUrl: "https://agent.test",
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          Response.json({ title: "Conflict" }, { status: 409 }),
+        ),
+    });
+
+    const error = await client.sessions.list().catch((cause) => cause);
+
+    expect(error).toBeInstanceOf(AgentApiProblem);
+    expect((error as AgentApiProblem).problem).toMatchObject({
+      status: 409,
+      code: "AGENT_API_HTTP_409",
+      title: "Conflict",
+    });
   });
 });

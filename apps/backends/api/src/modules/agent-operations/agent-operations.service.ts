@@ -76,9 +76,9 @@ export class AgentOperationsService {
     switch (toolKey) {
       case AgentToolKey.LEXICON_SEARCH:
         return {
-          data: await this.lexicon.search(
-            requiredText(argumentsValue.query, "query", 200),
-            optionalInteger(argumentsValue.limit, 10, 1, 20),
+          data: await this.lexicon.searchMany(
+            lexicalQueries(argumentsValue.queries),
+            optionalInteger(argumentsValue.limitPerQuery, 10, 1, 20),
           ),
         };
       case AgentToolKey.LEXICON_ENTRY_READ:
@@ -520,6 +520,20 @@ function stringArray(
     throw new BadRequestException("AGENT_STRING_ARRAY_INVALID");
   }
   return value.map((item) => requiredText(item, "arrayItem", maximumLength));
+}
+
+function lexicalQueries(value: unknown): string[] {
+  const queries = stringArray(value, 20, 200);
+  if (queries.length === 0) {
+    throw new BadRequestException("AGENT_LEXICON_QUERIES_INVALID");
+  }
+  const seen = new Set<string>();
+  return queries.filter((query) => {
+    const key = query.normalize("NFC").toLocaleLowerCase("en-US");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function record(

@@ -8,6 +8,12 @@ import type { ClaimedAttempt, JobExecutor } from "@sylis/job-runtime";
 
 import { AgentApiClient } from "../adapters/agent-api-client";
 import { ModelGatewayClient } from "../adapters/model-gateway-client";
+import {
+  AgentExecutorLogEvent,
+  AgentExecutorLogLevel,
+  silentAgentExecutorLogger,
+  type AgentExecutorLogger,
+} from "../observability/agent-executor-logger";
 import { AgentToolExecutor } from "../runtime/tool-executor";
 
 enum AgentExecutionResultType {
@@ -23,12 +29,21 @@ export function createActivateAgentRunHandler(dependencies: {
   modelGateway: ModelGatewayClient;
   tools: AgentToolExecutor;
   maxParallelToolCalls: number;
+  logger?: AgentExecutorLogger;
 }) {
   return async (
     attempt: ClaimedAttempt,
     executor: JobExecutor,
   ): Promise<{ resultType: string; resultId: string }> => {
     const activation = await dependencies.agentApi.getActivation(attempt);
+    const logger = dependencies.logger ?? silentAgentExecutorLogger;
+    logger.write({
+      level: AgentExecutorLogLevel.INFO,
+      event: AgentExecutorLogEvent.ACTIVATION_STARTED,
+      runId: activation.runId,
+      jobId: attempt.jobId,
+      attemptId: attempt.attemptId,
+    });
     const controller = new AbortController();
     const cancellationMonitor = setInterval(() => {
       void executor
@@ -70,6 +85,14 @@ export function createActivateAgentRunHandler(dependencies: {
         etaReliability: JobProgressEtaReliability.HIGH,
         attemptId: attempt.attemptId,
       });
+      logger.write({
+        level: AgentExecutorLogLevel.INFO,
+        event: AgentExecutorLogEvent.ACTIVATION_COMPLETED,
+        runId: activation.runId,
+        jobId: attempt.jobId,
+        attemptId: attempt.attemptId,
+        completedSteps: result.completedSteps,
+      });
       return {
         resultType: AgentExecutionResultType.AGENT_RUN,
         resultId: activation.runId,
@@ -84,6 +107,15 @@ export function createActivateAgentRunHandler(dependencies: {
         errorCode: executionFailureCode(error),
       };
       await dependencies.agentApi.settleActivation(attempt, result);
+      logger.write({
+        level: AgentExecutorLogLevel.ERROR,
+        event: AgentExecutorLogEvent.ACTIVATION_FAILED,
+        runId: activation.runId,
+        jobId: attempt.jobId,
+        attemptId: attempt.attemptId,
+        code: result.errorCode,
+        completedSteps: result.completedSteps,
+      });
       throw error;
     } finally {
       clearInterval(cancellationMonitor);

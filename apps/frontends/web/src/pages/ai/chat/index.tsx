@@ -16,7 +16,6 @@ export const Chats = () => {
 
   // ==================== Zustand Store ====================
   const sessions = useChatStore((state) => state.sessions);
-  const currentSessionId = useChatStore((state) => state.currentSessionId);
   const loadSessions = useChatStore((state) => state.loadSessions);
   const createSession = useChatStore((state) => state.createSession);
   const switchSession = useChatStore((state) => state.switchSession);
@@ -77,6 +76,7 @@ export const Chats = () => {
 
   // ==================== Render ====================
   const currentSession = getCurrentSession();
+  const activeSessionId = currentSession?.id ?? null;
   const title = currentSession?.title || '✨ AI学习助手';
 
   const headerActions = (
@@ -115,7 +115,7 @@ export const Chats = () => {
       }
     >
       <ChatWindow
-        sessionId={currentSessionId}
+        sessionId={activeSessionId}
         onSessionCreated={handleSessionCreated}
         onTitleGenerated={handleTitleGenerated}
       />
@@ -124,7 +124,7 @@ export const Chats = () => {
         visible={showSidebar}
         onClose={() => setShowSidebar(false)}
         sessions={sessions}
-        currentSessionId={currentSessionId}
+        currentSessionId={activeSessionId}
         onNewChat={handleNewChat}
         onSessionSelect={handleSwitchSession}
         onSessionDelete={handleDeleteSession}
@@ -138,7 +138,7 @@ export const Chats = () => {
       <ChatConfig
         visible={showConfig}
         onClose={() => setShowConfig(false)}
-        currentSessionId={currentSessionId}
+        currentSessionId={activeSessionId}
       />
     </PageView>
   );

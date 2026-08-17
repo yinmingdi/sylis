@@ -70,6 +70,50 @@
   color: var(--adm-color-text);
 }
 
+.messageBody {
+  min-width: 0;
+}
+
+.messageActions {
+  display: flex;
+  gap: 4px;
+  min-height: 32px;
+  margin-top: 8px;
+}
+
+.windowContainer :global(.agent-inspector-backdrop) {
+  position: fixed;
+  inset: 0;
+  z-index: 1099;
+  border: 0;
+  background: rgb(0 0 0 / 34%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.windowContainer :global(.agent-inspector-backdrop[data-open='true']) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.windowContainer :global(.agent-inspector) {
+  position: fixed;
+  inset: 0 0 0 auto;
+  z-index: 1100;
+  display: block;
+  width: min(420px, 100vw);
+  border-left: 1px solid var(--sy-line);
+  background: var(--sy-surface);
+  box-shadow: -16px 0 40px rgb(0 0 0 / 12%);
+  transform: translateX(100%);
+  transition: transform 180ms ease;
+}
+
+.windowContainer :global(.agent-inspector[data-open='true']) {
+  transform: translateX(0);
+}
+
 // 响应式适配
 @media (max-width: 768px) {
   .content {
@@ -78,5 +122,11 @@
 
   .sender {
     padding: 8px;
+  }
+
+  .windowContainer :global(.agent-inspector) {
+    inset: 0;
+    width: 100vw;
+    border-left: 0;
   }
 }

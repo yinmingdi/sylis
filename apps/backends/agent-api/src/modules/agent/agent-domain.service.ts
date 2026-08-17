@@ -124,6 +124,10 @@ import { canonicalJson, stableUuid } from "@sylis/utils";
 import { createHash, randomUUID } from "node:crypto";
 
 import { AgentSchemaValidator } from "./agent-schema-validator";
+import {
+  AgentToolBudgetRejectionCode,
+  allocateToolCallBudget,
+} from "./tool-budget-policy";
 import { ModelGatewayClient } from "../../adapters/model-gateway.client";
 import { ProductApiClient } from "../../adapters/product-api.client";
 import { AGENT_DATABASE } from "../../platform/database/database.module";
@@ -216,6 +220,7 @@ interface PreparedStepAction {
   contentBodyId?: string;
   contentHash?: string;
   childGoalBodyIds?: readonly string[];
+  budgetRejectionCode?: AgentToolBudgetRejectionCode;
   tool?: {
     releaseId: string;
     grantId: string;
@@ -2455,13 +2460,6 @@ export class AgentDomainService {
       }
       prepared.push({ action, actionDigest });
     }
-    if (
-      prepared.filter(
-        ({ action }) => action.kind === ContractAgentStepActionKind.DOMAIN_TOOL,
-      ).length > ownership.run.maxToolCalls
-    ) {
-      throw new ConflictException("AGENT_RUN_TOOL_LIMIT_EXCEEDED");
-    }
     await Promise.all(
       prepared.map(async (item) => {
         const action = item.action;
@@ -2559,9 +2557,11 @@ export class AgentDomainService {
             stepId,
             modelPosition: item.action.modelPosition,
             kind: databaseStepActionKind(item.action.kind),
-            status: initialActionStatus(item.action.kind),
+            status: initialActionStatus(item),
+            errorCode: item.budgetRejectionCode,
             actionDigest: item.actionDigest,
             completedAt:
+              item.budgetRejectionCode ||
               isImmediateAction(item.action.kind) ||
               isWaitingAction(item.action.kind)
                 ? new Date()
@@ -2640,10 +2640,7 @@ export class AgentDomainService {
         status: { not: AgentToolCallStatus.REJECTED },
       },
     });
-    if (existingToolCalls + tools.length > run.maxToolCalls) {
-      throw new ConflictException("AGENT_RUN_TOOL_LIMIT_EXCEEDED");
-    }
-    const additionsByGrant = new Map<string, number>();
+    const grantBudgets = new Map<string, { used: number; maximum: number }>();
     for (const item of tools) {
       if (
         item.action.kind !== ContractAgentStepActionKind.DOMAIN_TOOL ||
@@ -2652,7 +2649,9 @@ export class AgentDomainService {
         throw new ConflictException("AGENT_TOOL_ACTION_INVALID");
       }
       const policy = item.tool;
-      await lock(transaction, "AgentToolGrant", policy.grantId);
+      if (!grantBudgets.has(policy.grantId)) {
+        await lock(transaction, "AgentToolGrant", policy.grantId);
+      }
       const grant = await transaction.agentToolGrant.findUnique({
         where: { id: policy.grantId },
       });
@@ -2666,21 +2665,38 @@ export class AgentDomainService {
       ) {
         throw new ConflictException("AGENT_TOOL_GRANT_UNAVAILABLE");
       }
-      additionsByGrant.set(grant.id, (additionsByGrant.get(grant.id) ?? 0) + 1);
-    }
-    for (const [grantId, additions] of additionsByGrant) {
-      const grant = await transaction.agentToolGrant.findUniqueOrThrow({
-        where: { id: grantId },
-      });
-      const used = await transaction.agentToolCall.count({
-        where: {
-          grantId,
-          status: { not: AgentToolCallStatus.REJECTED },
-        },
-      });
-      if (used + additions > grant.maxCalls) {
-        throw new ConflictException("AGENT_TOOL_GRANT_EXHAUSTED");
+      if (!grantBudgets.has(grant.id)) {
+        grantBudgets.set(grant.id, {
+          maximum: grant.maxCalls,
+          used: await transaction.agentToolCall.count({
+            where: {
+              grantId: grant.id,
+              status: { not: AgentToolCallStatus.REJECTED },
+            },
+          }),
+        });
       }
+    }
+    const allocations = allocateToolCallBudget({
+      run: { used: existingToolCalls, maximum: run.maxToolCalls },
+      calls: tools.map((item) => {
+        const policy = item.tool!;
+        const grant = grantBudgets.get(policy.grantId)!;
+        return {
+          actionId: item.action.actionId,
+          grantId: policy.grantId,
+          grantUsed: grant.used,
+          grantMaximum: grant.maximum,
+        };
+      }),
+    });
+    const allocationsByAction = new Map(
+      allocations.map((allocation) => [allocation.actionId, allocation]),
+    );
+    for (const item of tools) {
+      item.budgetRejectionCode = allocationsByAction.get(
+        item.action.actionId,
+      )?.rejectionCode;
     }
     for (const item of prepared) {
       const action = item.action;
@@ -2760,6 +2776,8 @@ export class AgentDomainService {
     const eventBase = `step/${stepId}/action/${action.actionId}`;
     if (action.kind === ContractAgentStepActionKind.DOMAIN_TOOL) {
       const policy = item.tool!;
+      const rejected = item.budgetRejectionCode !== undefined;
+      const completedAt = rejected ? new Date() : null;
       await transaction.agentToolCall.create({
         data: {
           id: action.actionId,
@@ -2775,8 +2793,12 @@ export class AgentDomainService {
           grantId: policy.grantId,
           sideEffectClass: policy.sideEffectClass,
           concurrencyMode: policy.concurrencyMode,
-          status: AgentToolCallStatus.QUEUED,
-          queuedAt: new Date(),
+          status: rejected
+            ? AgentToolCallStatus.REJECTED
+            : AgentToolCallStatus.QUEUED,
+          queuedAt: rejected ? null : new Date(),
+          completedAt,
+          errorCode: item.budgetRejectionCode,
           actionDigest: action.actionDigest,
         },
       });
@@ -2794,6 +2816,23 @@ export class AgentDomainService {
         },
         `${eventBase}/proposed`,
       );
+      if (rejected) {
+        await this.appendEvent(
+          transaction,
+          run.id,
+          AgentEventType.TOOL_CALL_COMPLETED,
+          {
+            stepId,
+            actionId: action.actionId,
+            toolCallId: action.actionId,
+            toolKey: action.toolKey,
+            modelPosition: action.modelPosition,
+            status: AgentToolCallStatus.REJECTED,
+            errorCode: item.budgetRejectionCode,
+          },
+          `${eventBase}/completed`,
+        );
+      }
       return;
     }
     if (action.kind === ContractAgentStepActionKind.PROPOSAL) {
@@ -7010,9 +7049,9 @@ function contractStepActionKind(
   }
 }
 
-function initialActionStatus(
-  kind: ContractAgentStepActionKind,
-): AgentStepActionStatus {
+function initialActionStatus(item: PreparedStepAction): AgentStepActionStatus {
+  if (item.budgetRejectionCode) return AgentStepActionStatus.REJECTED;
+  const kind = item.action.kind;
   if (isWaitingAction(kind)) return AgentStepActionStatus.WAITING;
   if (isImmediateAction(kind)) return AgentStepActionStatus.SUCCEEDED;
   return AgentStepActionStatus.PENDING;
@@ -7041,9 +7080,15 @@ function executionPlan(
     modelPosition: number;
     kind: AgentStepActionKind;
     actionDigest: string;
+    status: AgentStepActionStatus;
+    errorCode: string | null;
     memoryCardId: string | null;
     memoryApplied: boolean | null;
-    toolCall: { id: string } | null;
+    toolCall: {
+      id: string;
+      status: AgentToolCallStatus;
+      errorCode: string | null;
+    } | null;
   }[],
 ): AgentStepExecutionPlan {
   const persistedById = new Map(persisted.map((action) => [action.id, action]));
@@ -7054,6 +7099,26 @@ function executionPlan(
     if (action.kind === ContractAgentStepActionKind.DOMAIN_TOOL) {
       if (!row.toolCall || !item.tool) {
         throw new ConflictException("AGENT_TOOL_CALL_MISSING");
+      }
+      if (
+        row.status === AgentStepActionStatus.REJECTED &&
+        row.toolCall.status === AgentToolCallStatus.REJECTED &&
+        row.errorCode &&
+        row.toolCall.errorCode === row.errorCode
+      ) {
+        return {
+          mode: AgentStepDirectiveMode.SETTLED,
+          kind: ContractAgentStepActionKind.DOMAIN_TOOL,
+          actionId: action.actionId,
+          modelPosition: action.modelPosition,
+          concurrencyMode: contractConcurrencyMode(item.tool.concurrencyMode),
+          settledOutcome: {
+            actionId: action.actionId,
+            modelPosition: action.modelPosition,
+            status: AgentStepOutcomeStatus.REJECTED,
+            errorCode: row.errorCode,
+          },
+        };
       }
       return {
         mode: AgentStepDirectiveMode.EXECUTE,

@@ -51,6 +51,51 @@ describe("agent contracts", () => {
     );
   });
 
+  it("publishes capability-specific budgets and one batch lexicon search contract", () => {
+    const expectedBudgets: Readonly<Record<CapabilityKey, number>> = {
+      [CapabilityKey.LEARNING_CHAT]: 24,
+      [CapabilityKey.LEXICON_EXPLAIN]: 16,
+      [CapabilityKey.GRAMMAR_ANALYZE]: 0,
+      [CapabilityKey.TRANSLATION_ANALYZE]: 16,
+      [CapabilityKey.READING_COMPOSE]: 16,
+      [CapabilityKey.PRACTICE_GENERATE]: 12,
+      [CapabilityKey.STUDY_COACH]: 12,
+    };
+    for (const release of AGENT_CAPABILITY_RELEASE_FIXTURES) {
+      expect(release.maxToolCalls).toBe(expectedBudgets[release.capabilityKey]);
+      expect(release.version).toBe("0.0.2");
+    }
+
+    const lexiconSearch = AGENT_TOOL_RELEASE_FIXTURES.find(
+      ({ toolKey }) => toolKey === AgentToolKey.LEXICON_SEARCH,
+    )!;
+    expect(lexiconSearch.version).toBe("0.0.2");
+    expect(lexiconSearch.maxCalls).toBe(24);
+    expect(lexiconSearch.inputSchema).toMatchObject({
+      required: ["queries"],
+      properties: {
+        queries: { type: "array", minItems: 1, maxItems: 20 },
+        limitPerQuery: { type: "integer", minimum: 1, maximum: 20 },
+      },
+    });
+
+    for (const release of AGENT_TOOL_RELEASE_FIXTURES) {
+      if (
+        release.toolKey === AgentToolKey.NOTEBOOK_ITEM_ADD ||
+        release.toolKey === AgentToolKey.READING_DOCUMENT_PUBLISH
+      ) {
+        expect(release.maxCalls).toBe(1);
+      } else if (
+        release.toolKey === AgentToolKey.WEB_SEARCH ||
+        release.toolKey === AgentToolKey.WEB_PAGE_READ
+      ) {
+        expect(release.maxCalls).toBe(4);
+      } else {
+        expect(release.maxCalls).toBe(24);
+      }
+    }
+  });
+
   it("adds verified continuation evidence to the model request as data", () => {
     const request = buildAgentStreamingRequest({
       capability: CapabilityKey.LEARNING_CHAT,

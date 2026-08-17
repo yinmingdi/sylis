@@ -115,8 +115,16 @@ async function main(): Promise<void> {
             inputSchema: {
               type: "object",
               additionalProperties: false,
-              required: ["query"],
-              properties: { query: { type: "string" } },
+              required: ["queries"],
+              properties: {
+                queries: {
+                  type: "array",
+                  minItems: 1,
+                  maxItems: 20,
+                  items: { type: "string" },
+                },
+                limitPerQuery: { type: "integer", minimum: 1, maximum: 20 },
+              },
             },
           },
         ],
@@ -131,7 +139,11 @@ async function main(): Promise<void> {
       ? [chunk.block.toolCall]
       : [],
   );
-  if (toolCalls.length !== 1 || toolCalls[0]?.input.query !== "bank") {
+  if (
+    toolCalls.length !== 1 ||
+    !Array.isArray(toolCalls[0]?.input.queries) ||
+    toolCalls[0].input.queries[0] !== "bank"
+  ) {
     throw new Error("DEEPSEEK_TOOL_SMOKE_INVALID");
   }
 

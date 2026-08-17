@@ -15,11 +15,17 @@ import { PublicWebTools } from "./adapters/public-web-tools";
 import { SylisTools } from "./adapters/sylis-tools";
 import { agentExecutorConfigFromEnv } from "./config/executor-config";
 import { createActivateAgentRunHandler } from "./handlers/activate-agent-run";
+import {
+  AgentExecutorLogEvent,
+  AgentExecutorLogLevel,
+  JsonAgentExecutorLogger,
+} from "./observability/agent-executor-logger";
 import { runAgentReconciliationLoop } from "./runtime/reconciliation-loop";
 import { AgentToolExecutor } from "./runtime/tool-executor";
 
 async function main(): Promise<void> {
   const config = agentExecutorConfigFromEnv();
+  const logger = new JsonAgentExecutorLogger();
   const abort = new AbortController();
   let state: JobWorkerState = {
     status: JobWorkerStatus.STARTING,
@@ -46,7 +52,12 @@ async function main(): Promise<void> {
       leaseDurationMs: config.leaseDurationMs,
     },
   );
-  const agentApi = new AgentApiClient(config.agentApiUrl, config.serviceToken);
+  const agentApi = new AgentApiClient(
+    config.agentApiUrl,
+    config.serviceToken,
+    globalThis.fetch,
+    logger,
+  );
   await Promise.all([
     runJobWorker({
       executor,
@@ -70,6 +81,7 @@ async function main(): Promise<void> {
           new SylisTools(config.productApiUrl, config.serviceToken),
         ),
         maxParallelToolCalls: config.maxParallelToolCalls,
+        logger,
       }),
       signal: abort.signal,
       pollIntervalMs: config.pollIntervalMs,
@@ -83,7 +95,15 @@ async function main(): Promise<void> {
       signal: abort.signal,
       intervalMs: config.reconciliationIntervalMs,
       onError: (error) => {
-        console.error("Agent reconciliation failed", error);
+        logger.write({
+          level: AgentExecutorLogLevel.ERROR,
+          event: AgentExecutorLogEvent.RECONCILIATION_FAILED,
+          code:
+            error instanceof Error &&
+            /^[A-Z][A-Z0-9_:.-]{2,159}$/.test(error.message)
+              ? error.message
+              : "AGENT_RECONCILIATION_FAILED",
+        });
       },
     }),
   ]);

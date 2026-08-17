@@ -115,7 +115,7 @@ test(
       sessionId,
       deterministicProviderInstruction(
         DeterministicProviderScenario.TOOL_CONTINUATION_DELAY,
-        `[tool:${AgentToolKey.LEXICON_SEARCH}] ${JSON.stringify({ query: "bank", limit: 1 })}`,
+        `[tool:${AgentToolKey.LEXICON_SEARCH}] ${JSON.stringify({ queries: ["bank"], limitPerQuery: 1 })}`,
       ),
       namespace.idempotencyKey("agent-crash-after-tool"),
     );

@@ -7,6 +7,7 @@ import {
   type AgentMessageView,
   type AgentSessionSnapshotView,
   type AgentStreamEvent,
+  type AgentWaitConditionView,
 } from '@sylis/api-client/agent';
 
 import {
@@ -14,7 +15,7 @@ import {
   subscribeToAgentEvents,
   type AgentEventSubscription,
 } from './event-stream';
-import { reduceAgentMessages } from '../model/event-reducer';
+import { reduceAgentMessages, reduceAgentRuns } from '../model/event-reducer';
 
 const MAX_BUFFERED_EVENTS = 500;
 const DEFAULT_RUN_TIMEOUT_MS = 180_000;
@@ -29,6 +30,7 @@ export interface AgentRunStreamResult {
     revisionId: string;
     kind: AgentArtifactKind;
   };
+  wait?: AgentWaitConditionView;
   terminalEvent?: AgentStreamEvent;
 }
 
@@ -114,6 +116,8 @@ class SessionEventHub {
         if (frame.type === AgentStreamFrameType.SESSION_SNAPSHOT) {
           this.currentSnapshot = frame;
           this.cursor = Math.max(this.cursor, frame.cursor);
+          this.resolveReady?.();
+          this.resolveReady = null;
           for (const subscriber of this.subscribers) {
             subscriber.onSnapshot?.(frame);
           }
@@ -128,16 +132,13 @@ class SessionEventHub {
             ...this.currentSnapshot,
             cursor: frame.sequence,
             messages: reduceAgentMessages(this.currentSnapshot.messages, frame),
+            runs: reduceAgentRuns(this.currentSnapshot.runs, frame),
           };
         }
         for (const subscriber of this.subscribers) subscriber.onEvent?.(frame);
       },
       onStateChange: (state) => {
         this.state = state;
-        if (state === AgentStreamConnectionState.OPEN) {
-          this.resolveReady?.();
-          this.resolveReady = null;
-        }
         for (const subscriber of this.subscribers) {
           subscriber.onStateChange?.(state);
         }
@@ -146,7 +147,7 @@ class SessionEventHub {
   }
 
   private async ready(): Promise<void> {
-    if (this.state === AgentStreamConnectionState.OPEN) return;
+    if (this.currentSnapshot) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
@@ -207,6 +208,15 @@ class SessionEventHub {
             revisionId: event.payload.revisionId,
             kind: event.payload.kind,
           };
+        } else if (event.type === AgentEventType.WAIT_REQUESTED) {
+          finish({
+            runId: input.runId,
+            status: AgentRunStatus.WAITING,
+            message,
+            artifact,
+            wait: event.payload.wait,
+            terminalEvent: event,
+          });
         } else if (event.type === AgentEventType.RUN_COMPLETED) {
           finish({
             runId: input.runId,

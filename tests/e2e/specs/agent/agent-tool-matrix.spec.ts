@@ -51,8 +51,8 @@ const READ_TOOL_CASES = [
   },
   {
     key: AgentToolKey.LEXICON_SEARCH,
-    validInput: async () => ({ query: "bank", limit: 1 }),
-    invalidInput: { query: "bank", limit: 21 },
+    validInput: async () => ({ queries: ["bank"], limitPerQuery: 1 }),
+    invalidInput: { queries: ["bank"], limitPerQuery: 21 },
   },
   {
     key: AgentToolKey.LEXICON_ENTRY_READ,

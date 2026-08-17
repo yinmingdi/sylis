@@ -41,22 +41,25 @@ v1 是服务端 Agent：User 关闭页面或更换设备后，已接受的 Run �
 /agent/sessions/:id
 ```
 
+现有移动学习入口 `/ai` 不再拥有旧聊天协议；它复用同一 Session、Run、SSE、Block renderer 和 model selection，只保留原移动 AppBar、会话侧栏、配置抽屉与视觉结构。
+
 桌面布局：
 
 ```text
-┌──────────────┬──────────────────────────────┬──────────────────────┐
-│ Sessions     │ Events / Messages / Composer │ Artifact / Approval  │
-│ search/list  │ queue, tool and wait states  │ inspector            │
-└──────────────┴──────────────────────────────┴──────────────────────┘
+┌──────────────┬─────────────────────────────────────────────┐
+│ Sessions     │ Events / Messages / Composer                │
+│ search/list  │ queue, tool and wait states                 │
+└──────────────┴─────────────────────────────────────────────┘
+                     └─ Artifact / Approval modal inspector ─┘
 ```
 
-移动端使用全屏 workspace，inspector 通过底部层或独立路由打开。全局 Agent 入口在当前页面打开上下文侧栏；提交前展示将被共享的 Objective、Sense、ReadingRevision 或 Attempt 摘要，User 可移除。
+Inspector 覆盖在聊天上方，不能把桌面布局推成三栏。移动端使用全屏 workspace，inspector 通过全屏覆盖层或独立路由打开。全局 Agent 入口在当前页面打开上下文侧栏；提交前展示将被共享的 Objective、Sense、ReadingRevision 或 Attempt 摘要，User 可移除。
 
 删除旧的独立 Tutor、Grammar 和 AI Reading 页面。旧入口改为携带明确 context ref 打开 Agent，不保留第二套 Session 或生成逻辑。
 
 ## 5. 流式与进度
 
-Agent 时间线统一显示：消息 delta、工具排队/开始/完成、Proposal、批准、Artifact revision、WaitCondition、warning、完成和失败。同一步可以先显示 Agent 文本，再按模型顺序显示多个独立 ToolCall；每个调用使用稳定 `stepId + callId` 更新 queued/running/succeeded/failed/cancelled 状态，一个失败不会把其他卡片伪装成失败。新连接先收到 Session snapshot，之后只消费 typed events；每个事件有稳定 sequence，浏览器断线后用 `Last-Event-ID` 恢复，不重新创建 ModelInvocation 或重复计费。同一 tab/Session 共享一个 SSE，聊天和结构化生成不再轮询消息、Run、Artifact 或 Proposal，也不直接调用 Model Gateway、Executor、Agent Runtime 或 tool execute endpoint。
+Agent 时间线统一显示：消息 delta、工具排队/开始/完成、Proposal、批准、Artifact revision、WaitCondition、warning、完成和失败。同一步可以先显示 Agent 文本，再按模型顺序显示多个独立 ToolCall；每个调用使用稳定 `stepId + callId` 更新 queued/running/succeeded/failed/rejected/cancelled 状态，一个失败或预算拒绝不会把其他卡片伪装成失败。新连接先收到 Session snapshot，之后只消费 typed events；每个事件有稳定 sequence，浏览器断线后用 `Last-Event-ID` 恢复，不重新创建 ModelInvocation 或重复计费。同一 tab/Session 共享一个 SSE，聊天和结构化生成不再轮询消息、Run、Artifact 或 Proposal，也不直接调用 Model Gateway、Executor、Agent Runtime 或 tool execute endpoint。
 
 时间线使用 Notion-inspired Block，但不是自由编辑器。段落、标题、列表、引用、提示、代码、公式、表格和分隔线是受控文档 Block；ToolCall、Artifact、Proposal、Plan、WaitCondition、Asset 和 Notice 是 typed reference Block。每个 Block 有稳定 identity、父子位置和 streaming/sealed/interrupted 状态；同一个工具的 queued/running/terminal 只更新同一张 Block，不重复插入卡片。User 不能拖拽或原地改写历史回答；需要继续编辑的长内容在 inspector 中创建新的 Artifact revision，历史 Block 始终固定原 revision。
 
@@ -112,3 +115,5 @@ Learning Agent 不建立不可见的完整 User 画像。长期 MemoryCard 在�
 14. SSE 在文本 Block 中途断开后，snapshot + cursor 恢复的正文无重复、无缺口，Message/Block/Run identity 不变。
 15. AgentArtifact 产生新 revision 后，旧聊天 Block 仍打开它当时引用的 exact revision，不静默展示最新版。
 16. 恶意 HTML、越权 reference、过深 Block tree、未知 schema 与可执行 embed 均 fail closed，桌面/移动端仍可读取其安全状态。
+17. 模型提出的多个只读工具调用按 Run/Grant 剩余额度逐个判定；额度内调用继续执行，超额调用显示明确 rejected 状态，Agent 仍可基于已取得证据完成回答。
+18. Agent API 或内部执行失败展示服务端稳定错误码对应的可操作信息；前端不会只得到笼统的 `AGENT_API_HTTP_409`。

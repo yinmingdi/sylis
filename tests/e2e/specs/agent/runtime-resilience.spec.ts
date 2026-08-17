@@ -161,7 +161,7 @@ test(
       sessionId,
       deterministicProviderInstruction(
         DeterministicProviderScenario.MIXED_MULTI_TOOL,
-        JSON.stringify({ query: "bank", limit: 1 }),
+        JSON.stringify({ queries: ["bank"], limitPerQuery: 1 }),
       ),
       namespace.idempotencyKey("agent-mixed-multi-tool"),
     );

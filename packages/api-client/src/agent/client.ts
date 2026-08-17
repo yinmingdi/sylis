@@ -69,10 +69,12 @@ export function createAgentClient(options: AgentClientOptions = {}) {
         type: "about:blank",
         title: response.statusText || "Agent request failed",
         status: response.status,
+        code: `AGENT_API_HTTP_${response.status}`,
       };
-      const problem = (await response
-        .json()
-        .catch(() => fallback)) as AgentProblemDetails;
+      const problem = normalizeProblemDetails(
+        await response.json().catch(() => fallback),
+        fallback,
+      );
       throw new AgentApiProblem(problem);
     }
     if (response.status === 204) return undefined as T;
@@ -304,6 +306,34 @@ export function createAgentClient(options: AgentClientOptions = {}) {
     capabilities: () =>
       request<AgentCapabilityView[]>("GET", "/api/agent/v1/capabilities"),
     usage: () => request<AgentUsageView[]>("GET", "/api/agent/v1/usage"),
+  };
+}
+
+function normalizeProblemDetails(
+  value: unknown,
+  fallback: AgentProblemDetails,
+): AgentProblemDetails {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return fallback;
+  }
+  const problem = value as Partial<AgentProblemDetails>;
+  return {
+    type: typeof problem.type === "string" ? problem.type : fallback.type,
+    title: typeof problem.title === "string" ? problem.title : fallback.title,
+    status:
+      typeof problem.status === "number" ? problem.status : fallback.status,
+    code:
+      typeof problem.code === "string" &&
+      /^[A-Z][A-Z0-9_:.-]{2,159}$/.test(problem.code)
+        ? problem.code
+        : fallback.code,
+    ...(typeof problem.detail === "string" ? { detail: problem.detail } : {}),
+    ...(typeof problem.instance === "string"
+      ? { instance: problem.instance }
+      : {}),
+    ...(typeof problem.requestId === "string"
+      ? { requestId: problem.requestId }
+      : {}),
   };
 }
 

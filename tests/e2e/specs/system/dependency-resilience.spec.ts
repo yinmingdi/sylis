@@ -150,7 +150,14 @@ test(
     tag: e2eTags(TestTag.SYSTEM, TestTag.NIGHTLY),
   },
   async ({ request }) => {
-    const readinessUrl = `http://127.0.0.1:${e2ePorts().agentApi}/health/ready`;
+    const ports = e2ePorts();
+    const readinessUrl = `http://127.0.0.1:${ports.agentApi}/health/ready`;
+    const databaseReadinessUrls = [
+      ports.api,
+      ports.adminApi,
+      ports.agentApi,
+      ports.modelGateway,
+    ].map((port) => `http://127.0.0.1:${port}/health/ready`);
     await controlService(
       request,
       E2eControllableService.POSTGRES,
@@ -169,7 +176,15 @@ test(
     }
 
     await expect
-      .poll(() => reportsReady(request, readinessUrl), { timeout: 45_000 })
+      .poll(
+        async () =>
+          (
+            await Promise.all(
+              databaseReadinessUrls.map((url) => reportsReady(request, url)),
+            )
+          ).every(Boolean),
+        { timeout: 45_000 },
+      )
       .toBe(true);
   },
 );

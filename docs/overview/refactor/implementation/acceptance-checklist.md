@@ -232,15 +232,21 @@
 - 最近完成：开发/E2E 采用本地 Vite 前端通过 `SYLIS_*_PROXY_TARGET` 环境变量访问 Docker API、Agent、PostgreSQL、MinIO；无需为每次前端修改重建 Docker。旧版样式恢复后的 learner 功能旅程已通过，认证 Axe 仍有明确的旧配色对比度冲突。
 - 最近完成：认证页与学习页恢复 `47c58b2f` 视觉基线，输入控件可访问名称、Agent 检查器首焦点/Escape/焦点恢复、上传状态语义与 Reddit 已读提交等待等非视觉修复保留；Web 12 files、32/32 unit 与 Web typecheck 通过。
 - 最近完成：只在最终验收构建一次 `sylis-web:worktree`；镜像实际启动后 `/health`、`/version.json`、首页与 Docker HEALTHCHECK 全部通过，临时容器已停止。
-- 当前状态：stale Agent Session 业务回归与 GitHub `CONTENT-004-E2E` 暴露的 Asset 最终一致性竞态均已在本地闭合；Web 21 files/56 tests、typecheck、lint（零 error）、fresh-stack 目标 E2E 4/4、文档、格式、密钥与 diff 门禁全绿，等待 GitHub 必需门禁。Railway 生产发布不属于本次合并范围。
+- 当前状态：stale Agent Session、Asset 最终一致性、setup worker 退出超时与 PostgreSQL 恢复屏障竞态均已在本地闭合；E2E harness 定向回归在两个独立隔离栈、5 秒 worker 退出门禁下均为 5/5，E2E typecheck、lint、Prettier、docs、secret scan 与 diff 门禁全绿。Railway 生产发布不属于本次合并范围。
 - 当前进展：W1-W7 与本地 W8 均已闭合。API deployment gateway 不写死端口，九个 endpoint 必须由 Railway target service `RAILWAY_PRIVATE_DOMAIN` + 显式 `PORT` reference variables 注入；缺失时 fail closed。
-- 当前风险：无已知实现阻断；仅 GitHub 必需门禁尚未完成。有界追赶最多 200ms × 25 次，只有发现新 Job 才重置；READY/REJECTED、处理链过长与永久无进展继续 fail-closed。
-- 下一批顺序：提交推送并监听 GitHub 必需门禁；不发布 Railway。
+- 当前风险：无已知本地实现阻断；GitHub 必需门禁尚未对最新 E2E harness 补丁给出结果。Asset 有界追赶最多 200ms × 25 次，READY/REJECTED、处理链过长与永久无进展继续 fail-closed。
+- 下一批顺序：提交推送并重新监听 GitHub 必需门禁；不发布 Railway。
 - 验证策略：所有最终命令必须等待真实退出码并记录结果；复用 `sylis-e2e-*:local` 镜像，避免无关重建；数据库继续以 `schema.prisma` force-reset 加 `invariants.sql` 的声明式空库安装为唯一目标。
 - 记录纪律：每个最小工作项实现、验证、失败或出现新风险后，必须先同步对应验收项、本节和验收日志；数据库约束项还必须同步覆盖矩阵。所有适用账本一致前不得开始下一项或汇报完成。
 - 跨轮次纪律：恢复工作先核对本节、日志与工作树；完成项必须具备验收 ID、状态、证据和未决事项，禁止凭对话记忆跳过登记或重复执行未受影响的验证。
 
 ## 验收日志
+
+| 2026-08-17 | `WORKTREE` | E2E harness 最终静态门禁与 diff review | 全绿：`e2e:typecheck` 完成 8/8 依赖构建及 E2E/deployment 两套 TypeScript project；定向 lint 零 error（仅既有 import/order 与配置忽略提示）、Prettier、docs、secret scan、diff whitespace 均通过；受影响源码无 `[DEBUG-*]` 标记，最终 diff 未发现业务实现扩散 | A-00、A-03、A-04、A-05、I-03、I-04、I-07、E2E-08、E2E-10、E2E-11、E2E-13 |
+
+| 2026-08-17 | `WORKTREE` | E2E setup worker 退出与 PostgreSQL 恢复屏障回归 | 两个全新隔离栈 `harness-recovery-20260817a` / `harness-recovery-20260817b` 均在 `PWTEST_CHILD_PROCESS_TIMEOUT=5000` 下 5/5 passed（各 1.3m）；覆盖 database install、seed、`RESILIENCE-003-E2E`、紧邻的 `RESILIENCE-004-E2E` 和 teardown，未再出现首个 learner login 失败或 worker 退出超时 | A-00、A-03、I-03、I-04、I-07、E2E-08、E2E-10、E2E-11、E2E-13 |
+
+| 2026-08-17 | `dafaa04` | GitHub E2E harness 两类竞态红灯 | run `31994931524` 中 Secret、Architecture/contracts、Workspace/empty DB、13 个镜像/harness、API、browser-quality 与 core 1/2/4 全绿；system-exclusive 的 `RESILIENCE-004-E2E` 首次 learner login 非 2xx、retry 通过，compose 同期显示前一 `RESILIENCE-003-E2E` 重启 PostgreSQL 后 API Prisma 连接仍在恢复；core 3 的两个 setup worker 再次各卡满 300s，3 setup/teardown passed、12 business tests 未运行，controller 无错误且 18 个容器 healthy。failed logs 与 diagnostics 均已下载，进入原生 controller client + 全数据库服务 readiness 屏障修复 | A-00、A-03、I-03、I-04、I-07、E2E-08、E2E-10、E2E-11、E2E-13 |
 
 | 2026-08-17 | `WORKTREE` | Asset lagging projection 最终清理门禁复验 | 全绿：纯格式修正后 Web 21 files/56 tests、受影响文件 Prettier、docs、secret scan 与 diff whitespace 全部通过；受影响源码无 `[DEBUG-*]` 标记，最终本地门禁闭合 | A-00、A-05、I-02、E2E-13 |
 

@@ -107,7 +107,10 @@ export async function learnerSessionStorageState(
     const session = await request.post("/api/v1/auth/sessions", {
       data: { email: account.email, password: account.password },
     });
-    expect(session.ok()).toBeTruthy();
+    expect(
+      session.ok(),
+      `learner login failed with status ${session.status()}`,
+    ).toBeTruthy();
     return await request.storageState();
   } finally {
     await request.dispose();
